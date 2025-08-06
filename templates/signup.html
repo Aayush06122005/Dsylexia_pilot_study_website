@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration - Dyslexia Research Study</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='landing_style.css') }}">
+
+</head>
+<body>
+    <!-- Header -->
+    <header class="primary-bg text-white py-6">
+        <div class="content-wrapper flex justify-between items-center">
+            <div class="flex items-center">
+                <h1 class="text-xl md:text-2xl font-bold">Leveraging NLP for Dyslexia Identification</h1>
+            </div>
+            <nav>
+                <ul class="flex space-x-6 text-lg md:text-xl">
+                    <li><a href="{{ url_for('landing') }}#about" class="hover:text-yellow-100 transition">About</a></li>
+                    
+                    <li><a href="{{ url_for('landing') }}#contact" class="hover:text-yellow-100 transition">Contact</a></li>
+
+                    <li><a href="{{ url_for('signin') }}" class="hover:text-yellow-100 transition">Sign In</a></li>
+                    
+                </ul> 
+            </nav>
+        </div>    
+    </header>
+
+    <!-- Accessibility Button with Label -->
+    <div class="fixed bottom-4 left-4 z-50 flex flex-col items-center space-y-1">
+
+    <!-- Button -->
+    <button id="togglePanel"
+        class="bg-[#1A237E] text-white p-3 rounded-full shadow-lg hover:bg-[#3a74cc] transition border border-white"
+        aria-label="Toggle Accessibility Panel">
+        <!-- Accessibility SVG Icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
+            viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 4.5c.828 0 1.5-.672 1.5-1.5S12.828 1.5 12 1.5 10.5 2.172 10.5 3s.672 1.5 1.5 1.5zM4.75 9.25l3.625.75M19.25 9.25l-3.625.75M8.375 10l.625 9m6-9l-.625 9M5.5 21.25h13"/>
+        </svg>
+    </button>
+
+    <!-- Label -->
+    <span class="text-sm text-white bg-[#1A237E] px-2 py-1 rounded shadow border border-white">
+        Accessibility
+    </span>
+    </div>
+    
+    <!-- Reading ruler -->
+    <div id="readingRuler" class="hidden pointer-events-none fixed top-0 left-0 w-full h-10 z-40" style="background-color: rgba(58, 116, 204, 0.3);">
+    </div>
+    
+    <!-- Accessibility Panel -->
+    <div id="accessibilityPanel"
+        class="hidden fixed top-0 left-0 h-screen w-80 bg-white shadow-lg z-50 border-l border-gray-300 overflow-y-auto p-4 space-y-6">
+
+    <!-- Panel Header -->
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-lg font-semibold text-[#1A237E]">Accessibility Menu</h2>
+        <button id="closePanel" class="text-2xl font-bold text-gray-500 hover:text-gray-700">&times;</button>
+    </div>
+
+        <!-- Font Size -->
+        <div class="flex items-center justify-between">
+        <span>Font Size</span>
+        <div class="space-x-2">
+            <button id="fontDecrease" class="px-2 py-1 bg-gray-200 rounded">A-</button>
+            <button id="fontReset" class="px-2 py-1 bg-gray-200 rounded">Reset</button>
+            <button id="fontIncrease" class="px-2 py-1 bg-gray-200 rounded">A+</button>
+        </div>
+        </div>
+
+        <!-- Toggle Row -->
+        <div class="flex justify-between items-center">
+        <span>Dyslexic Font</span>
+        <button id="toggleDyslexic" class="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-300 transition-colors">
+            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1"></span>
+        </button>
+        </div>
+
+        <div class="flex justify-between items-center">
+        <span>Monochrome</span>
+        <button id="toggleMonochrome" class="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-300 transition-colors">
+            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1"></span>
+        </button>
+        </div>
+
+        <div class="flex justify-between items-center">
+        <span>Reading Ruler</span>
+        <button id="toggleRuler" class="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-300 transition-colors">
+            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1"></span>
+        </button>
+        </div>
+
+        <div class="flex justify-between items-center">
+        <span>Big Cursor</span>
+        <button id="toggleCursor" class="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-300 transition-colors">
+            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1"></span>
+        </button>
+        </div>
+
+    </div>
+
+    <!-- Progress Indicator -->
+    <div class="content-wrapper mt-8">
+        <div class="progress-indicator">
+            <div class="progress-step active">
+                <span>1</span>
+                <span class="progress-label">Sign Up</span>
+            </div>
+            <div class="progress-step ">
+                <span>2</span>
+                <span class="progress-label">Informed Consent</span>
+            </div>
+            <div class="progress-step">
+                <span>3</span>
+                <span class="progress-label">Profile Setup</span>
+            </div>
+        
+        </div>
+    </div>
+
+    <!-- Registration Section -->
+    <section class="py-12 md:py-16 text-lg">
+        <div class="content-wrapper">
+            <div class="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden">
+                <div class="primary-bg text-white p-6">
+                    <h2 class="text-2xl font-bold">Create Your Account</h2>
+                    <p class="mt-2 text-white text-opacity-90">Join our research study on dyslexia identification</p>
+                </div>
+                
+                <div class="p-6">
+                    <form id="registrationForm" class="space-y-6" method="POST" action="/register">
+                        <!-- Name Field -->
+                        <div>
+                            <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                            <input type="text" id="name" name="name" class="w-full px-4 py-2 border-2 border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-blue" required>
+                            <div id="nameError" class="error-message hidden"></div>
+                        </div>
+                        
+                        <!-- Email Field -->
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                            <input type="email" id="email" name="email" class="w-full px-4 py-2 border-2 border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-blue" required>
+                            <div id="emailError" class="error-message hidden"></div>
+                        </div>
+                        
+                        <!-- Password Field -->
+                        <div>
+                            <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                            <div class="relative">
+                                <input type="password" id="password" name="password" class="w-full px-4 py-2 border-2 border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-blue" required>
+                                <button type="button" id="togglePassword" class="eye-toggle absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 focus:outline-none focus:ring-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="mt-2">
+                                <div class="bg-gray-200 rounded-full h-1 w-full">
+                                    <div id="passwordStrength" class="password-strength"></div>
+                                </div>
+                                <p id="passwordStrengthText" class="text-xs mt-1 text-gray-500">Password strength: Enter at least 8 characters</p>
+                            </div>
+                            <div id="passwordError" class="error-message hidden"></div>
+                            <ul class="text-xs text-gray-500 mt-2 space-y-1">
+                                <li id="lengthCheck" class="flex items-center">
+                                    <svg class="w-3 h-3 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    At least 8 characters
+                                </li>
+                                <li id="numberCheck" class="flex items-center">
+                                    <svg class="w-3 h-3 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    Contains a number
+                                </li>
+                                <li id="specialCheck" class="flex items-center">
+                                    <svg class="w-3 h-3 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    Contains a special character
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <!-- Confirm Password Field -->
+                        <div>
+                            <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                            <input type="password" id="confirmPassword" name="confirmPassword" class="w-full px-4 py-2 border-2 border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-blue" required>
+                            <div id="confirmPasswordError" class="error-message hidden"></div>
+                        </div>
+                        
+                        <!-- Eligibility Checkbox -->
+                        <div class="flex items-start">
+                            <div class="flex items-center h-5">
+                                <input id="eligibility" name="eligibility" type="checkbox" class="h-4 w-4 text-primary-blue focus:ring-primary-blue border-gray-700 rounded" required>
+                            </div>
+                            <div class="ml-3 text-sm">
+                                <label for="eligibility" class="font-medium text-gray-700">I confirm I meet the basic eligibility criteria (e.g., age 18+ or parental consent process initiated).</label>
+                                <div id="eligibilityError" class="error-message hidden"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Submit Button -->
+                        <div>
+                            <button type="submit" class="w-full primary-bg hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition" style="background-color: #1A237E;">
+                                Create Account
+                            </button>
+                        </div>
+
+                        <!-- Sign in with Google button -->
+                            <div class="flex justify-center my-4">
+                                <a href="{{ url_for('login_google') }}">
+                                    <button style="background:#4285F4; color:white; padding:10px 20px; border:none; border-radius:5px; display:flex; align-items:center;">
+                                        <img src="https://developers.google.com/identity/images/g-logo.png" width="20" style="margin-right:8px;">
+                                        Sign in with Google
+                                    </button>
+                                </a>
+                            </div>
+                        
+                        <!-- Already have an account -->
+                        <div class="text-center text-sm text-gray-600">
+                            Already have an account? <a href="{{ url_for('signin') }}" class="text-primary-blue hover:underline">Sign in</a>
+                        </div>
+
+                        
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Registration Success Modal (hidden by default) -->
+            <div id="successModal" class="fixed inset-0 flex items-center justify-center z-50 hidden">
+                <div class="absolute inset-0 bg-black opacity-50"></div>
+                <div class="bg-white rounded-lg p-8 max-w-md w-full relative z-10">
+                    <div class="text-center">
+                        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+                            <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">Registration Successful!</h3>
+                        <p class="text-sm text-gray-600 mb-6">
+                            Thank you for registering. We've sent a verification email to your inbox. Please check your email and follow the instructions to verify your account.
+                        </p>
+                        <div class="flex justify-center">
+                            <button id="closeModal" class="primary-bg hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition" style="background-color: #1A237E;">
+                                Got it
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="dark-bg text-white py-12 text-lg" style="background-color: #333333;">
+        <div class="content-wrapper">
+            <div class="flex flex-col md:flex-row justify-between">
+                <div class="mb-8 md:mb-0">
+                    <div class="flex items-center">
+                        
+                        <h2 class="text-xl font-bold">Dyslexia Research Initiative</h2>
+                    </div>
+                    <p class="mt-4 text-gray-400 max-w-md">
+                        Advancing our understanding of dyslexia through innovative research and technology to create better support systems for everyone.
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-8">
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+                        <ul class="space-y-2">
+                            <li><a href="{{ url_for('landing') }}#about" class="text-gray-400 hover:text-white transition">About</a></li>
+                            <li><a href="{{ url_for('landing') }}#contact" class="text-gray-400 hover:text-white transition">Contact</a></li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Resources</h3>
+                        <ul class="space-y-2">
+                            <li><a href="{{ url_for('learn_more') }}#faq" class="text-gray-400 hover:text-white transition">FAQs</a></li>
+                            <li><a href="#" class="text-gray-400 hover:text-white transition">Privacy Policy</a></li>
+                            <!-- <li><a href="#" class="text-gray-400 hover:text-white transition">Terms of Service</a></li> -->
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Connect</h3>
+                        <div class="flex space-x-4">
+                            <a href="#" class="text-gray-400 hover:text-white transition">
+                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"></path>
+                                </svg>
+                            </a>
+                            <a href="#" class="text-gray-400 hover:text-white transition">
+                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill-rule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z" clip-rule="evenodd"></path>
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-12 pt-8 border-t border-gray-700 text-center text-gray-400">
+                <p>&copy; 2025 Leveraging NLP for Dyslexia Identification. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const root = document.documentElement;
+        const panel = document.getElementById('accessibilityPanel');
+        const panelToggle = document.getElementById('togglePanel');
+        const closePanel = document.getElementById('closePanel');
+        const decreaseBtn = document.getElementById('fontDecrease');
+        const resetBtn = document.getElementById('fontReset');
+        const increaseBtn = document.getElementById('fontIncrease');
+
+        panelToggle.addEventListener('click', () => {
+            panel.classList.toggle('hidden');
+        });
+
+        closePanel.addEventListener('click', () => {
+            accessibilityPanel.classList.add('hidden');
+        });
+
+        document.addEventListener('click', function (event) {
+            const isClickInsidePanel = accessibilityPanel.contains(event.target);
+            const isClickToggleButton = togglePanel.contains(event.target);
+
+            if (!isClickInsidePanel && !isClickToggleButton) {
+            accessibilityPanel.classList.add('hidden');
+            }
+        });
+
+        function setupToggle(buttonId, classTarget, className) {
+            const button = document.getElementById(buttonId);
+            const thumb = button.querySelector('span');
+
+            button.addEventListener('click', () => {
+            const isActive = classTarget.classList.toggle(className);
+            button.classList.toggle('bg-blue-600', isActive);
+            button.classList.toggle('bg-gray-300', !isActive);
+            thumb.classList.toggle('translate-x-6', isActive);
+            thumb.classList.toggle('translate-x-1', !isActive);
+            });
+        }
+
+        setupToggle('toggleDyslexic', root, 'dyslexic-font');
+        setupToggle('toggleMonochrome', root, 'monochrome');
+        // setupToggle('toggleRuler', root, 'reading-ruler');
+        setupToggle('toggleCursor', root, 'big-cursor');
+
+        //ruler
+        const ruler = document.getElementById('readingRuler');
+        const rulerToggle = document.getElementById('toggleRuler');
+        const rulerThumb = rulerToggle.querySelector('span');
+
+        let rulerActive = false;
+
+        rulerToggle.addEventListener('click', () => {
+        rulerActive = !rulerActive;
+        ruler.classList.toggle('hidden', !rulerActive);
+
+        rulerToggle.classList.toggle('bg-blue-600', rulerActive);
+        rulerToggle.classList.toggle('bg-gray-300', !rulerActive);
+        rulerThumb.classList.toggle('translate-x-6', rulerActive);
+        rulerThumb.classList.toggle('translate-x-1', !rulerActive);
+        });
+
+        document.addEventListener('mousemove', (e) => {
+        if (rulerActive) {
+            const height = ruler.offsetHeight;
+            ruler.style.top = `${e.clientY - height / 2}px`;
+        }
+        });
+        //font size
+        let currentFontSize = 16;
+        decreaseBtn.addEventListener('click', () => {
+            if (currentFontSize > 12) {
+                currentFontSize -= 1;
+                updateFontSize();
+            }
+        });
+        resetBtn.addEventListener('click', () => {
+            currentFontSize = 16;
+            updateFontSize();
+        });
+        increaseBtn.addEventListener('click', () => {
+            if (currentFontSize < 24) {
+                currentFontSize += 1;
+                updateFontSize();
+            }
+        });
+
+        function updateFontSize() {
+            document.documentElement.style.setProperty('--font-size-base', `${currentFontSize}px`);
+            document.body.style.fontSize = `${currentFontSize}px`;
+            root.style.fontSize = `${currentFontSize}px`;
+        }
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Password visibility toggle
+        document.addEventListener('DOMContentLoaded', function() {
+            const togglePassword = document.getElementById('togglePassword');
+            const password = document.getElementById('password');
+            
+            if (togglePassword && password) {
+                togglePassword.addEventListener('click', function() {
+                    const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+                    password.setAttribute('type', type);
+                    
+                    // Change the eye icon
+                    if (type === 'text') {
+                        togglePassword.innerHTML = `
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                <line x1="1" y1="1" x2="23" y2="23"></line>
+                            </svg>
+                        `;
+                    } else {
+                        togglePassword.innerHTML = `
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        `;
+                    }
+                });
+            }
+        });
+
+        // Password strength checker
+        document.addEventListener('DOMContentLoaded', function() {
+            const password = document.getElementById('password');
+            const passwordStrength = document.getElementById('passwordStrength');
+            const passwordStrengthText = document.getElementById('passwordStrengthText');
+            const lengthCheck = document.getElementById('lengthCheck');
+            const numberCheck = document.getElementById('numberCheck');
+            const specialCheck = document.getElementById('specialCheck');
+            
+            if (password && passwordStrength && passwordStrengthText) {
+                password.addEventListener('input', function() {
+                    const value = password.value;
+                    let strength = 0;
+                    
+                    // Check length
+                    if (value.length >= 8) {
+                        strength += 1;
+                        lengthCheck.classList.add('text-green-500');
+                        lengthCheck.querySelector('svg').classList.add('text-green-500');
+                    } else {
+                        lengthCheck.classList.remove('text-green-500');
+                        lengthCheck.querySelector('svg').classList.remove('text-green-500');
+                    }
+                    
+                    // Check for numbers
+                    if (/\d/.test(value)) {
+                        strength += 1;
+                        numberCheck.classList.add('text-green-500');
+                        numberCheck.querySelector('svg').classList.add('text-green-500');
+                    } else {
+                        numberCheck.classList.remove('text-green-500');
+                        numberCheck.querySelector('svg').classList.remove('text-green-500');
+                    }
+                    
+                    // Check for special characters
+                    if (/[!@#$%^&*(),.?":{}|<>]/.test(value)) {
+                        strength += 1;
+                        specialCheck.classList.add('text-green-500');
+                        specialCheck.querySelector('svg').classList.add('text-green-500');
+                    } else {
+                        specialCheck.classList.remove('text-green-500');
+                        specialCheck.querySelector('svg').classList.remove('text-green-500');
+                    }
+                    
+                    // Update strength indicator
+                    passwordStrength.className = 'password-strength';
+                    if (strength === 0) {
+                        passwordStrengthText.textContent = 'Password strength: Enter at least 8 characters';
+                        passwordStrength.classList.add('strength-weak');
+                        passwordStrength.style.width = '0%';
+                    } else if (strength === 1) {
+                        passwordStrengthText.textContent = 'Password strength: Weak';
+                        passwordStrength.classList.add('strength-weak');
+                    } else if (strength === 2) {
+                        passwordStrengthText.textContent = 'Password strength: Medium';
+                        passwordStrength.classList.add('strength-medium');
+                    } else {
+                        passwordStrengthText.textContent = 'Password strength: Strong';
+                        passwordStrength.classList.add('strength-strong');
+                    }
+                });
+            }
+        });
+
+        // Form validation and submission
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('registrationForm');
+            const email = document.getElementById('email');
+            const password = document.getElementById('password');
+            const confirmPassword = document.getElementById('confirmPassword');
+            const eligibility = document.getElementById('eligibility');
+            const successModal = document.getElementById('successModal');
+            const closeModal = document.getElementById('closeModal');
+            
+            if (form && email && password && confirmPassword && eligibility && successModal && closeModal) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    let isValid = true;
+                    
+                    // Validate email
+                    if (!validateEmail(email.value)) {
+                        showError(email, 'emailError', 'Please enter a valid email address');
+                        isValid = false;
+                    } else {
+                        hideError(email, 'emailError');
+                    }
+                    
+                    // Validate password
+                    if (password.value.length < 8) {
+                        showError(password, 'passwordError', 'Password must be at least 8 characters long');
+                        isValid = false;
+                    } else {
+                        hideError(password, 'passwordError');
+                    }
+                    
+                    // Validate confirm password
+                    if (password.value !== confirmPassword.value) {
+                        showError(confirmPassword, 'confirmPasswordError', 'Passwords do not match');
+                        isValid = false;
+                    } else {
+                        hideError(confirmPassword, 'confirmPasswordError');
+                    }
+                    
+                    // Validate eligibility checkbox
+                    if (!eligibility.checked) {
+                        showError(null, 'eligibilityError', 'You must confirm that you meet the eligibility criteria');
+                        isValid = false;
+                    } else {
+                        hideError(null, 'eligibilityError');
+                    }
+                    
+                    // If form is valid, submit to backend
+                    if (isValid) {
+                        // Form will be submitted normally to Flask route
+                        form.submit();
+                    }
+                });
+                
+                // Close modal when clicking the close button
+                closeModal.addEventListener('click', function() {
+                    successModal.classList.add('hidden');
+                    // Redirect to signin page
+                    window.location.href = '/signin';
+                });
+                
+                // Helper functions for validation
+                function validateEmail(email) {
+                    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    return re.test(email);
+                }
+                
+                function showError(input, errorId, message) {
+                    const errorElement = document.getElementById(errorId);
+                    errorElement.textContent = message;
+                    errorElement.classList.remove('hidden');
+                    if (input) {
+                        input.classList.add('input-error');
+                    }
+                }
+                
+                function hideError(input, errorId) {
+                    const errorElement = document.getElementById(errorId);
+                    errorElement.textContent = '';
+                    errorElement.classList.add('hidden');
+                    if (input) {
+                        input.classList.remove('input-error');
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

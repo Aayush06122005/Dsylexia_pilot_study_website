@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NLP for Dyslexia Identification</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='landing_style.css') }}">
+   
+</head>
+<body>
+    <!-- Header -->
+    <header class="primary-bg text-white py-6">
+        <div class="content-wrapper flex justify-between items-center">
+            <div class="flex items-center">
+                
+                <h1 class="text-xl md:text-2xl font-bold">Leveraging NLP for Dyslexia Identification</h1>
+            </div>
+            <nav>
+                <ul class="flex space-x-6 text-lg md:text-xl">
+                    <li><a href="#about" class="hover:text-yellow-100 transition">About</a></li>
+                    <li><a href="#eligibility" class="hover:text-yellow-100 transition">Eligibility</a></li>
+                    <li><a href="#contact" class="hover:text-yellow-100 transition">Contact</a></li>
+                    {% if session.get('user_id') %}
+                    <li><a href="/participant-dashboard" class="hover:text-yellow-100 transition">Dashboard</a></li>
+                    {% else %}
+                    <li><a href="{{ url_for('signin') }}" class="hover:text-yellow-100 transition">Sign In</a></li>
+                    {% endif %}
+                    <li>
+                        <a href="/parent-signup" class="hover:text-yellow-100 transition">Sign Up as Parent</a>
+                    </li>
+                    <li>
+                        <a href="/school-signup" class="hover:text-yellow-100 transition">Sign Up as School</a>
+                    </li>
+                </ul> 
+            </nav>
+        </div>    
+    </header>
+
+    <!-- Accessibility Button with Label -->
+    <div class="fixed bottom-4 left-4 z-50 flex flex-col items-center space-y-1">
+
+    <!-- Button -->
+    <button id="togglePanel"
+        class="bg-[#1A237E] text-white p-3 rounded-full shadow-lg hover:bg-[#3a74cc] transition border border-white"
+        aria-label="Toggle Accessibility Panel">
+        <!-- Accessibility SVG Icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
+            viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 4.5c.828 0 1.5-.672 1.5-1.5S12.828 1.5 12 1.5 10.5 2.172 10.5 3s.672 1.5 1.5 1.5zM4.75 9.25l3.625.75M19.25 9.25l-3.625.75M8.375 10l.625 9m6-9l-.625 9M5.5 21.25h13"/>
+        </svg>
+    </button>
+
+    <!-- Label -->
+    <span class="text-sm text-white bg-[#1A237E] px-2 py-1 rounded shadow border border-white">
+        Accessibility
+    </span>
+    </div>
+    
+    <!-- Reading ruler -->
+    <div id="readingRuler" class="hidden pointer-events-none fixed top-0 left-0 w-full h-10 z-40" style="background-color: rgba(58, 116, 204, 0.3);">
+    </div>
+    
+    <!-- Accessibility Panel -->
+    <div id="accessibilityPanel"
+        class="hidden fixed top-0 left-0 h-screen w-80 bg-white shadow-lg z-50 border-l border-gray-300 overflow-y-auto p-4 space-y-6">
+
+    <!-- Panel Header -->
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-lg font-semibold text-[#1A237E]">Accessibility Menu</h2>
+        <button id="closePanel" class="text-2xl font-bold text-gray-500 hover:text-gray-700">&times;</button>
+    </div>
+
+        <!-- Font Size -->
+        <div class="flex items-center justify-between">
+        <span>Font Size</span>
+        <div class="space-x-2">
+            <button id="fontDecrease" class="px-2 py-1 bg-gray-200 rounded">A-</button>
+            <button id="fontReset" class="px-2 py-1 bg-gray-200 rounded">Reset</button>
+            <button id="fontIncrease" class="px-2 py-1 bg-gray-200 rounded">A+</button>
+        </div>
+        </div>
+
+        <!-- Toggle Row -->
+        <div class="flex justify-between items-center">
+        <span>Dyslexic Font</span>
+        <button id="toggleDyslexic" class="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-300 transition-colors">
+            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1"></span>
+        </button>
+        </div>
+
+        <div class="flex justify-between items-center">
+        <span>Monochrome</span>
+        <button id="toggleMonochrome" class="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-300 transition-colors">
+            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1"></span>
+        </button>
+        </div>
+
+        <div class="flex justify-between items-center">
+        <span>Reading Ruler</span>
+        <button id="toggleRuler" class="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-300 transition-colors">
+            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1"></span>
+        </button>
+        </div>
+
+        <div class="flex justify-between items-center">
+        <span>Big Cursor</span>
+        <button id="toggleCursor" class="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-300 transition-colors">
+            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1"></span>
+        </button>
+        </div>
+
+    </div>
+
+    <!-- Hero Section -->
+    <section class="relative pt-16 pb-24 md:pt-24 md:pb-32">
+        <div class="content-wrapper flex flex-col md:flex-row items-center">
+            <div class="md:w-1/2 mb-10 md:mb-0 md:pr-10">
+                <h1 class="text-3xl md:text-4xl lg:text-5xl font-bold mb-6" style="color: #1a1a1a;">
+                    Leveraging NLP for Dyslexia Identification
+                </h1>
+                <h2 class="text-xl md:text-2xl font-semibold mb-6" style="color: #003366;">
+                    Personalized Multimodal Language Assistance - Research Study
+                </h2>
+                <p class="text-gray-800 text-lg mb-8" style="COLOR: #333;">
+                    Join our groundbreaking research to develop innovative tools that can help identify dyslexia earlier and create personalized learning solutions. Your participation could make a significant difference in how we understand and support individuals with dyslexia.
+                </p>
+                <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                    <button id="learnMoreBtn" class="primary-bg hover:bg-blue-600 text-white font-medium py-3 px-6 rounded-lg transition" style="background-color: #1A237E;">
+                        Learn More
+                    </button>
+                    <button id="signupBtn" class="bg-white border-2 border-primary-blue text-primary-blue hover:bg-blue-50 font-medium py-3 px-6 rounded-lg transition" style="border-color: #1A237E; color: #1A237E;">
+                        Sign Up
+                    </button>
+                </div>
+            </div>
+            <div class="md:w-1/2">
+                <img src="{{ url_for('static', filename='img1.jpg') }}" alt="Illustration related to dyslexia and NLP" class="w-full h-auto rounded-lg shadow-lg">
+            </div>
+            
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="py-16 text-lg" style="background-color: #ffffff;">
+        <div class="content-wrapper">
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">About the Research</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="card bg-gradient-to-br from-blue-50 to-white p-6 rounded-xl shadow-md">
+                    <div class="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mb-6">
+                        <svg class="w-8 h-8" style="color: #1A237E;" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838l-2.727 1.17 1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-3">Understanding Dyslexia</h3>
+                    <p class="text-gray-600">
+                        Dyslexia affects up to 20% of India's population, including 35 million students, and impacts their reading, writing, and language processing. Our research aims to spread awareness and develop better tools for early identification and personalized support.
+                    </p>
+                </div>
+                
+                <div class="card bg-gradient-to-br from-blue-50 to-white p-6 rounded-xl shadow-md">
+                    <div class="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mb-6">
+                        <svg class="w-8 h-8" style="color: #1A237E;" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-3">Project Goals</h3>
+                    <p class="text-gray-600 ">
+                        We're using Natural Language Processing (NLP) to create innovative screening tools and develop personalized multimodal learning approaches that adapt to individual needs and strengths.
+                    </p>
+                </div>
+                
+                <div class="card bg-gradient-to-br from-blue-50 to-white p-6 rounded-xl shadow-md">
+                    <div class="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mb-6">
+                        <svg class="w-8 h-8" style="color: #1A237E;" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" d="M6.625 2.655A9 9 0 0119 11a1 1 0 11-2 0 7 7 0 00-9.625-6.492 1 1 0 11-.75-1.853zM4.662 4.959A1 1 0 014.75 6.37 6.97 6.97 0 003 11a1 1 0 11-2 0 8.97 8.97 0 012.25-5.953 1 1 0 011.412-.088z" clip-rule="evenodd"></path>
+                            <path fill-rule="evenodd" d="M5 11a5 5 0 1110 0 1 1 0 11-2 0 3 3 0 10-6 0c0 1.677-.345 3.276-.968 4.729a1 1 0 11-1.838-.789A9.964 9.964 0 005 11zm8.921 2.012a1 1 0 01.831 1.145 19.86 19.86 0 01-.545 2.436 1 1 0 11-1.92-.558c.207-.713.371-1.445.49-2.192a1 1 0 011.144-.83z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-3">Your Support</h3>
+                    <p class="text-gray-600 ">
+                        By participating, you'll help advance our understanding of dyslexia and contribute to the development of tools that could benefit millions of people worldwide.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="mt-16 highlight-bg p-8 rounded-xl bg-gradient-to-br from-blue-50 to-white" >
+                <!-- style="background-color: #f5f5dc rgba(255, 255, 0, 0.1);" -->
+                <h3 class="text-2xl font-semibold text-gray-800 mb-4">Data Privacy & Ethics</h3>
+                <div class="flex flex-col md:flex-row">
+                    <div class="md:w-2/3 md:pr-8">
+                        <p class="text-gray-600 mb-4">
+                            We take your privacy seriously. All data collected during this study will be:
+                        </p>
+                        <ul class="list-disc pl-5 text-gray-600 space-y-2 mb-4">
+                            <li>Fully anonymized to protect your identity</li>
+                            <li>Stored securely with encryption</li>
+                            <li>Used only for research purposes</li>
+                            <li>Handled according to IRB (Institutional Review Board) approved protocols</li>
+                        </ul>
+                        
+                    </div>
+                    
+                    <div class="md:w-1/2 flex justify-center items-start">
+                        <img src="{{ url_for('static', filename='shield.jpg') }}" alt="Illustration related to dyslexia and NLP" class="w-1/3 h-auto rounded-lg shadow-lg">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Eligibility Section -->
+    <section id="eligibility" class="py-16 beige-bg text-lg" style="background-color: #f5f5dc;">
+        <div class="content-wrapper">
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">Who Can Participate?</h2>
+            
+            <div class="flex flex-col md:flex-row gap-8">
+                <div class="md:w-1/2 bg-white p-8 rounded-xl shadow-md">
+                    <h3 class="text-2xl font-semibold mb-6 flex items-center" style="color: #1A237E;">
+                        <svg class="w-8 h-8 mr-3" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                        </svg>
+                        Participants with Dyslexia
+                    </h3>
+                    <ul class="space-y-4">
+                        <li class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>Ages 18-65</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>Medically diagnosed with dyslexia</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>Fluent in English (native or non-native)</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>Access to a computer with internet connection</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="md:w-1/2 bg-white p-8 rounded-xl shadow-md">
+                    <h3 class="text-2xl font-semibold mb-6 flex items-center" style="color: #1A237E;">
+                        <svg class="w-8 h-8 mr-3" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"></path>
+                        </svg>
+                        Control Participants
+                    </h3>
+                    <ul class="space-y-4">
+                        <li class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>Ages 18-65</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>No history of reading difficulties or dyslexia diagnosis</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>Fluent in English (native or non-native)</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>Access to a computer with internet connection</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="mt-12 bg-white p-8 rounded-xl shadow-md">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-6">What Participation Involves</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="border border-blue-100 rounded-lg p-5">
+                        <div class="flex items-center mb-4">
+                            <div class="rounded-full w-10 h-10 flex items-center justify-center mr-3" style="background-color: rgba(74, 144, 226, 0.1);">
+                                <svg class="w-6 h-6" style="color: #1A237E;" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"></path>
+                                </svg>
+                            </div>
+                            <h4 class="text-lg font-medium text-gray-800">Time Commitment</h4>
+                        </div>
+                        <p class="text-gray-600">
+                            2-3 sessions of approximately 45-60 minutes each, scheduled at your convenience over a 2-week period.
+                        </p>
+                    </div>
+                    
+                    <div class="border border-blue-100 rounded-lg p-5">
+                        <div class="flex items-center mb-4">
+                            <div class="rounded-full w-10 h-10 flex items-center justify-center mr-3" style="background-color: rgba(74, 144, 226, 0.1);">
+                                <svg class="w-6 h-6" style="color: #1A237E;" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path>
+                                    <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path>
+                                </svg>
+                            </div>
+                            <h4 class="text-lg font-medium text-gray-800">Tasks</h4>
+                        </div>
+                        <p class="text-gray-600">
+                            Reading exercises, writing samples, interactive digital tasks, and brief questionnaires about your experiences.
+                        </p>
+                    </div>
+                    
+                    <div class="border border-blue-100 rounded-lg p-5">
+                        <div class="flex items-center mb-4">
+                            <div class="rounded-full w-10 h-10 flex items-center justify-center mr-3" style="background-color: rgba(74, 144, 226, 0.1);">
+                                <svg class="w-6 h-6" style="color: #1A237E;" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clip-rule="evenodd"></path>
+                                </svg>
+                            </div>
+                            <h4 class="text-lg font-medium text-gray-800">Benefits</h4>
+                        </div>
+                        <p class="text-gray-600">
+                            Compensation for your time, early access to research findings, and the satisfaction of contributing to important research.
+                        </p>
+                    </div>
+                </div>
+                
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="py-16 bg-white text-lg">
+        <div class="content-wrapper">
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">Contact Us</h2>
+            
+            <div class="w-full max-w-6xl mx-auto bg-beige rounded-xl overflow-hidden shadow-md px-4" style="background-color: #f5f5dc;">
+                <div class="md:flex">
+                    <div class="md:w-1/3 p-8 text-white" style="background-color: #1A237E;">
+                        <h3 class="text-xl font-semibold mb-6">Research Team</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <p class="font-medium">Principal Investigator</p>
+                                <p>[name]</name></p>
+                            </div>
+                            <div>
+                                <p class="font-medium">Email</p>
+                                <p>[email]</p>
+                            </div>
+                            <!-- <div>
+                                <p class="font-medium">Phone</p>
+                                <p>(123) 456-7890</p>
+                            </div> -->
+                            <div>
+                                <p class="font-medium">Department</p>
+                                <p>[Department name]</p>
+                                <p>IIIT Delhi</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="md:w-2/3 p-8">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-6">Have Questions?</h3>
+                        <p class="text-gray-600 mb-6">
+                            We're happy to provide more information about the study. Please reach out with any questions or concerns.
+                        </p>
+                        <form id="contactForm" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                                    <input type="text" id="name" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                    <input type="email" id="email" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="subject" class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                                <input type="text" id="subject" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label for="message" class="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                                <textarea id="message" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"></textarea>
+                            </div>
+                            <div>
+                                <button type="submit" class="primary-bg hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-md transition" style="background-color: #1A237E;">
+                                    Send Message
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-16 text-white" style="background-color: #1A237E;">
+        <div class="content-wrapper text-center">
+            <h2 class="text-3xl font-bold mb-6">Ready to Make a Difference?</h2>
+            <p class="text-xl mb-8 max-w-2xl mx-auto">
+                Join our research study today and help us develop better tools for identifying and supporting individuals with dyslexia.
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                <button id="signupBtn" class="bg-white text-blue-600 hover:bg-blue-50 font-medium py-3 px-8 rounded-lg transition" style="color: #1A237E;">
+                    Sign Up
+                </button>
+                <button id="learnMoreFooterBtn" class="border-2 border-white text-white hover:bg-white hover:bg-opacity-10 font-medium py-3 px-8 rounded-lg transition">
+                    Learn More
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="dark-bg text-white py-12 text-lg" style="background-color: #333333;">
+        <div class="content-wrapper">
+            <div class="flex flex-col md:flex-row justify-between">
+                <div class="mb-8 md:mb-0">
+                    <div class="flex items-center">
+                        
+                        <h2 class="text-xl font-bold">Dyslexia Research Initiative</h2>
+                    </div>
+                    <p class="mt-4 text-gray-400 max-w-md">
+                        Advancing our understanding of dyslexia through innovative research and technology to create better support systems for everyone.
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-8">
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+                        <ul class="space-y-2">
+                            <li><a href="#about" class="text-gray-400 hover:text-white transition">About</a></li>
+                            <li><a href="#eligibility" class="text-gray-400 hover:text-white transition">Eligibility</a></li>
+                            <li><a href="#contact" class="text-gray-400 hover:text-white transition">Contact</a></li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Resources</h3>
+                        <ul class="space-y-2">
+                            <li><a href="{{ url_for('learn_more') }}#faq" class="text-gray-400 hover:text-white transition">FAQs</a></li>
+                            <li><a href="#" class="text-gray-400 hover:text-white transition">Privacy Policy</a></li>
+                            <!-- <li><a href="#" class="text-gray-400 hover:text-white transition">Terms of Service</a></li> -->
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Connect</h3>
+                        <div class="flex space-x-4">
+                            <a href="#" class="text-gray-400 hover:text-white transition">
+                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"></path>
+                                </svg>
+                            </a>
+                            <a href="#" class="text-gray-400 hover:text-white transition">
+                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill-rule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z" clip-rule="evenodd"></path>
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-12 pt-8 border-t border-gray-700 text-center text-gray-400">
+                <p>&copy; 2025 Leveraging NLP for Dyslexia Identification. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    <script src="{{ url_for('static', filename='landing_script.js') }}"></script>
+</body>
+</html>

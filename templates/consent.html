@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Informed Consent - Dyslexia Research Study</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='landing_style.css') }}">
+
+</head>
+<body>
+    <!-- Header -->
+    <header class="primary-bg text-white py-6">
+        <div class="content-wrapper flex justify-between items-center">
+            <div class="flex items-center">
+                <h1 class="text-xl md:text-2xl font-bold">Leveraging NLP for Dyslexia Identification</h1>
+            </div>
+            <nav>
+                <ul class="flex space-x-6 text-lg md:text-xl">
+                    <li><a href="{{ url_for('landing') }}#about" class="hover:text-yellow-100 transition">About</a></li>
+                    
+                    <li><a href="{{ url_for('landing') }}#contact" class="hover:text-yellow-100 transition">Contact</a></li>
+
+                    
+                </ul> 
+            </nav>
+        </div>    
+    </header>
+
+    <!-- Accessibility Button with Label -->
+    <div class="fixed bottom-4 left-4 z-50 flex flex-col items-center space-y-1">
+
+    <!-- Button -->
+    <button id="togglePanel"
+        class="bg-[#1A237E] text-white p-3 rounded-full shadow-lg hover:bg-[#3a74cc] transition border border-white"
+        aria-label="Toggle Accessibility Panel">
+        <!-- Accessibility SVG Icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
+            viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 4.5c.828 0 1.5-.672 1.5-1.5S12.828 1.5 12 1.5 10.5 2.172 10.5 3s.672 1.5 1.5 1.5zM4.75 9.25l3.625.75M19.25 9.25l-3.625.75M8.375 10l.625 9m6-9l-.625 9M5.5 21.25h13"/>
+        </svg>
+    </button>
+
+    <!-- Label -->
+    <span class="text-sm text-white bg-[#1A237E] px-2 py-1 rounded shadow border border-white">
+        Accessibility
+    </span>
+    </div>
+    
+    <!-- Reading ruler -->
+    <div id="readingRuler" class="hidden pointer-events-none fixed top-0 left-0 w-full h-10 z-40" style="background-color: rgba(58, 116, 204, 0.3);">
+    </div>
+    
+    <!-- Accessibility Panel -->
+    <div id="accessibilityPanel"
+        class="hidden fixed top-0 left-0 h-screen w-80 bg-white shadow-lg z-50 border-l border-gray-300 overflow-y-auto p-4 space-y-6">
+
+    <!-- Panel Header -->
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-lg font-semibold text-[#1A237E]">Accessibility Menu</h2>
+        <button id="closePanel" class="text-2xl font-bold text-gray-500 hover:text-gray-700">&times;</button>
+    </div>
+
+        <!-- Font Size -->
+        <div class="flex items-center justify-between">
+        <span>Font Size</span>
+        <div class="space-x-2">
+            <button id="fontDecrease" class="px-2 py-1 bg-gray-200 rounded">A-</button>
+            <button id="fontReset" class="px-2 py-1 bg-gray-200 rounded">Reset</button>
+            <button id="fontIncrease" class="px-2 py-1 bg-gray-200 rounded">A+</button>
+        </div>
+        </div>
+
+        <!-- Toggle Row -->
+        <div class="flex justify-between items-center">
+        <span>Dyslexic Font</span>
+        <button id="toggleDyslexic" class="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-300 transition-colors">
+            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1"></span>
+        </button>
+        </div>
+
+        <div class="flex justify-between items-center">
+        <span>Monochrome</span>
+        <button id="toggleMonochrome" class="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-300 transition-colors">
+            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1"></span>
+        </button>
+        </div>
+
+        <div class="flex justify-between items-center">
+        <span>Reading Ruler</span>
+        <button id="toggleRuler" class="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-300 transition-colors">
+            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1"></span>
+        </button>
+        </div>
+
+        <div class="flex justify-between items-center">
+        <span>Big Cursor</span>
+        <button id="toggleCursor" class="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-300 transition-colors">
+            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1"></span>
+        </button>
+        </div>
+
+    </div>
+
+    <!-- Progress Indicator -->
+    <div class="content-wrapper mt-8">
+        <div class="progress-indicator">
+            <div class="progress-step completed">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span class="progress-label">Sign Up</span>
+            </div>
+            <div class="progress-step active">
+                <span>2</span>
+                <span class="progress-label">Informed Consent</span>
+            </div>
+            <div class="progress-step">
+                <span>3</span>
+                <span class="progress-label">Profile Setup</span>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- Informed Consent Section -->
+    <section class="py-8">
+        <div class="content-wrapper">
+            <div class="bg-white rounded-xl shadow-md overflow-hidden ">
+                <div class="primary-bg text-white p-6">
+                    <h2 class="text-2xl font-bold">Informed Consent</h2>
+                    <p class="mt-2 text-white text-opacity-90">Please review the information below carefully before deciding to participate</p>
+                </div>
+                
+                <div class="p-6">
+                    <div class="mb-6">
+                        <p class="text-gray-700">Before you can participate in this research study, we need your informed consent. Please read the following information carefully. You can download a copy for your records.</p>
+                        
+                        <div class="mt-4 flex justify-end">
+                            <button id="downloadConsent" class="flex items-center text-primary-blue hover:text-blue-700 transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                Download Consent Form
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="consent-content mb-6 text-gray-700 border-2 border-gray-500 ">
+                        <div class="consent-section">
+                            <h3 class="text-lg font-semibold mb-3">1. Study Purpose</h3>
+                            <p class="mb-3">This research study aims to develop and validate natural language processing (NLP) techniques for identifying linguistic patterns associated with dyslexia. The goal is to create accessible, non-invasive screening tools that can help identify dyslexia earlier and more efficiently.</p>
+                            <p>By analyzing writing samples and reading patterns, we hope to identify subtle linguistic markers that may indicate dyslexia, potentially leading to earlier intervention and support for those who need it.</p>
+                        </div>
+                        
+                        <div class="consent-section">
+                            <h3 class="text-lg font-semibold mb-3">2. Procedures</h3>
+                            <p class="mb-3">If you agree to participate, you will be asked to complete the following activities:</p>
+                            <ul class="list-disc pl-5 space-y-2 mb-3">
+                                <li>Complete a brief demographic questionnaire (approximately 5 minutes)</li>
+                                <li>Provide information about any previous dyslexia diagnosis or related learning differences</li>
+                                <li>Complete a series of reading and writing tasks (approximately 30-45 minutes total)</li>
+                                <li>Optionally participate in follow-up assessments (if you agree to be contacted again)</li>
+                            </ul>
+                            <p>The total time commitment is approximately 35-50 minutes for the initial session.</p>
+                        </div>
+                        
+                        <div class="consent-section">
+                            <h3 class="text-lg font-semibold mb-3">3. Potential risks and Discomforts(minimal)</h3>
+                            <p class="mb-3">The risks associated with this study are minimal and similar to those you might experience when doing reading or writing activities in everyday life:</p>
+                            <ul class="list-disc pl-5 space-y-2 mb-3">
+                                <li>You may experience mild fatigue from completing the tasks</li>
+                                <li>If you have reading difficulties, some tasks might cause mild frustration</li>
+                                <li>You might feel some discomfort if you're concerned about your performance</li>
+                            </ul>
+                            <p>We've designed the study to minimize these risks by allowing breaks between tasks and emphasizing that this is not a test with "right" or "wrong" answers.</p>
+                        </div>
+                        
+                        <div class="consent-section">
+                            <h3 class="text-lg font-semibold mb-3">4. Benefits</h3>
+                            <p class="mb-3">While you may not benefit directly from participating in this study, your contribution will help advance our understanding of dyslexia and potentially lead to:</p>
+                            <ul class="list-disc pl-5 space-y-2 mb-3">
+                                <li>Development of more accessible screening tools for dyslexia</li>
+                                <li>Earlier identification and intervention for individuals with dyslexia</li>
+                                <li>Improved understanding of the linguistic patterns associated with dyslexia</li>
+                            </ul>
+                            <p>If you're interested, we can provide you with a summary of the research findings when the study is complete.</p>
+                        </div>
+                        
+                        <div class="consent-section">
+                            <h3 class="text-lg font-semibold mb-3">5. Confidentiality</h3>
+                            <p class="mb-3">We take the protection of your data very seriously:</p>
+                            <ul class="list-disc pl-5 space-y-2 mb-3">
+                                <li>All data will be stored securely on encrypted servers</li>
+                                <li>Your personal information (name, email) will be stored separately from your study data</li>
+                                <li>A random participant ID will be used to link your data without identifying you</li>
+                                <li>Only authorized research team members will have access to the full dataset</li>
+                                <li>Any published results will use aggregated data and will not identify individual participants</li>
+                            </ul>
+                            <p>In accordance with research best practices, we will retain the anonymized data for 5 years after study completion.</p>
+                        </div>
+                        
+                        <div class="consent-section">
+                            <h3 class="text-lg font-semibold mb-3">6. Data Usage Statement</h3>
+                            <p class="mb-3">The data collected in this study will be:</p>
+                            <ul class="list-disc pl-5 space-y-2 mb-3">
+                                <li>Anonymized (all personally identifying information removed)</li>
+                                <li>Used for research purposes to develop and validate NLP models for dyslexia identification</li>
+                                <li>Potentially included in a public research dataset, pending ethical approval</li>
+                                <li>Used in academic publications, presentations, and reports</li>
+                            </ul>
+                            <p>If a public dataset is created, it will only include anonymized linguistic data and basic demographic information (age range, education level, etc.) with no personally identifying details.</p>
+                        </div>
+                        
+                        <div class="consent-section">
+                            <h3 class="text-lg font-semibold mb-3">7. Voluntary Participation and Right to Withdraw</h3>
+                            <p class="mb-3">Your participation in this study is completely voluntary. You may:</p>
+                            <ul class="list-disc pl-5 space-y-2 mb-3">
+                                <li>Decline to participate without any penalty or loss of benefits</li>
+                                <li>Skip any questions you prefer not to answer</li>
+                                <li>Take breaks during the tasks as needed</li>
+                                <li>Withdraw from the study at any time without penalty</li>
+                            </ul>
+                            <p>If you choose to withdraw, you can request that your data be removed from the study by contacting the research team within 30 days of your participation.</p>
+                        </div>
+                        
+                        <div class="consent-section">
+                            <h3 class="text-lg font-semibold mb-3">8. Contact Information</h3>
+                            <p class="mb-3">If you have questions, concerns, or complaints about this research, please contact:</p>
+                            <p class="mb-2"><strong>Principal Investigator:</strong> Dr. [name]</p>
+                            <p class="mb-2">Email: [email]</p>
+                            <p class="mb-2">Phone: [#1]</p>
+                            <p class="mb-3">Department of [], IIITD Research Center</p>
+                            
+                            <p class="mb-2"><strong>For questions about your rights as a research participant:</strong></p>
+                            <p class="mb-2">Institutional Review Board (IRB)</p>
+                            <p class="mb-2">Email: [email2]</p>
+                            <p>Phone: [#2]</p>
+                        </div>
+                    </div>
+                    
+                    <form id="consentForm" class="space-y-6">
+                        <!-- Digital Signature -->
+                        <div>
+                            <label for="signature" class="block text-sm font-medium text-gray-700 mb-1">Digital Signature (Type your full name)</label>
+                            <input type="text" id="signature" name="signature" class="w-full px-4 py-2 border-2 border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-blue" required>
+                            <div id="signatureError" class="error-message hidden"></div>
+                        </div>
+                        
+                        <!-- Consent Checkbox -->
+                        <div class="flex items-start">
+                            <div class="flex items-center h-5">
+                                <input id="consentCheckbox" name="consentCheckbox" type="checkbox" class="h-4 w-4 text-primary-blue focus:ring-primary-blue border-gray-700 rounded" required>
+                            </div>
+                            <div class="ml-3 text-sm">
+                                <label for="consentCheckbox" class="font-medium text-gray-700">I have read and understood the information above and consent to participate in this research study.</label>
+                                <div id="consentCheckboxError" class="error-message hidden"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Date -->
+                        <div>
+                            <label for="consentDate" class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                            <input type="date" id="consentDate" name="consentDate" class="w-full px-4 py-2 border-2 border-gray-700  rounded-md focus:outline-none focus:ring-2 focus:ring-primary-blue" required>
+                            <div id="consentDateError" class="error-message hidden"></div>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="flex flex-col sm:flex-row justify-between space-y-4 sm:space-y-0 sm:space-x-4">
+                            <button type="button" id="declineButton" class="px-6 py-2 border-2 border-gray-700 rounded-md text-gray-700 hover:bg-gray-50 transition">
+                                Decline
+                            </button>
+                            <button type="submit" id="agreeButton" class="primary-bg hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-md transition" style="background-color: #1A237E;">
+                                Agree and Continue
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Decline Modal (hidden by default) -->
+            <div id="declineModal" class="fixed inset-0 flex items-center justify-center z-50 hidden">
+                <div class="absolute inset-0 bg-black opacity-50"></div>
+                <div class="bg-white rounded-lg p-8 max-w-md w-full relative z-10">
+                    <div class="text-center">
+                        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                            <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">Participation Declined</h3>
+                        <p class="text-sm text-gray-600 mb-6">
+                            Thank you for your interest in our study. We respect your decision not to participate. You will not be able to proceed with the study tasks, but you're welcome to return and consent at any time if you change your mind.
+                        </p>
+                        <div class="flex justify-center">
+                            <button id="returnToHomeButton" class="primary-bg hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition" style="background-color: #1A237E;">
+                                Return to Home
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Success Modal (hidden by default) -->
+            <div id="successModal" class="fixed inset-0 flex items-center justify-center z-50 hidden">
+                <div class="absolute inset-0 bg-black opacity-50"></div>
+                <div class="bg-white rounded-lg p-8 max-w-md w-full relative z-10">
+                    <div class="text-center">
+                        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+                            <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">Thank You!</h3>
+                        <p class="text-sm text-gray-600 mb-6">
+                            Your consent has been recorded. You can now proceed with the study tasks. Thank you for your participation in this important research.
+                        </p>
+                        <div class="flex justify-center">
+                            <button id="continueButton" class="primary-bg hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition" style="background-color: #1A237E;">
+                                Continue to Profile Setup
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="dark-bg text-white py-12 text-lg" style="background-color: #333333;">
+        <div class="content-wrapper">
+            <div class="flex flex-col md:flex-row justify-between">
+                <div class="mb-8 md:mb-0">
+                    <div class="flex items-center">
+                        
+                        <h2 class="text-xl font-bold">Dyslexia Research Initiative</h2>
+                    </div>
+                    <p class="mt-4 text-gray-400 max-w-md">
+                        Advancing our understanding of dyslexia through innovative research and technology to create better support systems for everyone.
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-8">
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+                        <ul class="space-y-2">
+                            <li><a href="landing.html#about" class="text-gray-400 hover:text-white transition">About</a></li>
+                            <li><a href="landing.html#contact" class="text-gray-400 hover:text-white transition">Contact</a></li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Resources</h3>
+                        <ul class="space-y-2">
+                            <li><a href="learn_more.html#faq" class="text-gray-400 hover:text-white transition">FAQs</a></li>
+                            <li><a href="#" class="text-gray-400 hover:text-white transition">Privacy Policy</a></li>
+                            <!-- <li><a href="#" class="text-gray-400 hover:text-white transition">Terms of Service</a></li> -->
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Connect</h3>
+                        <div class="flex space-x-4">
+                            <a href="#" class="text-gray-400 hover:text-white transition">
+                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"></path>
+                                </svg>
+                            </a>
+                            <a href="#" class="text-gray-400 hover:text-white transition">
+                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill-rule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z" clip-rule="evenodd"></path>
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-12 pt-8 border-t border-gray-700 text-center text-gray-400">
+                <p>&copy; 2025 Leveraging NLP for Dyslexia Identification. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const root = document.documentElement;
+        const panel = document.getElementById('accessibilityPanel');
+        const panelToggle = document.getElementById('togglePanel');
+        const closePanel = document.getElementById('closePanel');
+        const decreaseBtn = document.getElementById('fontDecrease');
+        const resetBtn = document.getElementById('fontReset');
+        const increaseBtn = document.getElementById('fontIncrease');
+
+        panelToggle.addEventListener('click', () => {
+            panel.classList.toggle('hidden');
+        });
+
+        closePanel.addEventListener('click', () => {
+            accessibilityPanel.classList.add('hidden');
+        });
+
+        document.addEventListener('click', function (event) {
+            const isClickInsidePanel = accessibilityPanel.contains(event.target);
+            const isClickToggleButton = togglePanel.contains(event.target);
+
+            if (!isClickInsidePanel && !isClickToggleButton) {
+            accessibilityPanel.classList.add('hidden');
+            }
+        });
+
+        function setupToggle(buttonId, classTarget, className) {
+            const button = document.getElementById(buttonId);
+            const thumb = button.querySelector('span');
+
+            button.addEventListener('click', () => {
+            const isActive = classTarget.classList.toggle(className);
+            button.classList.toggle('bg-blue-600', isActive);
+            button.classList.toggle('bg-gray-300', !isActive);
+            thumb.classList.toggle('translate-x-6', isActive);
+            thumb.classList.toggle('translate-x-1', !isActive);
+            });
+        }
+
+        setupToggle('toggleDyslexic', root, 'dyslexic-font');
+        setupToggle('toggleMonochrome', root, 'monochrome');
+        // setupToggle('toggleRuler', root, 'reading-ruler');
+        setupToggle('toggleCursor', root, 'big-cursor');
+
+        //ruler
+        const ruler = document.getElementById('readingRuler');
+        const rulerToggle = document.getElementById('toggleRuler');
+        const rulerThumb = rulerToggle.querySelector('span');
+
+        let rulerActive = false;
+
+        rulerToggle.addEventListener('click', () => {
+        rulerActive = !rulerActive;
+        ruler.classList.toggle('hidden', !rulerActive);
+
+        rulerToggle.classList.toggle('bg-blue-600', rulerActive);
+        rulerToggle.classList.toggle('bg-gray-300', !rulerActive);
+        rulerThumb.classList.toggle('translate-x-6', rulerActive);
+        rulerThumb.classList.toggle('translate-x-1', !rulerActive);
+        });
+
+        document.addEventListener('mousemove', (e) => {
+        if (rulerActive) {
+            const height = ruler.offsetHeight;
+            ruler.style.top = `${e.clientY - height / 2}px`;
+        }
+        });
+        //font size
+        let currentFontSize = 16;
+        decreaseBtn.addEventListener('click', () => {
+            if (currentFontSize > 12) {
+                currentFontSize -= 1;
+                updateFontSize();
+            }
+        });
+        resetBtn.addEventListener('click', () => {
+            currentFontSize = 16;
+            updateFontSize();
+        });
+        increaseBtn.addEventListener('click', () => {
+            if (currentFontSize < 24) {
+                currentFontSize += 1;
+                updateFontSize();
+            }
+        });
+
+        function updateFontSize() {
+            document.documentElement.style.setProperty('--font-size-base', `${currentFontSize}px`);
+            document.body.style.fontSize = `${currentFontSize}px`;
+            root.style.fontSize = `${currentFontSize}px`;
+        }
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+
+        // Download consent form
+        document.addEventListener('DOMContentLoaded', function() {
+            const downloadBtn = document.getElementById('downloadConsent');
+            
+            if (downloadBtn) {
+                downloadBtn.addEventListener('click', function() {
+                    // Get the consent content
+                    const consentContent = document.querySelector('.consent-content').innerText;
+                    
+                    // Create a Blob with the content
+                    const blob = new Blob([consentContent], { type: 'text/plain' });
+                    
+                    // Create a download link
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'dyslexia_research_consent_form.txt';
+                    
+                    // Append to the document, click it, and remove it
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                });
+            }
+        });
+
+        // Form validation and submission
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('consentForm');
+            const signature = document.getElementById('signature');
+            const consentCheckbox = document.getElementById('consentCheckbox');
+            const consentDate = document.getElementById('consentDate');
+            const declineButton = document.getElementById('declineButton');
+            const declineModal = document.getElementById('declineModal');
+            const returnToHomeButton = document.getElementById('returnToHomeButton');
+            const successModal = document.getElementById('successModal');
+            const continueButton = document.getElementById('continueButton');
+            
+            // Set today's date as default
+            const today = new Date().toISOString().split('T')[0];
+            consentDate.value = today;
+            
+            if (form && signature && consentCheckbox && consentDate && declineButton && declineModal && returnToHomeButton && successModal && continueButton) {
+                // Handle form submission
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    let isValid = true;
+                    
+                    // Validate signature
+                    if (signature.value.trim() === '') {
+                        showError(signature, 'signatureError', 'Please type your full name as your digital signature');
+                        isValid = false;
+                    } else {
+                        hideError(signature, 'signatureError');
+                    }
+                    
+                    // Validate consent checkbox
+                    if (!consentCheckbox.checked) {
+                        showError(null, 'consentCheckboxError', 'You must consent to participate in the study');
+                        isValid = false;
+                    } else {
+                        hideError(null, 'consentCheckboxError');
+                    }
+                    
+                    // Validate date
+                    if (consentDate.value === '') {
+                        showError(consentDate, 'consentDateError', 'Please enter today\'s date');
+                        isValid = false;
+                    } else {
+                        hideError(consentDate, 'consentDateError');
+                    }
+                    
+                    // If form is valid, show success modal
+                    if (isValid) {
+                        // Record consent status and timestamp
+                        const consentData = {
+                            consent_given: true,
+                            consent_date: new Date().toISOString().slice(0, 19).replace('T', ' '),
+                            signature: signature.value.trim()
+                        };
+                        // Send to backend
+                        fetch('/api/consent', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(consentData)
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                // Show success modal
+                                successModal.classList.remove('hidden');
+                            } else {
+                                showError(signature, 'signatureError', data.message || 'Failed to record consent');
+                            }
+                        })
+                        .catch(() => {
+                            showError(signature, 'signatureError', 'Failed to record consent. Please try again.');
+                        });
+                    }
+                });
+                
+                // Handle decline button
+                declineButton.addEventListener('click', function() {
+                    // Record decline status
+                    const declineData = {
+                        consented: false,
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    // Store decline data in localStorage (in a real app, this would be sent to a server)
+                    localStorage.setItem('consentData', JSON.stringify(declineData));
+                    
+                    // Show decline modal
+                    declineModal.classList.remove('hidden');
+                });
+                
+                // Handle return to home button
+                returnToHomeButton.addEventListener('click', function() {
+                    // In a real application, you would redirect to the home page
+                    window.location.href = "/";
+                });
+                
+                // Handle continue button
+                continueButton.addEventListener('click', function() {
+                    // In a real application, you would redirect to the profile setup page
+                    window.location.href = "/profile-setup";
+                });
+                
+                // Helper functions for validation
+                function showError(input, errorId, message) {
+                    const errorElement = document.getElementById(errorId);
+                    errorElement.textContent = message;
+                    errorElement.classList.remove('hidden');
+                    if (input) {
+                        input.classList.add('input-error');
+                    }
+                }
+                
+                function hideError(input, errorId) {
+                    const errorElement = document.getElementById(errorId);
+                    errorElement.textContent = '';
+                    errorElement.classList.add('hidden');
+                    if (input) {
+                        input.classList.remove('input-error');
+                    }
+                }
+                
+                // Close modals when clicking outside
+                window.addEventListener('click', function(e) {
+                    if (e.target === declineModal) {
+                        declineModal.classList.add('hidden');
+                    }
+                    if (e.target === successModal) {
+                        successModal.classList.add('hidden');
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

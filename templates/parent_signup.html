@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parent Registration - Dyslexia Research Study</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='landing_style.css') }}">
+</head>
+<body>
+    <!-- Header -->
+    <header class="primary-bg text-white py-6">
+        <div class="content-wrapper flex justify-between items-center">
+            <div class="flex items-center">
+                <img src="{{ url_for('static', filename='gauge.png') }}" alt="Dashboard Graphic" class="h-12 w-12 rounded-full mr-4 hidden md:block">
+                <h1 class="text-xl md:text-2xl font-bold">Parent Registration</h1>
+            </div>
+            <nav>
+                <ul class="flex space-x-6 text-lg md:text-xl items-center">
+                    <li><a href="{{ url_for('landing') }}#about" class="hover:text-yellow-100 transition">About</a></li>
+                    <li><a href="{{ url_for('landing') }}#contact" class="hover:text-yellow-100 transition">Contact</a></li>
+                    <li><a href="{{ url_for('signin') }}" class="hover:text-yellow-100 transition">Sign In</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="content-wrapper py-12">
+        <div class="max-w-md mx-auto">
+            <div class="bg-white rounded-lg shadow-md p-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Create Parent Account</h2>
+                
+                <form id="parentSignupForm" class="space-y-6">
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                        <input type="text" id="name" name="name" required
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="Enter your full name">
+                    </div>
+                    
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                        <input type="email" id="email" name="email" required
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="Enter your email address">
+                    </div>
+                    
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                        <input type="password" id="password" name="password" required
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="Create a password">
+                        <p class="text-sm text-gray-500 mt-1">Password must be at least 8 characters long</p>
+                    </div>
+                    
+                    <div>
+                        <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" required
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="Confirm your password">
+                    </div>
+                    
+                    <div class="flex items-start">
+                        <input type="checkbox" id="terms" name="terms" required
+                               class="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <label for="terms" class="ml-2 block text-sm text-gray-700">
+                            I agree to the <a href="#" class="text-blue-600 hover:text-blue-500">Terms of Service</a> and 
+                            <a href="#" class="text-blue-600 hover:text-blue-500">Privacy Policy</a>
+                        </label>
+                    </div>
+                    
+                    <div class="flex items-start">
+                        <input type="checkbox" id="consent" name="consent" required
+                               class="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <label for="consent" class="ml-2 block text-sm text-gray-700">
+                            I consent to participate in the dyslexia research study and understand that I can manage my children's participation
+                        </label>
+                    </div>
+                    
+                    <button type="submit" 
+                            class="w-full primary-bg hover:bg-blue-600 text-white font-medium py-3 px-6 rounded-lg transition"
+                            style="background-color: #1A237E;">
+                        Create Parent Account
+                    </button>
+                </form>
+                
+                <div class="mt-6 text-center">
+                    <p class="text-gray-600">
+                        Already have an account? 
+                        <a href="{{ url_for('signin') }}" class="text-blue-600 hover:text-blue-500 font-medium">Sign In</a>
+                    </p>
+                </div>
+                
+                <div class="mt-6 text-center">
+                    <p class="text-gray-600">
+                        Want to participate as a regular participant? 
+                        <a href="{{ url_for('signup') }}" class="text-blue-600 hover:text-blue-500 font-medium">Sign Up Here</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="dark-bg text-white py-12 text-lg" style="background-color: #333333;">
+        <div class="content-wrapper">
+            <div class="flex flex-col md:flex-row justify-between">
+                <div class="mb-8 md:mb-0">
+                    <div class="flex items-center">
+                        <h2 class="text-xl font-bold">Dyslexia Research Initiative</h2>
+                    </div>
+                    <p class="mt-4 text-gray-400 max-w-md">
+                        Advancing our understanding of dyslexia through innovative research and technology to create better support systems for everyone.
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-8">
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+                        <ul class="space-y-2">
+                            <li><a href="{{ url_for('landing') }}#about" class="text-gray-400 hover:text-white transition">About</a></li>
+                            <li><a href="{{ url_for('landing') }}#contact" class="text-gray-400 hover:text-white transition">Contact</a></li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Resources</h3>
+                        <ul class="space-y-2">
+                            <li><a href="{{ url_for('learn_more') }}#faq" class="text-gray-400 hover:text-white transition">FAQs</a></li>
+                            <li><a href="#" class="text-gray-400 hover:text-white transition">Privacy Policy</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-12 pt-8 border-t border-gray-700 text-center text-gray-400">
+                <p>&copy; 2025 Leveraging NLP for Dyslexia Identification. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.getElementById('parentSignupForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const password = formData.get('password');
+            const confirmPassword = formData.get('confirmPassword');
+            
+            // Validate password
+            if (password.length < 8) {
+                alert('Password must be at least 8 characters long');
+                return;
+            }
+            
+            // Validate password confirmation
+            if (password !== confirmPassword) {
+                alert('Passwords do not match');
+                return;
+            }
+            
+            // Validate terms and consent
+            if (!formData.get('terms') || !formData.get('consent')) {
+                alert('Please agree to the terms and consent to participate');
+                return;
+            }
+            
+            const data = {
+                name: formData.get('name'),
+                email: formData.get('email'),
+                password: password
+            };
+            
+            // Submit form
+            fetch('/api/parent/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Parent account created successfully! You will be redirected to the parent dashboard.');
+                    window.location.href = '/parent.html';
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while creating your account.');
+            });
+        });
+    </script>
+</body>
+</html> 

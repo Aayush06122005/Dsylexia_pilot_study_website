@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback that Drives Action - ConnectiZen</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'cool-blue': '#3B82F6',
+                        'deep-purple': '#6366F1',
+                        'soft-beige': '#F5F5DC',
+                        'charcoal': '#1F2937'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        @keyframes slide-in {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes fade-in-up {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
+            50% { box-shadow: 0 0 30px rgba(59, 130, 246, 0.6); }
+        }
+        @keyframes progress-fill {
+            from { width: 0%; }
+            to { width: var(--progress-width); }
+        }
+        @keyframes bounce-in {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .float { animation: float 3s ease-in-out infinite; }
+        .slide-in { animation: slide-in 0.6s ease-out; }
+        .fade-in-up { animation: fade-in-up 0.8s ease-out; }
+        .pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+        .progress-animate { animation: progress-fill 1.5s ease-out; }
+        .bounce-in { animation: bounce-in 0.6s ease-out; }
+        .gradient-bg { background: linear-gradient(135deg, #1F2937 0%, #374151 50%, #4B5563 100%); }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+        .feedback-card { 
+            border-left: 4px solid transparent; 
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .feedback-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #3B82F6, #6366F1, #8B5CF6);
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+        .feedback-card:hover::before {
+            transform: translateX(0);
+        }
+        .sentiment-positive { border-left-color: #10B981; }
+        .sentiment-neutral { border-left-color: #F59E0B; }
+        .sentiment-negative { border-left-color: #EF4444; }
+        .priority-high { background: linear-gradient(135deg, #FEE2E2, #FECACA); }
+        .priority-medium { background: linear-gradient(135deg, #FEF3C7, #FDE68A); }
+        .priority-low { background: linear-gradient(135deg, #D1FAE5, #A7F3D0); }
+        .action-status-pending { background: #FEF3C7; color: #92400E; }
+        .action-status-progress { background: #DBEAFE; color: #1E40AF; }
+        .action-status-completed { background: #D1FAE5; color: #065F46; }
+        .emoji-rating { 
+            font-size: 2rem; 
+            cursor: pointer; 
+            transition: all 0.2s ease;
+            filter: grayscale(100%);
+        }
+        .emoji-rating:hover, .emoji-rating.selected { 
+            transform: scale(1.2); 
+            filter: grayscale(0%);
+        }
+        .feedback-flow {
+            position: relative;
+        }
+        .feedback-flow::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: -20px;
+            width: 0;
+            height: 0;
+            border: 10px solid transparent;
+            border-left-color: #3B82F6;
+            transform: translateY(-50%);
+        }
+        .auto-collect-badge {
+            background: linear-gradient(45deg, #10B981, #059669);
+            animation: pulse 2s infinite;
+        }
+        .insight-badge {
+            background: linear-gradient(45deg, #8B5CF6, #7C3AED);
+        }
+        .action-badge {
+            background: linear-gradient(45deg, #F59E0B, #D97706);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- Header -->
+    <header class="gradient-bg text-white py-6 shadow-lg">
+        <div class="container mx-auto px-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3 slide-in">
+                    <div class="w-10 h-10 bg-cool-blue rounded-lg flex items-center justify-center">
+                        <span class="text-xl font-bold">💬</span>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold">Feedback that Drives Action</h1>
+                        <p class="text-sm text-gray-300">Smart Community Insights by ConnectiZen</p>
+                    </div>
+                </div>
+                <nav class="hidden md:flex space-x-6">
+                    <a href="#" class="hover:text-cool-blue transition-colors">Dashboard</a>
+                    <a href="#" class="hover:text-cool-blue transition-colors">Analytics</a>
+                    <a href="#" class="hover:text-cool-blue transition-colors">Actions</a>
+                    <a href="#" class="hover:text-cool-blue transition-colors">Reports</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="py-16 bg-gradient-to-br from-soft-beige to-white">
+        <div class="container mx-auto px-6 text-center">
+            <h2 class="text-4xl md:text-5xl font-bold text-charcoal mb-6 fade-in-up">
+                Feedback that Drives Action
+            </h2>
+            <p class="text-xl text-gray-600 mb-8 max-w-3xl mx-auto fade-in-up" style="animation-delay: 0.2s;">
+                Auto-collect feedback on events, services, and society life. Transform insights into quality upgrades and better planning.
+            </p>
+            
+            <!-- Feedback Flow Visualization -->
+            <div class="max-w-5xl mx-auto mb-12">
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div class="feedback-flow bg-white rounded-xl shadow-lg p-6 card-hover">
+                        <div class="w-16 h-16 auto-collect-badge rounded-full flex items-center justify-center text-white text-2xl mx-auto mb-4">
+                            📊
+                        </div>
+                        <h3 class="text-xl font-bold text-charcoal mb-3">Auto-Collect</h3>
+                        <p class="text-gray-600 text-sm">Seamlessly gather feedback from events, services, and daily community interactions</p>
+                        <div class="mt-4 text-xs text-green-600 font-semibold">✓ 24/7 Collection Active</div>
+                    </div>
+                    
+                    <div class="feedback-flow bg-white rounded-xl shadow-lg p-6 card-hover">
+                        <div class="w-16 h-16 insight-badge rounded-full flex items-center justify-center text-white text-2xl mx-auto mb-4">
+                            🧠
+                        </div>
+                        <h3 class="text-xl font-bold text-charcoal mb-3">Smart Insights</h3>
+                        <p class="text-gray-600 text-sm">AI analyzes patterns, sentiment, and priorities to identify improvement opportunities</p>
+                        <div class="mt-4 text-xs text-purple-600 font-semibold">⚡ Real-time Analysis</div>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                        <div class="w-16 h-16 action-badge rounded-full flex items-center justify-center text-white text-2xl mx-auto mb-4">
+                            🚀
+                        </div>
+                        <h3 class="text-xl font-bold text-charcoal mb-3">Drive Action</h3>
+                        <p class="text-gray-600 text-sm">Convert insights into concrete improvements that enhance quality of living</p>
+                        <div class="mt-4 text-xs text-orange-600 font-semibold">📈 Measurable Results</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Stats -->
+            <div class="grid md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+                <div class="bg-white rounded-xl p-6 shadow-lg card-hover">
+                    <div class="text-3xl font-bold text-green-600">1,247</div>
+                    <div class="text-sm text-gray-600">Feedback Collected</div>
+                    <div class="text-xs text-green-500 mt-1">↑ 23% this month</div>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-lg card-hover">
+                    <div class="text-3xl font-bold text-blue-600">89</div>
+                    <div class="text-sm text-gray-600">Actions Taken</div>
+                    <div class="text-xs text-blue-500 mt-1">🎯 92% success rate</div>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-lg card-hover">
+                    <div class="text-3xl font-bold text-purple-600">4.7</div>
+                    <div class="text-sm text-gray-600">Satisfaction Score</div>
+                    <div class="text-xs text-purple-500 mt-1">⭐ +0.3 improvement</div>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-lg card-hover">
+                    <div class="text-3xl font-bold text-orange-600">2.1</div>
+                    <div class="text-sm text-gray-600">Avg Response Time</div>
+                    <div class="text-xs text-orange-500 mt-1">⚡ Days to action</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Society Layout Snapshot -->
+    <section class="py-16 bg-white">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-charcoal mb-4">🏘️ Society Layout Snapshot</h2>
+                <p class="text-lg text-gray-600 max-w-3xl mx-auto">
+                    ConnectiZen shows a basic structure of the society including Blocks, Clubhouse, Parking areas, Playgrounds, Gates. 
+                    This helps new residents, guests, and service staff orient themselves.
+                </p>
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-8">
+                <!-- Interactive Map -->
+                <div class="lg:col-span-2">
+                    <div class="bg-gradient-to-br from-blue-50 to-green-50 rounded-xl shadow-lg p-8">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-bold text-charcoal">Interactive Society Map</h3>
+                            <div class="flex space-x-2">
+                                <button class="map-view-btn bg-cool-blue text-white px-3 py-1 rounded text-sm" data-view="overview">Overview</button>
+                                <button class="map-view-btn bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm" data-view="detailed">Detailed</button>
+                                <button class="map-view-btn bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm" data-view="navigation">Navigation</button>
+                            </div>
+                        </div>
+
+                        <!-- Society Layout SVG -->
+                        <div class="relative bg-white rounded-lg p-6 shadow-inner" style="min-height: 400px;">
+                            <svg viewBox="0 0 800 500" class="w-full h-full">
+                                <!-- Background -->
+                                <rect width="800" height="500" fill="#f0f9ff" stroke="#e0e7ff" stroke-width="2"/>
+                                
+                                <!-- Main Gate -->
+                                <g class="map-element" data-info="main-gate">
+                                    <rect x="350" y="10" width="100" height="30" fill="#ef4444" rx="5"/>
+                                    <text x="400" y="30" text-anchor="middle" fill="white" font-size="12" font-weight="bold">Main Gate</text>
+                                    <circle cx="400" cy="25" r="3" fill="#fbbf24" class="pulse-dot"/>
+                                </g>
+
+                                <!-- Road -->
+                                <rect x="350" y="40" width="100" height="460" fill="#6b7280" opacity="0.3"/>
+                                <line x1="400" y1="40" x2="400" y2="500" stroke="#374151" stroke-width="2" stroke-dasharray="10,5"/>
+
+                                <!-- Block A -->
+                                <g class="map-element" data-info="block-a">
+                                    <rect x="50" y="80" width="120" height="150" fill="#3b82f6" rx="8"/>
+                                    <text x="110" y="105" text-anchor="middle" fill="white" font-size="14" font-weight="bold">Block A</text>
+                                    <text x="110" y="125" text-anchor="middle" fill="#bfdbfe" font-size="10">Flats 101-150</text>
+                                    <rect x="60" y="140" width="15" height="20" fill="#1e40af"/>
+                                    <rect x="85" y="140" width="15" height="20" fill="#1e40af"/>
+                                    <rect x="110" y="140" width="15" height="20" fill="#1e40af"/>
+                                    <rect x="135" y="140" width="15" height="20" fill="#1e40af"/>
+                                    <circle cx="110" cy="155" r="2" fill="#fbbf24" class="pulse-dot"/>
+                                </g>
+
+                                <!-- Block B -->
+                                <g class="map-element" data-info="block-b">
+                                    <rect x="50" y="280" width="120" height="150" fill="#3b82f6" rx="8"/>
+                                    <text x="110" y="305" text-anchor="middle" fill="white" font-size="14" font-weight="bold">Block B</text>
+                                    <text x="110" y="325" text-anchor="middle" fill="#bfdbfe" font-size="10">Flats 201-250</text>
+                                    <rect x="60" y="340" width="15" height="20" fill="#1e40af"/>
+                                    <rect x="85" y="340" width="15" height="20" fill="#1e40af"/>
+                                    <rect x="110" y="340" width="15" height="20" fill="#1e40af"/>
+                                    <rect x="135" y="340" width="15" height="20" fill="#1e40af"/>
+                                    <circle cx="110" cy="355" r="2" fill="#fbbf24" class="pulse-dot"/>
+                                </g>
+
+                                <!-- Block C -->
+                                <g class="map-element" data-info="block-c">
+                                    <rect x="630" y="80" width="120" height="150" fill="#3b82f6" rx="8"/>
+                                    <text x="690" y="105" text-anchor="middle" fill="white" font-size="14" font-weight="bold">Block C</text>
+                                    <text x="690" y="125" text-anchor="middle" fill="#bfdbfe" font-size="10">Flats 301-350</text>
+                                    <rect x="640" y="140" width="15" height="20" fill="#1e40af"/>
+                                    <rect x="665" y="140" width="15" height="20" fill="#1e40af"/>
+                                    <rect x="690" y="140" width="15" height="20" fill="#1e40af"/>
+                                    <rect x="715" y="140" width="15" height="20" fill="#1e40af"/>
+                                    <circle cx="690" cy="155" r="2" fill="#fbbf24" class="pulse-dot"/>
+                                </g>
+
+                                <!-- Block D -->
+                                <g class="map-element" data-info="block-d">
+                                    <rect x="630" y="280" width="120" height="150" fill="#3b82f6" rx="8"/>
+                                    <text x="690" y="305" text-anchor="middle" fill="white" font-size="14" font-weight="bold">Block D</text>
+                                    <text x="690" y="325" text-anchor="middle" fill="#bfdbfe" font-size="10">Flats 401-450</text>
+                                    <rect x="640" y="340" width="15" height="20" fill="#1e40af"/>
+                                    <rect x="665" y="340" width="15" height="20" fill="#1e40af"/>
+                                    <rect x="690" y="340" width="15" height="20" fill="#1e40af"/>
+                                    <rect x="715" y="340" width="15" height="20" fill="#1e40af"/>
+                                    <circle cx="690" cy="355" r="2" fill="#fbbf24" class="pulse-dot"/>
+                                </g>
+
+                                <!-- Clubhouse -->
+                                <g class="map-element" data-info="clubhouse">
+                                    <rect x="300" y="150" width="200" height="100" fill="#10b981" rx="10"/>
+                                    <text x="400" y="175" text-anchor="middle" fill="white" font-size="16" font-weight="bold">Clubhouse</text>
+                                    <text x="400" y="195" text-anchor="middle" fill="#a7f3d0" font-size="10">Events • Gym • Library</text>
+                                    <rect x="320" y="210" width="30" height="20" fill="#047857"/>
+                                    <rect x="370" y="210" width="30" height="20" fill="#047857"/>
+                                    <rect x="420" y="210" width="30" height="20" fill="#047857"/>
+                                    <circle cx="400" cy="200" r="3" fill="#fbbf24" class="pulse-dot"/>
+                                </g>
+
+                                <!-- Swimming Pool -->
+                                <g class="map-element" data-info="pool">
+                                    <ellipse cx="400" cy="320" rx="80" ry="40" fill="#0ea5e9"/>
+                                    <text x="400" y="325" text-anchor="middle" fill="white" font-size="12" font-weight="bold">Swimming Pool</text>
+                                    <circle cx="400" cy="320" r="2" fill="#fbbf24" class="pulse-dot"/>
+                                </g>
+
+                                <!-- Playground -->
+                                <g class="map-element" data-info="playground">
+                                    <rect x="200" y="80" width="100" height="80" fill="#f59e0b" rx="8"/>
+                                    <text x="250" y="105" text-anchor="middle" fill="white" font-size="12" font-weight="bold">Playground</text>
+                                    <text x="250" y="125" text-anchor="middle" fill="#fde68a" font-size="9">Kids Play Area</text>
+                                    <circle cx="220" cy="140" r="8" fill="#d97706"/>
+                                    <circle cx="250" cy="140" r="8" fill="#d97706"/>
+                                    <circle cx="280" cy="140" r="8" fill="#d97706"/>
+                                    <circle cx="250" cy="120" r="2" fill="#fbbf24" class="pulse-dot"/>
+                                </g>
+
+                                <!-- Parking Area 1 -->
+                                <g class="map-element" data-info="parking-1">
+                                    <rect x="500" y="80" width="100" height="80" fill="#6b7280" rx="5"/>
+                                    <text x="550" y="105" text-anchor="middle" fill="white" font-size="12" font-weight="bold">Parking A</text>
+                                    <text x="550" y="125" text-anchor="middle" fill="#d1d5db" font-size="9">Visitor Parking</text>
+                                    <rect x="510" y="135" width="12" height="20" fill="#374151"/>
+                                    <rect x="530" y="135" width="12" height="20" fill="#374151"/>
+                                    <rect x="550" y="135" width="12" height="20" fill="#374151"/>
+                                    <rect x="570" y="135" width="12" height="20" fill="#374151"/>
+                                    <circle cx="550" cy="120" r="2" fill="#fbbf24" class="pulse-dot"/>
+                                </g>
+
+                                <!-- Parking Area 2 -->
+                                <g class="map-element" data-info="parking-2">
+                                    <rect x="200" y="350" width="100" height="80" fill="#6b7280" rx="5"/>
+                                    <text x="250" y="375" text-anchor="middle" fill="white" font-size="12" font-weight="bold">Parking B</text>
+                                    <text x="250" y="395" text-anchor="middle" fill="#d1d5db" font-size="9">Resident Parking</text>
+                                    <rect x="210" y="405" width="12" height="20" fill="#374151"/>
+                                    <rect x="230" y="405" width="12" height="20" fill="#374151"/>
+                                    <rect x="250" y="405" width="12" height="20" fill="#374151"/>
+                                    <rect x="270" y="405" width="12" height="20" fill="#374151"/>
+                                    <circle cx="250" cy="390" r="2" fill="#fbbf24" class="pulse-dot"/>
+                                </g>
+
+                                <!-- Garden Area -->
+                                <g class="map-element" data-info="garden">
+                                    <rect x="500" y="350" width="100" height="80" fill="#22c55e" rx="8"/>
+                                    <text x="550" y="375" text-anchor="middle" fill="white" font-size="12" font-weight="bold">Garden</text>
+                                    <text x="550" y="395" text-anchor="middle" fill="#bbf7d0" font-size="9">Green Space</text>
+                                    <circle cx="520" cy="410" r="6" fill="#16a34a"/>
+                                    <circle cx="550" cy="405" r="8" fill="#16a34a"/>
+                                    <circle cx="580" cy="410" r="6" fill="#16a34a"/>
+                                    <circle cx="550" cy="390" r="2" fill="#fbbf24" class="pulse-dot"/>
+                                </g>
+
+                                <!-- Security Gate -->
+                                <g class="map-element" data-info="security-gate">
+                                    <rect x="350" y="460" width="100" height="30" fill="#ef4444" rx="5"/>
+                                    <text x="400" y="480" text-anchor="middle" fill="white" font-size="12" font-weight="bold">Exit Gate</text>
+                                    <circle cx="400" cy="475" r="3" fill="#fbbf24" class="pulse-dot"/>
+                                </g>
+                            </svg>
+
+                            <!-- Info Panel -->
+                            <div id="mapInfoPanel" class="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-4 max-w-xs hidden">
+                                <h4 id="infoTitle" class="font-bold text-gray-800 mb-2"></h4>
+                                <p id="infoDescription" class="text-sm text-gray-600 mb-3"></p>
+                                <div id="infoDetails" class="text-xs text-gray-500"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation Helper -->
+                <div class="space-y-6">
+                    <!-- Quick Navigation -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h4 class="text-lg font-semibold text-charcoal mb-4 flex items-center">
+                            <span class="mr-2">🧭</span> Quick Navigation
+                        </h4>
+                        <div class="space-y-3">
+                            <button class="nav-btn w-full text-left p-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors" data-target="main-gate">
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-red-500">🚪</span>
+                                    <div>
+                                        <div class="font-semibold text-gray-800">Main Entrance</div>
+                                        <div class="text-sm text-gray-600">Visitor entry point</div>
+                                    </div>
+                                </div>
+                            </button>
+                            <button class="nav-btn w-full text-left p-3 bg-green-50 hover:bg-green-100 rounded-lg transition-colors" data-target="clubhouse">
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-green-500">🏢</span>
+                                    <div>
+                                        <div class="font-semibold text-gray-800">Clubhouse</div>
+                                        <div class="text-sm text-gray-600">Events & amenities</div>
+                                    </div>
+                                </div>
+                            </button>
+                            <button class="nav-btn w-full text-left p-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors" data-target="pool">
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-blue-500">🏊</span>
+                                    <div>
+                                        <div class="font-semibold text-gray-800">Swimming Pool</div>
+                                        <div class="text-sm text-gray-600">Recreation area</div>
+                                    </div>
+                                </div>
+                            </button>
+                            <button class="nav-btn w-full text-left p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors" data-target="parking-1">
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-gray-500">🚗</span>
+                                    <div>
+                                        <div class="font-semibold text-gray-800">Visitor Parking</div>
+                                        <div class="text-sm text-gray-600">Guest vehicles</div>
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Layout Benefits -->
+                    <div class="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl shadow-lg p-6">
+                        <h4 class="text-lg font-semibold text-charcoal mb-4">🎯 Layout Benefits</h4>
+                        <div class="space-y-4">
+                            <div class="flex items-start space-x-3">
+                                <span class="text-green-500 text-lg">👥</span>
+                                <div>
+                                    <h5 class="font-semibold text-gray-800">New Residents</h5>
+                                    <p class="text-sm text-gray-600">Quick orientation and familiarization</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <span class="text-blue-500 text-lg">🚗</span>
+                                <div>
+                                    <h5 class="font-semibold text-gray-800">Guests & Visitors</h5>
+                                    <p class="text-sm text-gray-600">Easy navigation to destinations</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <span class="text-orange-500 text-lg">🔧</span>
+                                <div>
+                                    <h5 class="font-semibold text-gray-800">Service Staff</h5>
+                                    <p class="text-sm text-gray-600">Efficient service delivery routes</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <span class="text-purple-500 text-lg">📱</span>
+                                <div>
+                                    <h5 class="font-semibold text-gray-800">Digital Integration</h5>
+                                    <p class="text-sm text-gray-600">Connected with feedback system</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Status -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h4 class="text-lg font-semibold text-charcoal mb-4">📊 Live Status</h4>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                                    <span class="text-gray-700">Clubhouse</span>
+                                </div>
+                                <span class="text-sm font-semibold text-green-600">Open</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                                    <span class="text-gray-700">Swimming Pool</span>
+                                </div>
+                                <span class="text-sm font-semibold text-blue-600">Active</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
+                                    <span class="text-gray-700">Parking A</span>
+                                </div>
+                                <span class="text-sm font-semibold text-yellow-600">78% Full</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                                    <span class="text-gray-700">Security</span>
+                                </div>
+                                <span class="text-sm font-semibold text-green-600">24/7</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Dashboard -->
+    <section class="py-12 bg-gray-50">
+        <div class="container mx-auto px-6">
+            <div class="grid lg:grid-cols-3 gap-8">
+                <!-- Feedback Feed -->
+                <div class="lg:col-span-2">
+                    <!-- Quick Feedback Form -->
+                    <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                        <h3 class="text-xl font-bold text-charcoal mb-4">💬 Quick Feedback</h3>
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Category</label>
+                                <select id="feedbackCategory" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option>Event Experience</option>
+                                    <option>Maintenance & Services</option>
+                                    <option>Community Life</option>
+                                    <option>Amenities</option>
+                                    <option>Security</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Rating</label>
+                                <div class="flex space-x-2" id="emojiRating">
+                                    <span class="emoji-rating" data-rating="1">😞</span>
+                                    <span class="emoji-rating" data-rating="2">😐</span>
+                                    <span class="emoji-rating" data-rating="3">🙂</span>
+                                    <span class="emoji-rating" data-rating="4">😊</span>
+                                    <span class="emoji-rating" data-rating="5">🤩</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Your Feedback</label>
+                            <textarea id="feedbackText" placeholder="Share your thoughts, suggestions, or concerns..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent h-24 resize-none"></textarea>
+                        </div>
+                        <button id="submitFeedback" class="mt-4 bg-cool-blue hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-colors pulse-glow">
+                            📤 Submit Feedback
+                        </button>
+                    </div>
+
+                    <!-- Recent Feedback -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-bold text-charcoal">Recent Feedback & Actions</h3>
+                            <div class="flex space-x-2">
+                                <button class="filter-btn bg-cool-blue text-white px-4 py-2 rounded-lg text-sm" data-filter="all">All</button>
+                                <button class="filter-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm" data-filter="events">Events</button>
+                                <button class="filter-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm" data-filter="services">Services</button>
+                                <button class="filter-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm" data-filter="community">Community</button>
+                            </div>
+                        </div>
+
+                        <div id="feedbackContainer" class="space-y-4">
+                            <!-- High Priority Feedback -->
+                            <div class="feedback-card sentiment-negative priority-high p-4 rounded-lg" data-category="services">
+                                <div class="flex items-start justify-between mb-3">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                                            <span class="text-red-600 font-bold">😞</span>
+                                        </div>
+                                        <div>
+                                            <h4 class="font-semibold text-gray-800">Elevator Maintenance Issue</h4>
+                                            <p class="text-sm text-gray-600">Building A • 2 hours ago</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex flex-col items-end space-y-1">
+                                        <span class="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-semibold">High Priority</span>
+                                        <span class="action-status-progress px-2 py-1 rounded-full text-xs font-semibold">In Progress</span>
+                                    </div>
+                                </div>
+                                
+                                <p class="text-gray-700 text-sm mb-3">
+                                    "Elevator in Building A has been making strange noises and stopped working twice today. This is affecting elderly residents who can't use stairs."
+                                </p>
+                                
+                                <div class="bg-blue-50 rounded-lg p-3 mb-3">
+                                    <h5 class="font-semibold text-blue-800 mb-1">🤖 AI Analysis</h5>
+                                    <p class="text-sm text-blue-700">Safety concern detected. Similar issues reported 3x this month. Maintenance team auto-notified.</p>
+                                </div>
+                                
+                                <div class="bg-green-50 rounded-lg p-3">
+                                    <h5 class="font-semibold text-green-800 mb-1">⚡ Action Taken</h5>
+                                    <p class="text-sm text-green-700">Emergency maintenance scheduled for today 3 PM. Technician dispatched. Temporary stairs assistance arranged.</p>
+                                    <div class="mt-2">
+                                        <div class="flex items-center justify-between text-xs text-green-600 mb-1">
+                                            <span>Progress</span>
+                                            <span>75%</span>
+                                        </div>
+                                        <div class="w-full bg-green-200 rounded-full h-2">
+                                            <div class="bg-green-500 h-2 rounded-full progress-animate" style="--progress-width: 75%; width: 75%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center justify-between mt-3 text-sm text-gray-500">
+                                    <span>👥 3 similar reports</span>
+                                    <span>⏱️ Response: 15 minutes</span>
+                                </div>
+                            </div>
+
+                            <!-- Positive Event Feedback -->
+                            <div class="feedback-card sentiment-positive priority-medium p-4 rounded-lg" data-category="events">
+                                <div class="flex items-start justify-between mb-3">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                            <span class="text-green-600 font-bold">🤩</span>
+                                        </div>
+                                        <div>
+                                            <h4 class="font-semibold text-gray-800">Diwali Celebration Feedback</h4>
+                                            <p class="text-sm text-gray-600">Community Event • 1 day ago</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex flex-col items-end space-y-1">
+                                        <span class="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold">Positive</span>
+                                        <span class="action-status-completed px-2 py-1 rounded-full text-xs font-semibold">Implemented</span>
+                                    </div>
+                                </div>
+                                
+                                <p class="text-gray-700 text-sm mb-3">
+                                    "Amazing Diwali celebration! The rangoli competition was fantastic. Only suggestion: maybe have more vegetarian food options next time."
+                                </p>
+                                
+                                <div class="bg-purple-50 rounded-lg p-3 mb-3">
+                                    <h5 class="font-semibold text-purple-800 mb-1">📊 Insight Generated</h5>
+                                    <p class="text-sm text-purple-700">Positive sentiment (4.8/5). Food variety suggestion noted. 12 similar requests identified.</p>
+                                </div>
+                                
+                                <div class="bg-orange-50 rounded-lg p-3">
+                                    <h5 class="font-semibold text-orange-800 mb-1">🎯 Action Planned</h5>
+                                    <p class="text-sm text-orange-700">Event planning team updated guidelines. 70% vegetarian menu planned for next cultural event.</p>
+                                </div>
+                                
+                                <div class="flex items-center justify-between mt-3 text-sm text-gray-500">
+                                    <span>👥 45 event attendees</span>
+                                    <span>📈 Satisfaction: +0.2</span>
+                                </div>
+                            </div>
+
+                            <!-- Service Improvement -->
+                            <div class="feedback-card sentiment-neutral priority-low p-4 rounded-lg" data-category="services">
+                                <div class="flex items-start justify-between mb-3">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                                            <span class="text-yellow-600 font-bold">🙂</span>
+                                        </div>
+                                        <div>
+                                            <h4 class="font-semibold text-gray-800">Swimming Pool Hours</h4>
+                                            <p class="text-sm text-gray-600">Amenities • 3 days ago</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex flex-col items-end space-y-1">
+                                        <span class="bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-semibold">Suggestion</span>
+                                        <span class="action-status-completed px-2 py-1 rounded-full text-xs font-semibold">Approved</span>
+                                    </div>
+                                </div>
+                                
+                                <p class="text-gray-700 text-sm mb-3">
+                                    "Could we extend swimming pool hours until 9 PM? Many working residents can only use it after 7 PM."
+                                </p>
+                                
+                                <div class="bg-blue-50 rounded-lg p-3 mb-3">
+                                    <h5 class="font-semibold text-blue-800 mb-1">📈 Usage Analysis</h5>
+                                    <p class="text-sm text-blue-700">Peak usage: 6-8 PM. 67% residents support extended hours. Lifeguard availability confirmed.</p>
+                                </div>
+                                
+                                <div class="bg-green-50 rounded-lg p-3">
+                                    <h5 class="font-semibold text-green-800 mb-1">✅ Decision Made</h5>
+                                    <p class="text-sm text-green-700">Pool hours extended to 9 PM starting next week. Additional lifeguard hired for evening shift.</p>
+                                </div>
+                                
+                                <div class="flex items-center justify-between mt-3 text-sm text-gray-500">
+                                    <span>👥 23 supporting votes</span>
+                                    <span>💰 Budget: Approved</span>
+                                </div>
+                            </div>
+
+                            <!-- Community Life Feedback -->
+                            <div class="feedback-card sentiment-positive priority-medium p-4 rounded-lg" data-category="community">
+                                <div class="flex items-start justify-between mb-3">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                            <span class="text-green-600 font-bold">😊</span>
+                                        </div>
+                                        <div>
+                                            <h4 class="font-semibold text-gray-800">Community Garden Idea</h4>
+                                            <p class="text-sm text-gray-600">Green Initiative • 5 days ago</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex flex-col items-end space-y-1">
+                                        <span class="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold">Initiative</span>
+                                        <span class="action-status-progress px-2 py-1 rounded-full text-xs font-semibold">Planning</span>
+                                    </div>
+                                </div>
+                                
+                                <p class="text-gray-700 text-sm mb-3">
+                                    "What about creating a community vegetable garden? Kids could learn about plants and we could grow organic vegetables together."
+                                </p>
+                                
+                                <div class="bg-green-50 rounded-lg p-3 mb-3">
+                                    <h5 class="font-semibold text-green-800 mb-1">🌱 Community Interest</h5>
+                                    <p class="text-sm text-green-700">35 families interested. Space identified near playground. Gardening expert volunteer found.</p>
+                                </div>
+                                
+                                <div class="bg-blue-50 rounded-lg p-3">
+                                    <h5 class="font-semibold text-blue-800 mb-1">📋 Next Steps</h5>
+                                    <p class="text-sm text-blue-700">Committee formed. Soil testing scheduled. Budget proposal being prepared for next board meeting.</p>
+                                </div>
+                                
+                                <div class="flex items-center justify-between mt-3 text-sm text-gray-500">
+                                    <span>🌿 35 interested families</span>
+                                    <span>📅 Timeline: 2 months</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Load More -->
+                        <div class="text-center mt-6">
+                            <button class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg transition-colors">
+                                📄 Load More Feedback
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar -->
+                <div class="space-y-6">
+                    <!-- Real-time Analytics -->
+                    <div class="bg-gradient-to-br from-deep-purple to-purple-600 text-white rounded-xl shadow-lg p-6">
+                        <h4 class="text-lg font-semibold mb-4 flex items-center">
+                            <span class="mr-2">📊</span> Live Analytics
+                        </h4>
+                        <div class="space-y-4">
+                            <div class="bg-white bg-opacity-20 rounded-lg p-3">
+                                <h5 class="font-semibold mb-1">Today's Feedback</h5>
+                                <div class="text-2xl font-bold">23</div>
+                                <div class="text-sm text-purple-100">↑ 15% vs yesterday</div>
+                            </div>
+                            <div class="bg-white bg-opacity-20 rounded-lg p-3">
+                                <h5 class="font-semibold mb-1">Response Time</h5>
+                                <div class="text-2xl font-bold">1.8h</div>
+                                <div class="text-sm text-purple-100">⚡ 40% faster</div>
+                            </div>
+                            <div class="bg-white bg-opacity-20 rounded-lg p-3">
+                                <h5 class="font-semibold mb-1">Satisfaction Trend</h5>
+                                <div class="text-2xl font-bold">📈</div>
+                                <div class="text-sm text-purple-100">+0.3 this week</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sentiment Analysis -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h4 class="text-lg font-semibold text-charcoal mb-4">😊 Sentiment Analysis</h4>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-sm text-gray-600 flex items-center">
+                                        <span class="mr-2">😊</span> Positive
+                                    </span>
+                                    <span class="text-sm font-semibold text-green-600">68%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-green-500 h-2 rounded-full progress-animate" style="--progress-width: 68%; width: 68%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-sm text-gray-600 flex items-center">
+                                        <span class="mr-2">😐</span> Neutral
+                                    </span>
+                                    <span class="text-sm font-semibold text-yellow-600">22%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-yellow-500 h-2 rounded-full progress-animate" style="--progress-width: 22%; width: 22%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-sm text-gray-600 flex items-center">
+                                        <span class="mr-2">😞</span> Negative
+                                    </span>
+                                    <span class="text-sm font-semibold text-red-600">10%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-red-500 h-2 rounded-full progress-animate" style="--progress-width: 10%; width: 10%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Tracker -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h4 class="text-lg font-semibold text-charcoal mb-4">🚀 Action Tracker</h4>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                                <div>
+                                    <div class="font-semibold text-green-800">Completed</div>
+                                    <div class="text-sm text-green-600">This week</div>
+                                </div>
+                                <div class="text-2xl font-bold text-green-600">12</div>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                                <div>
+                                    <div class="font-semibold text-blue-800">In Progress</div>
+                                    <div class="text-sm text-blue-600">Active now</div>
+                                </div>
+                                <div class="text-2xl font-bold text-blue-600">8</div>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                                <div>
+                                    <div class="font-semibold text-yellow-800">Planned</div>
+                                    <div class="text-sm text-yellow-600">Next week</div>
+                                </div>
+                                <div class="text-2xl font-bold text-yellow-600">5</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top Categories -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h4 class="text-lg font-semibold text-charcoal mb-4">📈 Top Categories</h4>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-lg">🏗️</span>
+                                    <span class="text-gray-700">Maintenance</span>
+                                </div>
+                                <span class="text-sm font-semibold text-gray-600">34%</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-lg">🎉</span>
+                                    <span class="text-gray-700">Events</span>
+                                </div>
+                                <span class="text-sm font-semibold text-gray-600">28%</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-lg">🏊</span>
+                                    <span class="text-gray-700">Amenities</span>
+                                </div>
+                                <span class="text-sm font-semibold text-gray-600">22%</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-lg">🛡️</span>
+                                    <span class="text-gray-700">Security</span>
+                                </div>
+                                <span class="text-sm font-semibold text-gray-600">16%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quality Improvements -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h4 class="text-lg font-semibold text-charcoal mb-4">⭐ Quality Improvements</h4>
+                        <div class="space-y-4">
+                            <div class="border-l-4 border-green-500 pl-3">
+                                <h5 class="font-semibold text-green-800">Faster Maintenance</h5>
+                                <p class="text-sm text-gray-600">Response time reduced by 40%</p>
+                            </div>
+                            <div class="border-l-4 border-blue-500 pl-3">
+                                <h5 class="font-semibold text-blue-800">Better Events</h5>
+                                <p class="text-sm text-gray-600">Satisfaction up 0.8 points</p>
+                            </div>
+                            <div class="border-l-4 border-purple-500 pl-3">
+                                <h5 class="font-semibold text-purple-800">New Amenities</h5>
+                                <p class="text-sm text-gray-600">3 resident-requested additions</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="gradient-bg text-white py-8">
+        <div class="container mx-auto px-6 text-center">
+            <p class="text-gray-300">&copy; 2024 ConnectiZen Feedback System. Transforming insights into action.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Success message function
+        function showSuccessMessage(message) {
+            const successDiv = document.createElement('div');
+            successDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform duration-300';
+            successDiv.textContent = message;
+            document.body.appendChild(successDiv);
+            
+            setTimeout(() => {
+                successDiv.classList.remove('translate-x-full');
+            }, 100);
+            
+            setTimeout(() => {
+                successDiv.classList.add('translate-x-full');
+                setTimeout(() => {
+                    document.body.removeChild(successDiv);
+                }, 300);
+            }, 4000);
+        }
+
+        // Emoji rating system
+        const emojiRatings = document.querySelectorAll('.emoji-rating');
+        let selectedRating = 0;
+
+        emojiRatings.forEach(emoji => {
+            emoji.addEventListener('click', function() {
+                selectedRating = parseInt(this.dataset.rating);
+                emojiRatings.forEach(e => e.classList.remove('selected'));
+                this.classList.add('selected');
+                
+                // Highlight all emojis up to selected rating
+                for (let i = 0; i < selectedRating; i++) {
+                    emojiRatings[i].classList.add('selected');
+                }
+            });
+        });
+
+        // Submit feedback
+        document.getElementById('submitFeedback').addEventListener('click', function() {
+            const category = document.getElementById('feedbackCategory').value;
+            const text = document.getElementById('feedbackText').value;
+            
+            if (!selectedRating) {
+                showSuccessMessage('⭐ Please select a rating first!');
+                return;
+            }
+            
+            if (!text.trim()) {
+                showSuccessMessage('💬 Please enter your feedback!');
+                return;
+            }
+            
+            // Show submitting state
+            this.innerHTML = '📤 Submitting...';
+            this.disabled = true;
+            
+            setTimeout(() => {
+                this.innerHTML = '📤 Submit Feedback';
+                this.disabled = false;
+                
+                // Clear form
+                document.getElementById('feedbackText').value = '';
+                emojiRatings.forEach(e => e.classList.remove('selected'));
+                selectedRating = 0;
+                
+                showSuccessMessage(`✅ Feedback submitted! AI analysis started for ${category}.`);
+                
+                // Add new feedback to the feed (simplified for demo)
+                addNewFeedbackToFeed(category, text, selectedRating);
+            }, 2000);
+        });
+
+        // Add new feedback to feed
+        function addNewFeedbackToFeed(category, text, rating) {
+            const container = document.getElementById('feedbackContainer');
+            const ratingEmoji = ['', '😞', '😐', '🙂', '😊', '🤩'][rating];
+            const sentimentClass = rating <= 2 ? 'sentiment-negative' : rating >= 4 ? 'sentiment-positive' : 'sentiment-neutral';
+            
+            const newFeedback = document.createElement('div');
+            newFeedback.className = `feedback-card ${sentimentClass} priority-medium p-4 rounded-lg bounce-in`;
+            newFeedback.innerHTML = `
+                <div class="flex items-start justify-between mb-3">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span class="text-blue-600 font-bold">${ratingEmoji}</span>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800">${category}</h4>
+                            <p class="text-sm text-gray-600">Just now</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-col items-end space-y-1">
+                        <span class="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-semibold">New</span>
+                        <span class="action-status-pending px-2 py-1 rounded-full text-xs font-semibold">Analyzing</span>
+                    </div>
+                </div>
+                <p class="text-gray-700 text-sm mb-3">"${text}"</p>
+                <div class="bg-blue-50 rounded-lg p-3">
+                    <h5 class="font-semibold text-blue-800 mb-1">🤖 AI Processing</h5>
+                    <p class="text-sm text-blue-700">Analyzing sentiment and priority. Relevant team will be notified shortly.</p>
+                </div>
+            `;
+            
+            container.insertBefore(newFeedback, container.firstChild);
+        }
+
+        // Filter functionality
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const feedbackCards = document.querySelectorAll('.feedback-card');
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Update active button
+                filterBtns.forEach(b => {
+                    b.classList.remove('bg-cool-blue', 'text-white');
+                    b.classList.add('bg-gray-200', 'text-gray-700');
+                });
+                this.classList.add('bg-cool-blue', 'text-white');
+                this.classList.remove('bg-gray-200', 'text-gray-700');
+
+                // Filter feedback
+                const filter = this.dataset.filter;
+                feedbackCards.forEach(card => {
+                    if (filter === 'all' || card.dataset.category === filter) {
+                        card.style.display = 'block';
+                        card.classList.add('slide-in');
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+                
+                showSuccessMessage(`🔍 Filtered to show ${filter === 'all' ? 'all' : filter} feedback`);
+            });
+        });
+
+        // Animate progress bars on scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const progressBars = entry.target.querySelectorAll('.progress-animate');
+                    progressBars.forEach(bar => {
+                        bar.style.animation = 'progress-fill 1.5s ease-out';
+                    });
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.bg-white').forEach(card => {
+            observer.observe(card);
+        });
+
+        // Simulate real-time updates
+        setInterval(() => {
+            const stats = document.querySelectorAll('.text-3xl.font-bold');
+            stats.forEach(stat => {
+                if (Math.random() > 0.95 && !isNaN(parseInt(stat.textContent))) {
+                    const currentValue = parseInt(stat.textContent);
+                    stat.textContent = currentValue + 1;
+                    stat.classList.add('bounce-in');
+                    setTimeout(() => stat.classList.remove('bounce-in'), 600);
+                }
+            });
+        }, 5000);
+
+        // Add hover effects to cards
+        document.querySelectorAll('.card-hover').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-8px) scale(1.02)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+
+        // Handle other button clicks
+        document.addEventListener('click', function(e) {
+            if (e.target.textContent.includes('Load More')) {
+                showSuccessMessage('📄 Loading more feedback entries...');
+            }
+        });
+
+        // Auto-update action statuses
+        setInterval(() => {
+            const progressStatuses = document.querySelectorAll('.action-status-progress');
+            progressStatuses.forEach(status => {
+                if (Math.random() > 0.98) {
+                    status.textContent = 'Completed';
+                    status.className = 'action-status-completed px-2 py-1 rounded-full text-xs font-semibold';
+                    showSuccessMessage('✅ Action item completed! Quality improvement achieved.');
+                }
+            });
+        }, 8000);
+
+        // Society Layout Map Functionality
+        const mapElements = document.querySelectorAll('.map-element');
+        const infoPanel = document.getElementById('mapInfoPanel');
+        const infoTitle = document.getElementById('infoTitle');
+        const infoDescription = document.getElementById('infoDescription');
+        const infoDetails = document.getElementById('infoDetails');
+
+        const locationInfo = {
+            'main-gate': {
+                title: 'Main Gate',
+                description: 'Primary entrance for visitors and residents. Security checkpoint with 24/7 monitoring.',
+                details: 'Operating Hours: 24/7 • Security: Active • Visitor Registration: Required'
+            },
+            'block-a': {
+                title: 'Block A',
+                description: 'Residential building with 50 apartments across 10 floors.',
+                details: 'Flats: 101-150 • Floors: 10 • Elevator: 2 units • Parking: Basement'
+            },
+            'block-b': {
+                title: 'Block B',
+                description: 'Residential building with modern amenities and garden view.',
+                details: 'Flats: 201-250 • Floors: 10 • Elevator: 2 units • View: Garden facing'
+            },
+            'block-c': {
+                title: 'Block C',
+                description: 'Premium residential block with clubhouse proximity.',
+                details: 'Flats: 301-350 • Floors: 12 • Elevator: 3 units • Premium: Yes'
+            },
+            'block-d': {
+                title: 'Block D',
+                description: 'Newest residential block with smart home features.',
+                details: 'Flats: 401-450 • Floors: 12 • Smart Features: Yes • Pool View: Yes'
+            },
+            'clubhouse': {
+                title: 'Community Clubhouse',
+                description: 'Central hub for events, fitness, and community activities.',
+                details: 'Facilities: Gym, Library, Event Hall • Capacity: 200 people • Booking: Required'
+            },
+            'pool': {
+                title: 'Swimming Pool',
+                description: 'Olympic-size swimming pool with separate kids area.',
+                details: 'Size: 50m x 25m • Depth: 1.2m - 3m • Lifeguard: On duty • Hours: 6 AM - 9 PM'
+            },
+            'playground': {
+                title: 'Children\'s Playground',
+                description: 'Safe play area with modern equipment for kids of all ages.',
+                details: 'Age Groups: 2-12 years • Equipment: Swings, Slides, Climbing • Safety: Rubberized flooring'
+            },
+            'parking-1': {
+                title: 'Visitor Parking',
+                description: 'Dedicated parking area for guests and visitors.',
+                details: 'Capacity: 50 vehicles • Type: Open parking • Duration: Max 4 hours • Security: CCTV'
+            },
+            'parking-2': {
+                title: 'Resident Parking',
+                description: 'Covered parking exclusively for residents.',
+                details: 'Capacity: 200 vehicles • Type: Covered • Allocation: Per flat • EV Charging: Available'
+            },
+            'garden': {
+                title: 'Community Garden',
+                description: 'Landscaped green space for relaxation and community activities.',
+                details: 'Area: 2000 sq ft • Features: Walking path, Benches • Maintenance: Daily • Events: Yoga classes'
+            },
+            'security-gate': {
+                title: 'Exit Gate',
+                description: 'Secondary exit for emergency and service vehicles.',
+                details: 'Usage: Emergency, Service • Security: Automated • Access: Restricted • Hours: 24/7'
+            }
+        };
+
+        // Map element hover functionality
+        mapElements.forEach(element => {
+            element.addEventListener('mouseenter', function() {
+                const infoKey = this.dataset.info;
+                const info = locationInfo[infoKey];
+                
+                if (info) {
+                    infoTitle.textContent = info.title;
+                    infoDescription.textContent = info.description;
+                    infoDetails.textContent = info.details;
+                    infoPanel.classList.remove('hidden');
+                }
+                
+                // Highlight element
+                this.style.opacity = '0.8';
+                this.style.transform = 'scale(1.05)';
+                this.style.transition = 'all 0.3s ease';
+            });
+            
+            element.addEventListener('mouseleave', function() {
+                infoPanel.classList.add('hidden');
+                this.style.opacity = '1';
+                this.style.transform = 'scale(1)';
+            });
+            
+            element.addEventListener('click', function() {
+                const infoKey = this.dataset.info;
+                showSuccessMessage(`📍 Viewing details for ${locationInfo[infoKey]?.title || 'location'}`);
+            });
+        });
+
+        // Navigation buttons
+        const navBtns = document.querySelectorAll('.nav-btn');
+        navBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const target = this.dataset.target;
+                const targetElement = document.querySelector(`[data-info="${target}"]`);
+                
+                if (targetElement) {
+                    // Highlight target element
+                    mapElements.forEach(el => {
+                        el.style.opacity = '0.3';
+                        el.style.transform = 'scale(1)';
+                    });
+                    
+                    targetElement.style.opacity = '1';
+                    targetElement.style.transform = 'scale(1.1)';
+                    targetElement.style.transition = 'all 0.5s ease';
+                    
+                    // Show info
+                    const info = locationInfo[target];
+                    if (info) {
+                        infoTitle.textContent = info.title;
+                        infoDescription.textContent = info.description;
+                        infoDetails.textContent = info.details;
+                        infoPanel.classList.remove('hidden');
+                    }
+                    
+                    showSuccessMessage(`🎯 Navigating to ${info?.title || 'location'}`);
+                    
+                    // Reset after 3 seconds
+                    setTimeout(() => {
+                        mapElements.forEach(el => {
+                            el.style.opacity = '1';
+                            el.style.transform = 'scale(1)';
+                        });
+                        infoPanel.classList.add('hidden');
+                    }, 3000);
+                }
+            });
+        });
+
+        // Map view buttons
+        const mapViewBtns = document.querySelectorAll('.map-view-btn');
+        mapViewBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Update active button
+                mapViewBtns.forEach(b => {
+                    b.classList.remove('bg-cool-blue', 'text-white');
+                    b.classList.add('bg-gray-200', 'text-gray-700');
+                });
+                this.classList.add('bg-cool-blue', 'text-white');
+                this.classList.remove('bg-gray-200', 'text-gray-700');
+                
+                const view = this.dataset.view;
+                showSuccessMessage(`🗺️ Switched to ${view} view`);
+                
+                // Different view modes could show/hide different elements
+                if (view === 'detailed') {
+                    document.querySelectorAll('.pulse-dot').forEach(dot => {
+                        dot.style.display = 'block';
+                    });
+                } else if (view === 'navigation') {
+                    // Could highlight paths, distances, etc.
+                    showSuccessMessage('🧭 Navigation mode: Click any location for directions');
+                }
+            });
+        });
+
+        // Animate pulse dots
+        const pulseDots = document.querySelectorAll('.pulse-dot');
+        pulseDots.forEach(dot => {
+            dot.style.animation = 'pulse 2s infinite';
+        });
+
+        // Add CSS for pulse animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse {
+                0%, 100% { opacity: 1; transform: scale(1); }
+                50% { opacity: 0.5; transform: scale(1.2); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'964bd88e0693b7e5',t:'MTc1MzQ0ODQ4Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
