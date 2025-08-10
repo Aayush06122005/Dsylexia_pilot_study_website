@@ -7,17 +7,32 @@ import os
 from werkzeug.utils import secure_filename
 from authlib.integrations.flask_client import OAuth
 
+
+# Load environment variables only in local dev (Railway will already have them set)
+if not os.getenv("RAILWAY_ENVIRONMENT"):
+    from dotenv import load_dotenv
+    load_dotenv()
+
 app = Flask(__name__)
-app.secret_key = 'dyslexia_research_study_2025'
+app.secret_key = os.getenv("SECRET_KEY", "dyslexia_research_study_2025")
 CORS(app)
 
-# MySQL config
 DB_CONFIG = {
-    "host": "localhost",
-    "user": "root",
-    "password": "",
-    "database": "dyslexia_study"
+    "host": os.getenv("MYSQLHOST", "localhost"),
+    "user": os.getenv("MYSQLUSER", "root"),
+    "password": os.getenv("MYSQLPASSWORD", ""),
+    "database": os.getenv("MYSQLDATABASE", "dyslexia_study"),
+    "port": int(os.getenv("MYSQLPORT", 3306))
 }
+def connect_db():
+    """Establishes a connection to the MySQL database."""
+    try:
+        conn = mysql.connector.connect(**DB_CONFIG)
+        print("Connected to the database successfully!")
+        return conn
+    except mysql.connector.Error as err:
+        print(f"Error: {err}")
+        return None
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
 ALLOWED_EXTENSIONS = {'wav', 'webm', 'mp3', 'ogg', 'm4a'}
@@ -26,13 +41,13 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-
 # Set up OAuth
 oauth = OAuth(app)
 google = oauth.register(
     name='google',
-    client_id='',
-    server_metadata_url='',
+    client_id=os.getenv("GOOGLE_CLIENT_ID", ""),
+    client_secret=os.getenv("GOOGLE_CLIENT_SECRET", ""),
+    server_metadata_url=os.getenv("GOOGLE_METADATA_URL", ""),  
     # access_token_url='https://accounts.google.com/o/oauth2/token',
     # access_token_params=None,
     # authorize_url='https://accounts.google.com/o/oauth2/auth',
@@ -41,7 +56,6 @@ google = oauth.register(
     # userinfo_endpoint='https://www.googleapis.com/oauth2/v1/userinfo',
     client_kwargs={'scope': 'openid email profile'},
 )
-
 @app.route('/login/google')
 def login_google():
     redirect_uri = url_for('google_callback', _external=True)
@@ -94,15 +108,15 @@ def google_callback():
     else:
         return redirect(url_for('participant_dashboard'))
 
-def connect_db():
-    """Establishes a connection to the MySQL database."""
-    try:
-        conn = mysql.connector.connect(**DB_CONFIG)
-        print("Connected to the database successfully!")
-        return conn
-    except mysql.connector.Error as err:
-        print(f"Error: {err}")
-        return None
+# def connect_db():
+#     """Establishes a connection to the MySQL database."""
+#     try:
+#         conn = mysql.connector.connect(**DB_CONFIG)
+#         print("Connected to the database successfully!")
+#         return conn
+#     except mysql.connector.Error as err:
+#         print(f"Error: {err}")
+#         return None
 
 def create_user(name, email, password_hash, is_18_or_above, user_type='participant', parent_id=None, school_id=None):
     """Inserts a new user into the users table."""

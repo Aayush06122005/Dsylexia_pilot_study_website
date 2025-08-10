@@ -109,7 +109,7 @@ BEGIN
         SET NEW.age = TIMESTAMPDIFF(YEAR, NEW.date_of_birth, CURDATE());
     END IF;
 END$$
-DELIMITER ;
+-- DELIMITER ;
 
 DELIMITER $$
 CREATE TRIGGER set_age_before_update
@@ -188,6 +188,5 @@ SELECT * FROM users;
 SELECT * FROM schools;
 SELECT * FROM school_parents;
 SELECT * FROM parent_children;
-
 
 
