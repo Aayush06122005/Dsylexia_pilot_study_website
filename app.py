@@ -32,13 +32,13 @@ oauth = OAuth(app)
 google = oauth.register(
     name='google',
     client_id='',
-    client_secret='',
-    access_token_url='https://accounts.google.com/o/oauth2/token',
-    access_token_params=None,
-    authorize_url='https://accounts.google.com/o/oauth2/auth',
-    authorize_params=None,
-    api_base_url='https://www.googleapis.com/oauth2/v1/',
-    userinfo_endpoint='https://www.googleapis.com/oauth2/v1/userinfo',
+    server_metadata_url='',
+    # access_token_url='https://accounts.google.com/o/oauth2/token',
+    # access_token_params=None,
+    # authorize_url='https://accounts.google.com/o/oauth2/auth',
+    # authorize_params=None,
+    # api_base_url='https://www.googleapis.com/oauth2/v1/',
+    # userinfo_endpoint='https://www.googleapis.com/oauth2/v1/userinfo',
     client_kwargs={'scope': 'openid email profile'},
 )
 
@@ -50,7 +50,8 @@ def login_google():
 @app.route('/callback/google')
 def google_callback():
     token = google.authorize_access_token()
-    user_info = google.get('userinfo').json()
+    # user_info = google.get('userinfo').json()
+    user_info = google.get('https://openidconnect.googleapis.com/v1/userinfo').json()
     session['user'] = user_info
     session['email'] = user_info['email']
     # Check if user exists, else create
@@ -60,7 +61,38 @@ def google_callback():
         create_user(user_info.get('name', ''), user_info['email'], '', True)
         user_id = get_user_id(user_info['email'])
     session['user_id'] = user_id
-    return redirect(url_for('consent'))
+    # Check consent
+    conn = connect_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT consent_given FROM consent_data WHERE user_id = %s ORDER BY consent_date DESC LIMIT 1", (user_id,))
+    consent = cursor.fetchone()
+    cursor.close()
+    conn.close()
+
+    # Check demographics
+    conn = connect_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM demographics WHERE user_id = %s", (user_id,))
+    demographics = cursor.fetchone()
+    cursor.close()
+    conn.close()
+
+    if not demographics:
+        return redirect(url_for('profile_setup'))
+
+    # Get user type for dashboard redirect
+    conn = connect_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT user_type FROM users WHERE id = %s", (user_id,))
+    user_type = cursor.fetchone()[0]
+    cursor.close()
+    conn.close()
+    if user_type == 'parent':
+        return redirect(url_for('parent_page'))
+    elif user_type == 'school':
+        return redirect(url_for('school_page'))
+    else:
+        return redirect(url_for('participant_dashboard'))
 
 def connect_db():
     """Establishes a connection to the MySQL database."""
@@ -219,7 +251,8 @@ def school_page():
 def school_signup():
     return render_template('school_signup.html')
     
-@app.route('/parent.html')
+
+@app.route('/parent')
 def parent_page():
     # Check if user is logged in and is a parent
     if 'user_id' not in session:
