@@ -265,7 +265,40 @@ def school_page():
 def school_signup():
     return render_template('school_signup.html')
     
+@app.route('/student-signin')
+def student_signin():
+    return render_template('student_signin.html')
 
+@app.route('/api/student-login', methods=['POST'])
+def student_login():
+    data = request.get_json()
+    username = data.get('username', '').strip()
+    password = data.get('password', '')
+    if not username or not password:
+        return jsonify({'success': False, 'message': 'Username and password are required'}), 400
+    try:
+        conn = connect_db()
+        cursor = conn.cursor()
+        # Username is stored in the email field for children
+        query = "SELECT id, password_hash FROM users WHERE email = %s AND user_type = 'child'"
+        cursor.execute(query, (username,))
+        result = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        if not result:
+            return jsonify({'success': False, 'message': 'Invalid credentials'}), 401
+        user_id, stored_password_hash = result
+        if bcrypt.checkpw(password.encode('utf-8'), stored_password_hash.encode('utf-8')):
+            session['user_id'] = user_id
+            session['user_type'] = 'child'
+            return jsonify({'success': True, 'message': 'Login successful!'})
+        else:
+            return jsonify({'success': False, 'message': 'Invalid credentials'}), 401
+    except Exception as e:
+        print(f"Student login error: {e}")
+        return jsonify({'success': False, 'message': 'Internal server error'}), 500
+
+        
 @app.route('/parent')
 def parent_page():
     # Check if user is logged in and is a parent
