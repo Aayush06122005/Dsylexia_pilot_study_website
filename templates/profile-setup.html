@@ -368,17 +368,21 @@
                     dyslexia_status: document.getElementById('dyslexiaStatus').value
                 };
                 // Send to backend
-                fetch('/api/demographics', {
+                // Example JS after demographics POST
+                // Get child_id from URL if present
+                const urlParams = new URLSearchParams(window.location.search);
+                const childId = urlParams.get('child_id');
+                fetch('/api/demographics?child_id=' + childId, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 })
-                .then(response => response.json())
+                .then(res => res.json())
                 .then(data => {
                     if (data.success) {
-                        window.location.href = '/participant-dashboard';
+                        window.location.href = '/parent'; // Redirect to parent dashboard
                     } else {
-                        alert('Failed to record demographics: ' + data.message);
+                        alert(data.message || 'Failed to save demographics');
                     }
                 })
                 .catch(() => {

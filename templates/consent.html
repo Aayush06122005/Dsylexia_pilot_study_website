@@ -525,6 +525,9 @@
             const successModal = document.getElementById('successModal');
             const continueButton = document.getElementById('continueButton');
             
+            const urlParams = new URLSearchParams(window.location.search);
+            const childId = urlParams.get('child_id');
+
             // Set today's date as default
             const today = new Date().toISOString().split('T')[0];
             consentDate.value = today;
@@ -569,7 +572,11 @@
                             signature: signature.value.trim()
                         };
                         // Send to backend
-                        fetch('/api/consent', {
+                        let apiUrl = '/api/consent'
+                        if (childId) {
+                            apiUrl += '?child_id=' + encodeURIComponent(childId);
+                        }
+                        fetch(apiUrl, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(consentData)
@@ -613,7 +620,8 @@
                 // Handle continue button
                 continueButton.addEventListener('click', function() {
                     // In a real application, you would redirect to the profile setup page
-                    window.location.href = "/profile-setup";
+                    // After successful child creation
+                    window.location.href = '/profile-setup?child_id=' + childId;
                 });
                 
                 // Helper functions for validation

@@ -265,7 +265,40 @@ def school_page():
 def school_signup():
     return render_template('school_signup.html')
     
+@app.route('/student-signin')
+def student_signin():
+    return render_template('student_signin.html')
 
+@app.route('/api/student-login', methods=['POST'])
+def student_login():
+    data = request.get_json()
+    username = data.get('username', '').strip()
+    password = data.get('password', '')
+    if not username or not password:
+        return jsonify({'success': False, 'message': 'Username and password are required'}), 400
+    try:
+        conn = connect_db()
+        cursor = conn.cursor()
+        # Username is stored in the email field for children
+        query = "SELECT id, password_hash FROM users WHERE email = %s AND user_type = 'child'"
+        cursor.execute(query, (username,))
+        result = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        if not result:
+            return jsonify({'success': False, 'message': 'Invalid credentials'}), 401
+        user_id, stored_password_hash = result
+        if bcrypt.checkpw(password.encode('utf-8'), stored_password_hash.encode('utf-8')):
+            session['user_id'] = user_id
+            session['user_type'] = 'child'
+            return jsonify({'success': True, 'message': 'Login successful!'})
+        else:
+            return jsonify({'success': False, 'message': 'Invalid credentials'}), 401
+    except Exception as e:
+        print(f"Student login error: {e}")
+        return jsonify({'success': False, 'message': 'Internal server error'}), 500
+
+        
 @app.route('/parent')
 def parent_page():
     # Check if user is logged in and is a parent
@@ -418,21 +451,22 @@ def login():
 @app.route('/api/consent', methods=['POST'])
 def api_consent():
     """API endpoint to store consent status and timestamp, and check digital signature."""
-    if 'user_id' not in session:
+    user_id = request.args.get('child_id') or session.get('user_id')
+    if not user_id:
         return jsonify({'success': False, 'message': 'User not logged in'}), 401
     data = request.get_json()
     consent_given = data.get('consent_given')
     consent_date = data.get('consent_date')
     signature = data.get('signature', '').strip()
     # Fetch user's name from DB
-    user_name = get_user_name(session['user_id'])
+    user_name = get_user_name(user_id)
     if not user_name or signature.lower() != user_name.lower():
         return jsonify({'success': False, 'message': 'Digital signature must match your name (case-insensitive)'}), 400
     try:
         conn = connect_db()
         cursor = conn.cursor()
         query = "INSERT INTO consent_data (user_id, consent_given, consent_date) VALUES (%s, %s, %s)"
-        cursor.execute(query, (session['user_id'], consent_given, consent_date))
+        cursor.execute(query, (user_id, consent_given, consent_date))
         conn.commit()
         cursor.close()
         conn.close()
@@ -444,7 +478,10 @@ def api_consent():
 @app.route('/api/demographics', methods=['POST'])
 def api_demographics():
     """API endpoint to store profile setup/demographics data."""
-    if 'user_id' not in session:
+    # Accept child_id as query param or in JSON
+    child_id = request.args.get('child_id') or request.json.get('child_id')
+    user_id = child_id or session.get('user_id')
+    if not user_id:
         return jsonify({'success': False, 'message': 'User not logged in'}), 401
     data = request.get_json()
     dob = data.get('dob')
@@ -459,7 +496,7 @@ def api_demographics():
             INSERT INTO demographics (user_id, date_of_birth, gender, native_language, education_level, dyslexia_status)
             VALUES (%s, %s, %s, %s, %s, %s)
         """
-        cursor.execute(query, (session['user_id'], dob, gender, native_language, education_level, dyslexia_status))
+        cursor.execute(query, (user_id, dob, gender, native_language, education_level, dyslexia_status))
         conn.commit()
         cursor.close()
         conn.close()
@@ -467,7 +504,7 @@ def api_demographics():
     except Exception as e:
         print(f"Demographics error: {e}")
         return jsonify({'success': False, 'message': 'Failed to record demographics'}), 500
-
+    
 @app.route('/api/register', methods=['POST'])
 def api_register():
     """API endpoint to handle user registration."""
@@ -594,49 +631,57 @@ def parent_register():
     """API endpoint to handle parent registration."""
     try:
         data = request.get_json()
-        
         if not data:
             return jsonify({'success': False, 'message': 'No data received'}), 400
-        
-        # Extract form data
+
         name = data.get('name', '').strip()
         email = data.get('email', '').strip()
         password = data.get('password', '')
-        
-        # Validation
+
         if not name or not email or not password:
             return jsonify({'success': False, 'message': 'All fields are required'}), 400
-        
-        # Check if user already exists
-        if check_user_exists(email):
-            return jsonify({'success': False, 'message': 'User with this email already exists'}), 409
-        
-        # Hash the password
+
+        conn = connect_db()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+        cursor = conn.cursor()
+
+        # Check if parent exists
+        cursor.execute("""
+            SELECT id, password_hash FROM users 
+            WHERE email = %s AND user_type = 'parent'
+        """, (email,))
+        result = cursor.fetchone()
+
+        if not result:
+            cursor.close()
+            conn.close()
+            return jsonify({'success': False, 'message': 'You are not enrolled by any school. Please contact your school.'}), 403
+
+        user_id, password_hash_db = result
+
+        if password_hash_db is not None:
+            cursor.close()
+            conn.close()
+            return jsonify({'success': False, 'message': 'You are already registered. Please sign in.'}), 409
+
         password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-        
-        # Get school_id from session if this is a parent registration from school
-        school_id = session.get('school_id') if 'school_id' in session else None
-        
-        # Create parent user
-        if create_user(name, email, password_hash, True, 'parent', None, school_id):
-            # Get user ID for session
-            user_id = get_user_id(email)
-            if user_id:
-                session['user_id'] = user_id
-                session['email'] = email
-                session['user_type'] = 'parent'
-                # Clear school_id from session after successful registration
-                if 'school_id' in session and school_id:
-                    del session['school_id']
-            
-            return jsonify({
-                'success': True, 
-                'message': 'Parent registration successful!',
-                'user_id': user_id
-            }), 201
-        else:
-            return jsonify({'success': False, 'message': 'Failed to create parent account'}), 500
-            
+
+        # Update the parent record with password and name (in case name changed)
+        cursor.execute("""
+            UPDATE users SET name=%s, password_hash=%s WHERE id=%s
+        """, (name, password_hash, user_id))
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        # Set session
+        session['user_id'] = user_id
+        session['email'] = email
+        session['user_type'] = 'parent'
+
+        return jsonify({'success': True, 'message': 'Parent registration successful!', 'user_id': user_id}), 201
+
     except Exception as e:
         print(f"Parent registration error: {e}")
         return jsonify({'success': False, 'message': 'Internal server error'}), 500
@@ -646,48 +691,32 @@ def add_child():
     """API endpoint to add a child to a parent account."""
     try:
         # Check if user is logged in and is a parent
-        if 'user_id' not in session:
+        if 'user_id' not in session or session.get('user_type') != 'parent':
             return jsonify({'success': False, 'message': 'Please log in as a parent'}), 401
-        
+
         data = request.get_json()
-        
         if not data:
             return jsonify({'success': False, 'message': 'No data received'}), 400
-        
-        # Extract form data
-        name = data.get('name', '').strip()
-        email = data.get('email', '').strip()
+
+        username = data.get('username', '').strip()  # This will be stored in email field
         password = data.get('password', '')
-        
+        name = data.get('name', '').strip()
+
         # Validation
-        if not name or not email or not password:
+        if not username or not password or not name:
             return jsonify({'success': False, 'message': 'All fields are required'}), 400
-        
-        # Check if user already exists
-        if check_user_exists(email):
-            return jsonify({'success': False, 'message': 'User with this email already exists'}), 409
-        
-        # Verify parent status
-        conn = connect_db()
-        if conn:
-            cursor = conn.cursor()
-            query = "SELECT user_type FROM users WHERE id = %s"
-            cursor.execute(query, (session['user_id'],))
-            result = cursor.fetchone()
-            cursor.close()
-            conn.close()
-            
-            if not result or result[0] != 'parent':
-                return jsonify({'success': False, 'message': 'Access denied. Only parents can add children.'}), 403
-        
+
+        # Check if username (email field) already exists
+        if check_user_exists(username):
+            return jsonify({'success': False, 'message': 'Username already exists'}), 409
+
         # Hash the password
         password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-        
+
         # Create child user with parent_id
-        if create_user(name, email, password_hash, True, 'child', session['user_id']):
+        if create_user(name, username, password_hash, True, 'child', session['user_id']):
             # Get child user ID
-            child_id = get_user_id(email)
-            
+            child_id = get_user_id(username)
             # Add to parent_children table
             conn = connect_db()
             if conn:
@@ -702,7 +731,7 @@ def add_child():
                 finally:
                     cursor.close()
                     conn.close()
-            
+            # Return child_id so frontend can redirect to consent
             return jsonify({
                 'success': True, 
                 'message': 'Child account created successfully!',
@@ -710,7 +739,7 @@ def add_child():
             }), 201
         else:
             return jsonify({'success': False, 'message': 'Failed to create child account'}), 500
-            
+
     except Exception as e:
         print(f"Add child error: {e}")
         return jsonify({'success': False, 'message': 'Internal server error'}), 500
@@ -865,21 +894,17 @@ def add_parent():
         # Extract form data
         name = data.get('name', '').strip()
         email = data.get('email', '').strip()
-        password = data.get('password', '')
         
         # Validation
-        if not name or not email or not password:
+        if not name or not email:
             return jsonify({'success': False, 'message': 'All fields are required'}), 400
         
         # Check if user already exists
         if check_user_exists(email):
             return jsonify({'success': False, 'message': 'User with this email already exists'}), 409
-        
-        # Hash the password
-        password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-        
+         
         # Create parent user with school_id
-        if create_user(name, email, password_hash, True, 'parent', None, session['school_id']):
+        if create_user(name, email, None, True, 'parent', None, session['school_id']):
             # Get parent user ID
             parent_id = get_user_id(email)
             
