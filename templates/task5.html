@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mathematical Comprehension Task - Dyslexia Research Study</title>
+    <title>Writing Tasks - Dyslexia Research Study</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='landing_style.css') }}">
 </head>
@@ -12,15 +12,15 @@
     <header class="primary-bg text-white py-6">
         <div class="content-wrapper flex justify-between items-center">
             <div class="flex items-center">
-                <img src="{{ url_for('static', filename='comprehend.jpg') }}" alt="Comprehension Task" class="h-12 w-12 rounded-full mr-4 hidden md:block">
-                <h1 class="text-xl md:text-2xl font-bold">Mathematical Comprehension Task</h1>
+                <img src="{{ url_for('static', filename='write.jpg') }}" alt="Writing Tasks" class="h-12 w-12 rounded-full mr-4 hidden md:block">
+                <h1 class="text-xl md:text-2xl font-bold">Writing Tasks</h1>
             </div>
             <nav>
                 <ul class="flex space-x-6 text-lg md:text-xl items-center">
                     <li><a href="{{ url_for('landing') }}#about" class="hover:text-yellow-100 transition">About</a></li>
                     <li><a href="{{ url_for('landing') }}#contact" class="hover:text-yellow-100 transition">Contact</a></li>
-                    <li><a href="/participant-dashboard" class="hover:text-yellow-100 transition ">Dashboard</a></li>
-                    <li><a href="#" id="logoutBtn" class="hover:text-yellow-100 transition ">Logout</a></li>
+                    <li><a href="/participant-dashboard" class="hover:text-yellow-100 transition">Dashboard</a></li>
+                    <li><a href="#" id="logoutBtn" class="hover:text-yellow-100 transition">Logout</a></li>
                 </ul>
             </nav>
         </div>
@@ -92,335 +92,459 @@
         </div>
     </div>
 
-    <main class="flex justify-center items-center min-h-[60vh] bg-transparent my-16">
-        <div class="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-8 flex flex-col items-center border border-gray-200">
-            <div class="flex items-center gap-4 mb-4">
-                <img src="{{ url_for('static', filename='comprehend.jpg') }}" alt="Comprehension Task" class="w-16 h-16 object-cover rounded-xl shadow-md">
-                <h2 class="text-2xl font-bold text-[#1A237E]">Mathematical Comprehension</h2>
+    <main class="content-wrapper py-12">
+        <!-- Welcome Section -->
+        <div class="text-center mb-12">
+            <div class="flex items-center justify-center gap-4 mb-6">
+                <img src="{{ url_for('static', filename='write.jpg') }}" alt="Writing Tasks" class="w-20 h-20 object-cover rounded-xl shadow-lg">
+                <h1 class="text-4xl font-bold text-[#1A237E]">Writing Tasks</h1>
             </div>
-            <div class="mb-4 w-full rounded p-4">
-                <span class="font-semibold">Instructions:</span>
-                <ul class="list-disc pl-6 mt-2 text-gray-800 text-lg">
-                    <li>If you are in a lab, please follow the instructions provided by the researcher for eye-tracker calibration before starting.</li>
-                    <li>If you are using a web-based eye-tracker, please ensure your webcam is enabled and follow the on-screen calibration steps (if available).</li>
-                    <li><b>Read</b> the questions below carefully. </li>
-                    <li>You may take your time.</li>
-                    <li>After reading, <b>answer</b> the comprehension questions.</li>
-                    <li>Your responses will be recorded for research purposes.</li>
-            </ul>
-            </div>
-            <div class="mb-6 w-full bg-gray-50 rounded p-4 border border-gray-200">
-    <span class="font-semibold">Passage:</span>
-    <p class="mt-2 text-gray-900 text-lg" style="line-height: 1.7;">
-        A bakery sells cupcakes in boxes of 6. On Monday, the bakery sold 8 boxes of cupcakes in the morning and 5 boxes in the afternoon. Each cupcake costs $2.50.<br><br>
-        Later, the bakery received an order for 3 more boxes, but one box was returned because it was damaged. The bakery owner wants to know how many cupcakes were sold in total and how much money was earned from all the cupcakes sold that day.
-    </p>
-</div>
-<form id="comprehensionForm" class="w-full flex flex-col gap-6">
-    <div>
-        <label for="q1" class="block font-semibold mb-2">
-            1. How many cupcakes are there in one box?
-        </label>
-        <input type="number" id="q1" name="q1" class="w-full border border-gray-300 rounded p-2 text-lg" required>
-    </div>
-    <div>
-        <label for="q2" class="block font-semibold mb-2">
-            2. How many cupcakes did the bakery sell in total on Monday?
-        </label>
-        <input type="number" id="q2" name="q2" class="w-full border border-gray-300 rounded p-2 text-lg" required>
-    </div>
-    <div>
-        <label for="q3" class="block font-semibold mb-2">
-            3. What was the total amount of money earned from all the cupcakes sold that day?
-        </label>
-        <input type="text" id="q3" name="q3" class="w-full border border-gray-300 rounded p-2 text-lg" required>
-    </div>
-    <div class="flex gap-4">
-        <button type="button" id="saveProgressBtn" class="bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold transition flex-1">Save Progress</button>
-        <button type="submit" id="submitBtn" class="primary-bg text-white px-6 py-3 rounded-lg font-semibold transition flex-1">Submit Answers</button>
-    </div>
-    <div id="formMsg" class="mt-2 text-green-700 font-semibold hidden"></div>
-    <div id="returnDashboardContainer" class="mt-4 hidden">
-        <button id="returnDashboardBtn" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold transition">Return to Dashboard</button>
-                <div class="flex gap-4">
-                    <button type="button" id="saveProgressBtn" class="bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold transition flex-1">Save Progress</button>
-                    
-                    <button type="submit" id="submitBtn" class="primary-bg text-white px-6 py-3 rounded-lg font-semibold transition flex-1">Submit Answers</button>
-            </div>
-                <div id="formMsg" class="mt-2 text-green-700 font-semibold hidden"></div>
-                <div id="returnDashboardContainer" class="mt-4 hidden">
-                    <button id="returnDashboardBtn" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold transition">Return to Dashboard</button>
-            </div>
-            </form>
+            <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                Welcome! We've selected writing tasks that are appropriate for your age. 
+                Each task involves handwriting practice and you'll need to upload a photo of your writing.
+            </p>
+            <div id="userAgeInfo" class="mt-4 text-lg text-blue-600 font-semibold"></div>
         </div>
-    </main>
-    
-        <!-- Footer -->
-        <footer class="dark-bg text-white py-12 text-lg" style="background-color: #333333;">
-            <div class="content-wrapper">
-                <div class="flex flex-col md:flex-row justify-between">
-                    <div class="mb-8 md:mb-0">
-                        <div class="flex items-center">
-                            
-                            <h2 class="text-xl font-bold">Dyslexia Research Initiative</h2>
-                        </div>
-                        <p class="mt-4 text-gray-400 max-w-md">
-                            Advancing our understanding of dyslexia through innovative research and technology to create better support systems for everyone.
-                        </p>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="text-center py-12">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <p class="mt-4 text-gray-600 text-lg">Loading your personalized writing tasks...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="errorState" class="hidden text-center py-12">
+            <div class="text-red-600 text-6xl mb-4">⚠️</div>
+            <h3 class="text-2xl font-bold text-red-800 mb-4">Error Loading Tasks</h3>
+            <p id="errorMessage" class="text-red-600 mb-6 text-lg"></p>
+            <button onclick="loadTasks()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
+                Try Again
+            </button>
+        </div>
+
+        <!-- No Tasks State -->
+        <div id="noTasksState" class="hidden text-center py-12">
+            <div class="text-yellow-600 text-6xl mb-4">✍️</div>
+            <h3 class="text-2xl font-bold text-yellow-800 mb-4">No Tasks Available</h3>
+            <p class="text-yellow-600 mb-6 text-lg">No writing tasks are currently available for your age group.</p>
+            <a href="/participant-dashboard" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
+                Return to Dashboard
+            </a>
+        </div>
+
+        <!-- Tasks Grid -->
+        <div id="tasksGrid" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
+            <!-- Task cards will be dynamically inserted here -->
+        </div>
+
+        <!-- Task Preview Modal -->
+        <div id="taskPreviewModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 id="modalTaskName" class="text-2xl font-bold text-[#1A237E]"></h2>
+                        <button id="closeModal" class="text-3xl font-bold text-gray-500 hover:text-gray-700">&times;</button>
                     </div>
                     
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-8">
-                        <div>
-                            <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
-                            <ul class="space-y-2">
-                                <li><a href="landing.html#about" class="text-gray-400 hover:text-white transition">About</a></li>
-                                <li><a href="landing.html#contact" class="text-gray-400 hover:text-white transition">Contact</a></li>
-                            </ul>
+                    <div class="space-y-6">
+                        <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                            <h3 class="font-semibold text-blue-800 mb-2">Instructions:</h3>
+                            <p id="modalInstructions" class="text-blue-700"></p>
                         </div>
                         
-                        <div>
-                            <h3 class="text-lg font-semibold mb-4">Resources</h3>
-                            <ul class="space-y-2">
-                                <li><a href="learn_more.html#faq" class="text-gray-400 hover:text-white transition">FAQs</a></li>
-                                <li><a href="#" class="text-gray-400 hover:text-white transition">Privacy Policy</a></li>
-                                <!-- <li><a href="#" class="text-gray-400 hover:text-white transition">Terms of Service</a></li> -->
-                            </ul>
+                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                            <h3 class="font-semibold text-gray-800 mb-2">Writing Prompt:</h3>
+                            <div id="modalPrompt" class="text-gray-700 text-lg leading-relaxed whitespace-pre-wrap"></div>
                         </div>
                         
-                        <div>
-                            <h3 class="text-lg font-semibold mb-4">Connect</h3>
-                            <div class="flex space-x-4">
-                                <a href="#" class="text-gray-400 hover:text-white transition">
-                                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"></path>
-                                    </svg>
-                                </a>
-                                <a href="#" class="text-gray-400 hover:text-white transition">
-                                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                        <path fill-rule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z" clip-rule="evenodd"></path>
-                                    </svg>
-                                </a>
+                        <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                            <h3 class="font-semibold text-green-800 mb-2">Task Details:</h3>
+                            <div id="modalDetails" class="space-y-2 text-green-700">
+                                <p><strong>Word Limit:</strong> <span id="modalWordLimit"></span></p>
+                                <p><strong>Estimated Time:</strong> <span id="modalTime"></span> minutes</p>
+                                <p><strong>Difficulty:</strong> <span id="modalDifficulty"></span></p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                            <div class="flex items-start">
+                                <svg class="w-5 h-5 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                </svg>
+                                <div>
+                                    <p class="text-yellow-800 font-semibold">Important:</p>
+                                    <p class="text-yellow-700 text-sm">You will need to write by hand on paper and then take a photo of your writing to upload. Make sure you have good lighting and a clear photo before starting the task.</p>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                
-                <div class="mt-12 pt-8 border-t border-gray-700 text-center text-gray-400">
-                    <p>&copy; 2025 Leveraging NLP for Dyslexia Identification. All rights reserved.</p>
+                    
+                    <div class="flex gap-4 mt-8">
+                        <button id="startTaskBtn" class="primary-bg text-white px-8 py-3 rounded-lg font-semibold transition flex-1">
+                            Start This Task
+                        </button>
+                        <button id="cancelModalBtn" class="bg-gray-600 text-white px-8 py-3 rounded-lg font-semibold transition flex-1">
+                            Cancel
+                        </button>
+                    </div>
                 </div>
             </div>
-        </footer>
+        </div>
+    </main>
     
-        <script>
-            // Accessibility functionality
-            const root = document.documentElement;
-            const panel = document.getElementById('accessibilityPanel');
-            const panelToggle = document.getElementById('togglePanel');
-            const closePanel = document.getElementById('closePanel');
-            const decreaseBtn = document.getElementById('fontDecrease');
-            const resetBtn = document.getElementById('fontReset');
-            const increaseBtn = document.getElementById('fontIncrease');
+    <!-- Footer -->
+    <footer class="dark-bg text-white py-12 text-lg" style="background-color: #333333;">
+        <div class="content-wrapper">
+            <div class="flex flex-col md:flex-row justify-between">
+                <div class="mb-8 md:mb-0">
+                    <div class="flex items-center">
+                        <h2 class="text-xl font-bold">Dyslexia Research Initiative</h2>
+                    </div>
+                    <p class="mt-4 text-gray-400 max-w-md">
+                        Advancing our understanding of dyslexia through innovative research and technology to create better support systems for everyone.
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-8">
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+                        <ul class="space-y-2">
+                            <li><a href="landing.html#about" class="text-gray-400 hover:text-white transition">About</a></li>
+                            <li><a href="landing.html#contact" class="text-gray-400 hover:text-white transition">Contact</a></li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Resources</h3>
+                        <ul class="space-y-2">
+                            <li><a href="learn_more.html#faq" class="text-gray-400 hover:text-white transition">FAQs</a></li>
+                            <li><a href="#" class="text-gray-400 hover:text-white transition">Privacy Policy</a></li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Connect</h3>
+                        <div class="flex space-x-4">
+                            <a href="#" class="text-gray-400 hover:text-white transition">
+                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"></path>
+                                </svg>
+                            </a>
+                            <a href="#" class="text-gray-400 hover:text-white transition">
+                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill-rule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z" clip-rule="evenodd"></path>
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-12 pt-8 border-t border-gray-700 text-center text-gray-400">
+                <p>&copy; 2025 Leveraging NLP for Dyslexia Identification. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
     
-            panelToggle.addEventListener('click', () => {
-                panel.classList.toggle('hidden');
-            });
-    
-            closePanel.addEventListener('click', () => {
+    <script>
+        // Global variables
+        let currentTasks = [];
+        let currentTaskId = null;
+        const userId = "{{ user_id }}";
+
+        // Accessibility functionality
+        const root = document.documentElement;
+        const panel = document.getElementById('accessibilityPanel');
+        const panelToggle = document.getElementById('togglePanel');
+        const closePanel = document.getElementById('closePanel');
+        const decreaseBtn = document.getElementById('fontDecrease');
+        const resetBtn = document.getElementById('fontReset');
+        const increaseBtn = document.getElementById('fontIncrease');
+
+        panelToggle.addEventListener('click', () => {
+            panel.classList.toggle('hidden');
+        });
+
+        closePanel.addEventListener('click', () => {
+            panel.classList.add('hidden');
+        });
+
+        document.addEventListener('click', function (event) {
+            const isClickInsidePanel = panel.contains(event.target);
+            const isClickToggleButton = panelToggle.contains(event.target);
+
+            if (!isClickInsidePanel && !isClickToggleButton) {
                 panel.classList.add('hidden');
-            });
-    
-            document.addEventListener('click', function (event) {
-                const isClickInsidePanel = panel.contains(event.target);
-                const isClickToggleButton = panelToggle.contains(event.target);
-    
-                if (!isClickInsidePanel && !isClickToggleButton) {
-                    panel.classList.add('hidden');
-                }
-            });
-    
-            function setupToggle(buttonId, classTarget, className) {
-                const button = document.getElementById(buttonId);
-                const thumb = button.querySelector('span');
-    
-                button.addEventListener('click', () => {
-                    const isActive = classTarget.classList.toggle(className);
-                    button.classList.toggle('bg-blue-600', isActive);
-                    button.classList.toggle('bg-gray-300', !isActive);
-                    thumb.classList.toggle('translate-x-6', isActive);
-                    thumb.classList.toggle('translate-x-1', !isActive);
-                });
             }
-    
-            setupToggle('toggleDyslexic', root, 'dyslexic-font');
-            setupToggle('toggleMonochrome', root, 'monochrome');
-            setupToggle('toggleCursor', root, 'big-cursor');
-    
-            // Reading ruler
-            const ruler = document.getElementById('readingRuler');
-            const rulerToggle = document.getElementById('toggleRuler');
-            const rulerThumb = rulerToggle.querySelector('span');
-            let rulerActive = false;
-    
-            rulerToggle.addEventListener('click', () => {
-                rulerActive = !rulerActive;
-                ruler.classList.toggle('hidden', !rulerActive);
-                rulerToggle.classList.toggle('bg-blue-600', rulerActive);
-                rulerToggle.classList.toggle('bg-gray-300', !rulerActive);
-                rulerThumb.classList.toggle('translate-x-6', rulerActive);
-                rulerThumb.classList.toggle('translate-x-1', !rulerActive);
+        });
+
+        function setupToggle(buttonId, classTarget, className) {
+            const button = document.getElementById(buttonId);
+            const thumb = button.querySelector('span');
+
+            button.addEventListener('click', () => {
+                const isActive = classTarget.classList.toggle(className);
+                button.classList.toggle('bg-blue-600', isActive);
+                button.classList.toggle('bg-gray-300', !isActive);
+                thumb.classList.toggle('translate-x-6', isActive);
+                thumb.classList.toggle('translate-x-1', !isActive);
             });
-    
-            document.addEventListener('mousemove', (e) => {
-                if (rulerActive) {
-                    const height = ruler.offsetHeight;
-                    ruler.style.top = `${e.clientY - height / 2}px`;
-                }
-            });
-    
-            // Font size controls
-            let currentFontSize = 16;
-            decreaseBtn.addEventListener('click', () => {
-                if (currentFontSize > 12) {
-                    currentFontSize -= 1;
-                    updateFontSize();
-                }
-            });
-            resetBtn.addEventListener('click', () => {
-                currentFontSize = 16;
+        }
+
+        setupToggle('toggleDyslexic', root, 'dyslexic-font');
+        setupToggle('toggleMonochrome', root, 'monochrome');
+        setupToggle('toggleCursor', root, 'big-cursor');
+
+        // Reading ruler
+        const ruler = document.getElementById('readingRuler');
+        const rulerToggle = document.getElementById('toggleRuler');
+        const rulerThumb = rulerToggle.querySelector('span');
+        let rulerActive = false;
+
+        rulerToggle.addEventListener('click', () => {
+            rulerActive = !rulerActive;
+            ruler.classList.toggle('hidden', !rulerActive);
+            rulerToggle.classList.toggle('bg-blue-600', rulerActive);
+            rulerToggle.classList.toggle('bg-gray-300', !rulerActive);
+            rulerThumb.classList.toggle('translate-x-6', rulerActive);
+            rulerThumb.classList.toggle('translate-x-1', !rulerActive);
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (rulerActive) {
+                const height = ruler.offsetHeight;
+                ruler.style.top = `${e.clientY - height / 2}px`;
+            }
+        });
+
+        // Font size controls
+        let currentFontSize = 16;
+        decreaseBtn.addEventListener('click', () => {
+            if (currentFontSize > 12) {
+                currentFontSize -= 1;
                 updateFontSize();
-            });
-            increaseBtn.addEventListener('click', () => {
-                if (currentFontSize < 24) {
-                    currentFontSize += 1;
-                    updateFontSize();
-                }
-            });
-    
-            function updateFontSize() {
-                document.documentElement.style.setProperty('--font-size-base', `${currentFontSize}px`);
-                document.body.style.fontSize = `${currentFontSize}px`;
-                root.style.fontSize = `${currentFontSize}px`;
             }
-    
-            // Logout functionality
-            document.getElementById('logoutBtn').addEventListener('click', function() {
-                fetch('/api/logout', {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: { 'Content-Type': 'application/json' }
-                })
-                .then(res => res.json())
-                .then(data => {
-                    localStorage.clear();
-                    window.location.href = '/';
-                })
-                .catch(() => {
-                    localStorage.clear();
-                    window.location.href = '/';
-                });
-            });
-    
-    // Prefill answers and handle completed state
-    let taskCompleted = false;
-            document.addEventListener('DOMContentLoaded', function() {
-        fetch('/api/get-comprehension-progress')
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success && data.progress) {
-                document.getElementById('q1').value = data.progress.q1 || '';
-                document.getElementById('q2').value = data.progress.q2 || '';
-                document.getElementById('q3').value = data.progress.q3 || '';
-                if (data.progress.status === 'Completed') {
-                    taskCompleted = true;
-                    document.getElementById('saveProgressBtn').disabled = true;
-                    document.getElementById('submitBtn').disabled = true;
-                    document.getElementById('formMsg').textContent = 'This task has already been submitted.';
-                    document.getElementById('formMsg').classList.remove('hidden', 'text-red-600');
-                    document.getElementById('formMsg').classList.add('text-green-700');
-                }
+        });
+        resetBtn.addEventListener('click', () => {
+            currentFontSize = 16;
+            updateFontSize();
+        });
+        increaseBtn.addEventListener('click', () => {
+            if (currentFontSize < 24) {
+                currentFontSize += 1;
+                updateFontSize();
             }
-                });
-            });
+        });
 
-            // Save Progress
-    const saveBtn = document.getElementById('saveProgressBtn');
-    saveBtn.addEventListener('click', function() {
-        if (taskCompleted) return;
-        const q1 = document.getElementById('q1').value;
-        const q2 = document.getElementById('q2').value;
-        const q3 = document.getElementById('q3').value;
-        fetch('/api/save-comprehension-progress', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({q1, q2, q3})
-                })
-                .then(res => res.json())
-        .then(resp => {
-            const msg = document.getElementById('formMsg');
-            if (resp.success) {
-                msg.textContent = 'Progress saved! Redirecting to dashboard...';
-                msg.classList.remove('hidden', 'text-red-600');
-                msg.classList.add('text-green-700');
-                        setTimeout(() => {
-                            window.location.href = '/participant-dashboard';
-                }, 1200);
+        function updateFontSize() {
+            document.documentElement.style.setProperty('--font-size-base', `${currentFontSize}px`);
+            document.body.style.fontSize = `${currentFontSize}px`;
+            root.style.fontSize = `${currentFontSize}px`;
+        }
+
+        // Logout functionality
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            fetch('/api/logout', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                localStorage.clear();
+                window.location.href = '/';
+            })
+            .catch(() => {
+                localStorage.clear();
+                window.location.href = '/';
+            });
+        });
+
+        // Load tasks on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTasks();
+        });
+
+        function loadTasks() {
+            showLoading();
+            
+            fetch(`/api/writing-tasks/${userId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        currentTasks = data.tasks;
+                        displayTasks(data);
                     } else {
-                msg.textContent = 'Save failed: ' + (resp.message || 'Unknown error');
-                msg.classList.remove('hidden', 'text-green-700');
-                msg.classList.add('text-red-600');
+                        showError(data.message || 'Failed to load tasks');
                     }
                 })
-                .catch(() => {
-            const msg = document.getElementById('formMsg');
-            msg.textContent = 'Save failed. Please try again.';
-            msg.classList.remove('hidden', 'text-green-700');
-            msg.classList.add('text-red-600');
+                .catch(error => {
+                    console.error('Error loading tasks:', error);
+                    showError('Failed to load tasks. Please try again.');
                 });
+        }
+
+        function displayTasks(data) {
+            const tasksGrid = document.getElementById('tasksGrid');
+            const userAgeInfo = document.getElementById('userAgeInfo');
+            
+            // Update user age info
+            if (data.user_age && data.user_age !== 'Not specified') {
+                userAgeInfo.textContent = `Showing tasks for age ${data.user_age}`;
+            } else if (data.message) {
+                userAgeInfo.textContent = data.message;
+            } else {
+                userAgeInfo.textContent = 'Showing all available tasks';
+            }
+
+            // Clear existing tasks
+            tasksGrid.innerHTML = '';
+
+            // Create task cards
+            data.tasks.forEach(task => {
+                const taskCard = createTaskCard(task);
+                tasksGrid.appendChild(taskCard);
             });
 
-    // Handle comprehension form submission
-    const form = document.getElementById('comprehensionForm');
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        if (taskCompleted) return;
-        const q1 = form.q1.value;
-        const q2 = form.q2.value;
-        const q3 = form.q3.value;
-        fetch('/api/submit-comprehension', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({q1, q2, q3})
-                })
-                .then(res => res.json())
-        .then(resp => {
-            const msg = document.getElementById('formMsg');
-            if (resp.success) {
-                msg.textContent = 'Your answers have been submitted. Thank you!';
-                msg.classList.remove('hidden', 'text-red-600');
-                msg.classList.add('text-green-700');
-                form.querySelector('button[type="submit"]').disabled = true;
-                document.getElementById('saveProgressBtn').disabled = true;
-                taskCompleted = true;
-                document.getElementById('returnDashboardContainer').classList.remove('hidden');
-                    } else {
-                msg.textContent = 'Submission failed: ' + (resp.message || 'Unknown error');
-                msg.classList.remove('hidden', 'text-green-700');
-                msg.classList.add('text-red-600');
-                    }
-                })
-                .catch(() => {
-            const msg = document.getElementById('formMsg');
-            msg.textContent = 'Submission failed. Please try again.';
-            msg.classList.remove('hidden', 'text-green-700');
-            msg.classList.add('text-red-600');
-                });
-            });
+            hideLoading();
+            tasksGrid.classList.remove('hidden');
+        }
 
-    // Add after successful submission:
-    document.getElementById('returnDashboardBtn').addEventListener('click', function() {
-                window.location.href = '/participant-dashboard';
+        function createTaskCard(task) {
+            const card = document.createElement('div');
+            card.className = 'bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-shadow duration-300';
+            
+            // Determine difficulty color
+            let difficultyColor = 'bg-green-100 text-green-800';
+            if (task.difficulty_level === 'Medium') {
+                difficultyColor = 'bg-yellow-100 text-yellow-800';
+            } else if (task.difficulty_level === 'Hard') {
+                difficultyColor = 'bg-red-100 text-red-800';
+            }
+
+            card.innerHTML = `
+                <div class="p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <h3 class="text-xl font-bold text-[#1A237E]">${task.task_name}</h3>
+                        <span class="px-3 py-1 rounded-full text-sm font-semibold ${difficultyColor}">
+                            ${task.difficulty_level}
+                        </span>
+                    </div>
+                    
+                    <div class="space-y-4 mb-6">
+                        <div class="bg-blue-50 p-3 rounded-lg">
+                            <p class="text-blue-800 text-sm"><strong>Instructions:</strong> ${task.instructions}</p>
+                        </div>
+                        
+                        <div class="bg-gray-50 p-3 rounded-lg max-h-32 overflow-y-auto">
+                            <p class="text-gray-700 text-sm"><strong>Writing Prompt:</strong></p>
+                            <p class="text-gray-600 text-sm mt-1">${task.prompt.substring(0, 150)}${task.prompt.length > 150 ? '...' : ''}</p>
+                        </div>
+                        
+                        <div class="flex justify-between text-sm text-gray-600">
+                            <span><strong>Word Limit:</strong> ${task.word_limit_min}-${task.word_limit_max}</span>
+                            <span><strong>Time:</strong> ~${task.estimated_time} min</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <button onclick="previewTask(${task.id})" class="bg-gray-600 text-white px-4 py-2 rounded-lg font-semibold transition hover:bg-gray-700 flex-1">
+                            Preview
+                        </button>
+                        <button onclick="startTask(${task.id}, '${task.task_name}')" class="primary-bg text-white px-4 py-2 rounded-lg font-semibold transition hover:bg-blue-700 flex-1">
+                            Start Task
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        function previewTask(taskId) {
+            const task = currentTasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            // Populate modal content
+            document.getElementById('modalTaskName').textContent = task.task_name;
+            document.getElementById('modalInstructions').textContent = task.instructions;
+            document.getElementById('modalPrompt').textContent = task.prompt;
+            document.getElementById('modalWordLimit').textContent = `${task.word_limit_min}-${task.word_limit_max} words`;
+            document.getElementById('modalTime').textContent = task.estimated_time;
+            document.getElementById('modalDifficulty').textContent = task.difficulty_level;
+
+            // Set up start task button
+            currentTaskId = taskId;
+            document.getElementById('startTaskBtn').onclick = () => startTask(taskId, task.task_name);
+            
+            // Show modal
+            document.getElementById('taskPreviewModal').classList.remove('hidden');
+        }
+
+        function startTask(taskId, taskName) {
+            // Mark task as started
+            fetch('/api/start-writing-task', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ task_id: taskId, task_name: taskName })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Close modal and redirect to task execution page
+                    document.getElementById('taskPreviewModal').classList.add('hidden');
+                    window.location.href = `/task55.html?task_id=${taskId}`;
+                } else {
+                    alert('Failed to start task: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error starting task:', error);
+                alert('Failed to start task. Please try again.');
             });
-        </script>
- 
+        }
+
+        // Modal controls
+        document.getElementById('closeModal').addEventListener('click', () => {
+            document.getElementById('taskPreviewModal').classList.add('hidden');
+        });
+
+        document.getElementById('cancelModalBtn').addEventListener('click', () => {
+            document.getElementById('taskPreviewModal').classList.add('hidden');
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('taskPreviewModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('taskPreviewModal')) {
+                document.getElementById('taskPreviewModal').classList.add('hidden');
+            }
+        });
+
+        function showLoading() {
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('errorState').classList.add('hidden');
+            document.getElementById('noTasksState').classList.add('hidden');
+            document.getElementById('tasksGrid').classList.add('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingState').classList.add('hidden');
+        }
+
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('errorState').classList.remove('hidden');
+            document.getElementById('noTasksState').classList.add('hidden');
+            document.getElementById('tasksGrid').classList.add('hidden');
+        }
+
+        function showNoTasks() {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('errorState').classList.add('hidden');
+            document.getElementById('noTasksState').classList.remove('hidden');
+            document.getElementById('tasksGrid').classList.add('hidden');
+        }
+    </script>
 </body>
 </html> 

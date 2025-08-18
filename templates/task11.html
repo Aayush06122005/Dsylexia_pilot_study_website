@@ -13,7 +13,7 @@
         <div class="content-wrapper flex justify-between items-center">
             <div class="flex items-center">
                 <img src="{{ url_for('static', filename='read.jpg') }}" alt="Dashboard Graphic" class="h-12 w-12 rounded-full mr-4 hidden md:block">
-                <h1 class="text-xl md:text-2xl font-bold">Welcome to Task</h1>
+                <h1 class="text-xl md:text-2xl font-bold">Reading Task</h1>
             </div>
             <nav>
                 <ul class="flex space-x-6 text-lg md:text-xl items-center">
@@ -107,10 +107,14 @@
                 <li>When satisfied, <b>submit</b> your recording</li>
             </ul>
             <div class="mb-4 w-full bg-blue-50 rounded p-4 border border-blue-100">
-                <span class="font-semibold">Story Passage:</span>
-                <p class="mt-2 text-gray-800 text-lg">
-                    Once upon a time, a little bird named Pip wanted to learn how to fly. Every day, Pip watched the other birds soar through the sky. One sunny morning, Pip spread his wings, took a deep breath, and jumped from his nest. He flapped and flapped, and soon he was flying! Pip was so happy, he sang a cheerful song for all his friends to hear.
-                </p>
+                <span class="font-semibold">Reading Content:</span>
+                <div id="readingContent" class="mt-2 text-gray-800 text-lg">
+                    <!-- Dynamic content will be loaded here -->
+                    <div class="text-center py-8">
+                        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                        <p class="mt-2 text-gray-600">Loading reading content...</p>
+                    </div>
+                </div>
             </div>
             <div class="flex flex-col items-center w-full mb-4">
                 <div id="recorder-visual" class="mb-2 flex items-center justify-center">
@@ -375,6 +379,80 @@
     
             
     
+            // --- Reading Content Loading Logic ---
+            let currentTaskId = null;
+            let currentTask = null;
+
+            function loadReadingContent() {
+                // Get task ID from URL parameters
+                const urlParams = new URLSearchParams(window.location.search);
+                currentTaskId = urlParams.get('task_id');
+                
+                if (!currentTaskId) {
+                    showError('No task selected. Please go back and select a reading task.');
+                    return;
+                }
+
+                // Fetch the reading task content
+                fetch(`/api/reading-task/${currentTaskId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            currentTask = data.task;
+                            displayReadingContent(data.task);
+                        } else {
+                            showError('Failed to load reading task: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading reading task:', error);
+                        showError('Failed to load reading task. Please try again.');
+                    });
+            }
+
+            function displayReadingContent(task) {
+                const contentDiv = document.getElementById('readingContent');
+                
+                // Update the title to show the task name
+                const titleElement = document.querySelector('h2');
+                if (titleElement) {
+                    titleElement.textContent = task.task_name;
+                }
+
+                // Display the reading content
+                contentDiv.innerHTML = `
+                    <div class="space-y-4">
+                        <div class="bg-white p-4 rounded border border-gray-200">
+                            <h3 class="font-semibold text-gray-700 mb-2">Instructions:</h3>
+                            <p class="text-gray-600">${task.instructions}</p>
+                        </div>
+                        <div class="bg-white p-4 rounded border border-gray-200">
+                            <h3 class="font-semibold text-gray-700 mb-2">Content to Read:</h3>
+                            <div class="text-gray-800 leading-relaxed whitespace-pre-wrap">${task.content}</div>
+                        </div>
+                        <div class="bg-gray-100 p-3 rounded text-sm text-gray-600">
+                            <strong>Difficulty:</strong> ${task.difficulty_level} | 
+                            <strong>Estimated Time:</strong> ${task.estimated_time} minutes
+                        </div>
+                    </div>
+                `;
+            }
+
+            function showError(message) {
+                const contentDiv = document.getElementById('readingContent');
+                contentDiv.innerHTML = `
+                    <div class="text-center py-8">
+                        <div class="text-red-600 text-6xl mb-4">⚠️</div>
+                        <h3 class="text-xl font-bold text-red-800 mb-2">Error Loading Task</h3>
+                        <p class="text-red-600 mb-4">${message}</p>
+                        <button onclick="window.location.href='/task1.html'" 
+                                class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+                            Back to Reading Tasks
+                        </button>
+                    </div>
+                `;
+            }
+
             // --- Audio Recording Logic ---
             let mediaRecorder, audioChunks = [], audioBlob;
             const recordBtn = document.getElementById('recordBtn');
@@ -388,8 +466,10 @@
             const recordingDot = document.getElementById('recording-dot');
             const uploadMsg = document.getElementById('uploadMsg');
 
-            // Load saved progress when page loads
+            // Load reading content when page loads
             document.addEventListener('DOMContentLoaded', function() {
+                loadReadingContent();
+                
                 // First check if task is already completed
                 fetch('/api/user-tasks')
                 .then(res => res.json())
@@ -508,6 +588,11 @@
                 uploadMsg.classList.add('hidden');
                 const formData = new FormData();
                 formData.append('audio', audioBlob, 'recording.webm');
+                // Add task information to form data
+                if (currentTask) {
+                    formData.append('task_name', currentTask.task_name);
+                }
+                
                 fetch('/api/upload-audio', {
                     method: 'POST',
                     body: formData
@@ -556,6 +641,10 @@
                 const formData = new FormData();
                 formData.append('audio', audioBlob, 'recording.webm');
                 formData.append('save_progress', 'true'); // Flag to indicate this is a save, not submit
+                // Add task information to form data
+                if (currentTask) {
+                    formData.append('task_name', currentTask.task_name);
+                }
                 fetch('/api/save-progress', {
                     method: 'POST',
                     body: formData

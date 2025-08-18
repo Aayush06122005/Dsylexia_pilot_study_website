@@ -113,6 +113,7 @@
 
         <!-- Task Cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-4">
+        
             {% for task in tasks %}
             <div class="card bg-white rounded-xl shadow-md p-6 flex flex-col items-center text-center">
                 {% if task.task_name == 'Reading Aloud Task 1' %}
@@ -125,6 +126,8 @@
                     <img src="{{ url_for('static', filename='math.jpg') }}" alt="Mathematical Comprehension" class="h-20 w-20 mb-4 rounded-full shadow">
                 {% elif task.task_name == 'Writing Task' %}
                     <img src="{{ url_for('static', filename='write.jpg') }}" alt="Writing Task" class="h-20 w-20 mb-4 rounded-full shadow">
+                    {% elif task.task_name == 'Aptitude Test' %}
+                    <img src="{{ url_for('static', filename='aptitude.png') }}" alt="Aptitude Test" class="h-20 w-20 mb-4 rounded-full shadow">
                 {% else %}
                     <div class="task-card">
                         <h3>{{ task.task_name }}</h3>
@@ -139,8 +142,9 @@
                     {% if task.task_name == 'Reading Aloud Task 1' %}Read a short story out loud. Click to begin!{% endif %}
                     {% if task.task_name == 'Typing Task' %}Type a short essay on the mentioned topic. {% endif %}
                     {% if task.task_name == 'Reading Comprehension' %}Read a passage and answer questions.{% endif %}
-                     {% if task.task_name == 'Mathematical Comprehension' %}Solve math-based comprehension questions.{% endif %}
+                    {% if task.task_name == 'Mathematical Comprehension' %}Solve math-based comprehension questions.{% endif %}
                     {% if task.task_name == 'Writing Task' %}Write a creative story or essay as instructed.{% endif %}
+                    {% if task.task_name == 'Aptitude Test' %}Test your logical, numerical, verbal, and spatial reasoning abilities.{% endif %}
                 </p>
                 <!-- {% if task.status == 'Not Started' %}
                     <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-yellow-200 text-yellow-800 mb-3">Not Started</span>
@@ -154,10 +158,13 @@
                 {% endif %} -->
                 {% if task.status == 'Not Started' %}
                     <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-yellow-200 text-yellow-800 mb-3">Not Started</span>
+                    <button class="primary-bg text-white px-4 py-2 rounded-md font-semibold mt-auto w-full transition task-btn" data-task="{{ task.task_name }}" data-status="Not Started">Start Task</button>
                 {% elif task.status == 'In Progress' %}
                     <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-200 text-blue-800 mb-3">In Progress</span>
+                    <button class="primary-bg text-white px-4 py-2 rounded-md font-semibold mt-auto w-full transition task-btn" data-task="{{ task.task_name }}" data-status="In Progress">Continue</button>
                 {% else %}
                     <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-green-200 text-green-800 mb-3">Completed</span>
+                    <button class="primary-bg text-white px-4 py-2 rounded-md font-semibold mt-auto w-full transition opacity-60 cursor-not-allowed" disabled>Completed</button>
                 {% endif %}
             </div>
             {% endfor %}
@@ -168,6 +175,7 @@
                 <h3 class="text-lg font-bold mb-2">Mathematical Comprehension</h3>
                 <p class="mb-4 text-gray-600">Solve math-based comprehension questions.</p>
                 <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-yellow-200 text-yellow-800 mb-3">Not Started</span>
+                <button class="primary-bg text-white px-4 py-2 rounded-md font-semibold mt-auto w-full transition task-btn" data-task="Mathematical Comprehension" data-status="Not Started">Start Task</button>
             </div>
             {% endif %}
 
@@ -178,6 +186,18 @@
                 <h3 class="text-lg font-bold mb-2">Writing Task</h3>
                 <p class="mb-4 text-gray-600">Write a creative story or essay as instructed.</p>
                 <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-yellow-200 text-yellow-800 mb-3">Not Started</span>
+                <button class="primary-bg text-white px-4 py-2 rounded-md font-semibold mt-auto w-full transition task-btn" data-task="Writing Task" data-status="Not Started">Start Task</button>
+            </div>
+            {% endif %}
+
+            <!-- Aptitude Test Card (if not already in tasks) -->
+            {% if not tasks|selectattr('task_name', 'equalto', 'Aptitude Test')|list %}
+            <div class="card bg-white rounded-xl shadow-md p-6 flex flex-col items-center text-center transition hover:shadow-lg hover:ring-2 hover:ring-blue-200">
+                <img src="{{ url_for('static', filename='aptitude.png') }}" alt="Aptitude Test" class="h-20 w-20 mb-4 rounded-full shadow">
+                <h3 class="text-lg font-bold mb-2">Aptitude Test</h3>
+                <p class="mb-4 text-gray-600">Test your logical, numerical, verbal, and spatial reasoning abilities.</p>
+                <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-yellow-200 text-yellow-800 mb-3">Not Started</span>
+                <button class="primary-bg text-white px-4 py-2 rounded-md font-semibold mt-auto w-full transition task-btn" data-task="Aptitude Test" data-status="Not Started">Start Task</button>
             </div>
             {% endif %}
 
@@ -351,68 +371,26 @@
 
         // Task status update logic
         const totalTasks = {{ total_tasks }};
-        const taskBtns = document.querySelectorAll('.task-btn');
+        
         function updateProgressBar(tasks) {
             const completed = tasks.filter(t => t.status === 'Completed').length;
             const progress = Math.round((completed / totalTasks) * 100);
             document.getElementById('progressBar').style.width = progress + '%';
             document.getElementById('progressText').textContent = `${completed} of ${totalTasks} tasks completed`;
         }
-        taskBtns.forEach(btn => {
-            btn.addEventListener('click', function() {
-                const taskName = this.getAttribute('data-task');
-                const status = this.getAttribute('data-status');
-                fetch('/api/user-tasks', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ task_name: taskName, status: status })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        // Refresh task statuses
-                        fetch('/api/user-tasks')
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.success) {
-                                // Update cards and progress bar
-                                data.tasks.forEach(task => {
-                                    const card = Array.from(document.querySelectorAll('.task-btn')).find(b => b.getAttribute('data-task') === task.task_name)?.closest('.card');
-                                    if (card) {
-                                        // Update status badge and button
-                                        const badge = card.querySelector('span');
-                                        const btn = card.querySelector('.task-btn');
-                                        if (task.status === 'Not Started') {
-                                            badge.textContent = 'Not Started';
-                                            badge.className = 'inline-block px-3 py-1 rounded-full text-xs font-semibold bg-yellow-200 text-yellow-800 mb-3';
-                                            btn.textContent = 'Start Task';
-                                            btn.setAttribute('data-status', 'Not Started');
-                                            btn.disabled = false;
-                                            btn.classList.remove('opacity-60', 'cursor-not-allowed');
-                                        } else if (task.status === 'In Progress') {
-                                            badge.textContent = 'In Progress';
-                                            badge.className = 'inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-200 text-blue-800 mb-3';
-                                            btn.textContent = 'Continue';
-                                            btn.setAttribute('data-status', 'In Progress');
-                                            btn.disabled = false;
-                                            btn.classList.remove('opacity-60', 'cursor-not-allowed');
-                                        } else {
-                                            badge.textContent = 'Completed';
-                                            badge.className = 'inline-block px-3 py-1 rounded-full text-xs font-semibold bg-green-200 text-green-800 mb-3';
-                                            btn.textContent = 'Completed';
-                                            btn.disabled = true;
-                                            btn.classList.add('opacity-60', 'cursor-not-allowed');
-                                        }
-                                    }
-                                });
-                                updateProgressBar(data.tasks);
-                            }
-                        });
-                    } else {
-                        alert('Failed to update task: ' + data.message);
-                    }
-                });
-            });
+        
+        // Add event listeners to task buttons
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('task-btn')) {
+                const taskName = e.target.getAttribute('data-task');
+                const status = e.target.getAttribute('data-status');
+                
+                // Navigate to the appropriate task page
+                const page = getTaskPage(taskName);
+                if (page) {
+                    window.location.href = '/' + page;
+                }
+            }
         });
 
         // Task navigation functionality
@@ -420,8 +398,9 @@
             if (taskName === 'Reading Aloud Task 1') return 'task1.html';
             if (taskName === 'Typing Task') return 'task2.html';
             if (taskName === 'Reading Comprehension') return 'task3.html';
-            if (taskName === 'Mathematical Comprehension') return 'task3.html';
-            if (taskName === 'Writing Task') return 'task3.html';
+            if (taskName === 'Mathematical Comprehension') return 'task4.html';
+            if (taskName === 'Writing Task') return 'task5.html';
+            if (taskName === 'Aptitude Test') return 'task6.html';
             else {// Convert task name to lowercase, replace spaces with underscores, remove special chars if needed
             const safeName = taskName.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
             return `task_${safeName}.html`;}
@@ -459,67 +438,17 @@
         // Call this function when page loads
         checkSavedProgress();
         
-        // Make cards clickable only if Not Started or In Progress
-        // document.querySelectorAll('.card').forEach(card => {
-        //     const title = card.querySelector('h3');
-        //     if (!title) return;
-        //     const taskName = title.textContent.trim();
-        //     const page = getTaskPage(taskName);
-        //     // Get status from the badge text
-        //     const badge = card.querySelector('span');
-        //     const status = badge ? badge.textContent.trim() : '';
-        //     if (page && (status === 'Not Started' || status === 'In Progress')) {
-        //         card.style.cursor = 'pointer';
-        //         card.addEventListener('click', function(e) {
-        //             // Prevent navigation if clicking a button inside the card
-        //             if (e.target.closest('button')) return;
-        //             window.location.href = page;
-        //         });
-        //     } else if (page && status === 'Completed') {
-        //         card.style.cursor = 'default';
-        //         card.addEventListener('click', function(e) {
-        //             // Prevent navigation if clicking a button inside the card
-        //             if (e.target.closest('button')) return;
-        //             alert('This task has been completed. You cannot re-enter it.');
-        //         });
-        //     } else {
-        //         card.style.cursor = 'default';
-        //     }
-        // });
-
-        document.querySelectorAll('.card').forEach(card => {
-        const title = card.querySelector('h3');
-        if (!title) return;
-        const taskName = title.textContent.trim();
-        const page = getTaskPage(taskName);
-        // Get status from the badge text
-        const badge = card.querySelector('span');
-        const status = badge ? badge.textContent.trim() : '';
-        if (page && (status === 'Not Started' || status === 'In Progress')) {
-            card.style.cursor = 'pointer';
-            card.addEventListener('click', function(e) {
-                window.location.href = page;
-            });
-        } else if (page && status === 'Completed') {
-            card.style.cursor = 'default';
-            card.addEventListener('click', function(e) {
-                alert('This task has been completed. You cannot re-enter it.');
-            });
-        } else {
-            card.style.cursor = 'default';
-        }
-    });
-        // Make task buttons open the correct page only if Not Started or In Progress
-        document.querySelectorAll('.task-btn').forEach(btn => {
-            const taskName = btn.getAttribute('data-task');
-            const status = btn.getAttribute('data-status');
-            const page = getTaskPage(taskName);
-            if (page && (status === 'Not Started' || status === 'In Progress')) {
-                btn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    window.location.href = '/'+ page;
-                });
+        // Refresh dashboard data when page becomes visible (returning from tasks)
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                // Page became visible, refresh data
+                location.reload();
             }
+        });
+        
+        // Make cards non-clickable since we now have buttons
+        document.querySelectorAll('.card').forEach(card => {
+            card.style.cursor = 'default';
         });
     </script>
 </body>

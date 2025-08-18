@@ -92,9 +92,59 @@
         </div>
     </div>
 
-    
-    
-        <!-- Footer -->
+    <!-- Main Content -->
+    <div class="content-wrapper mt-8 mb-16">
+        <!-- Welcome Section -->
+        <div class="bg-white rounded-xl shadow-md p-8 mb-8">
+            <h2 class="text-3xl font-bold mb-4 text-center text-gray-800">Welcome to Your Reading Tasks!</h2>
+            <p class="text-lg text-gray-600 text-center mb-6">
+                Based on your age, we've prepared personalized reading tasks just for you. 
+                Each task is designed to help improve your reading skills at your level.
+            </p>
+            <div id="userAgeInfo" class="text-center text-blue-600 font-semibold text-lg">
+                <!-- User age will be displayed here -->
+            </div>
+            <div id="ageMessage" class="text-center text-gray-500 text-sm mt-2">
+                <!-- Additional age-related messages will appear here -->
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="text-center py-12">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <p class="mt-4 text-gray-600">Loading your personalized reading tasks...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="errorState" class="hidden bg-red-50 border border-red-200 rounded-xl p-8 text-center">
+            <div class="text-red-600 text-6xl mb-4">⚠️</div>
+            <h3 class="text-xl font-bold text-red-800 mb-2">Oops! Something went wrong</h3>
+            <p id="errorMessage" class="text-red-600 mb-4">We couldn't load your reading tasks.</p>
+            <button onclick="loadReadingTasks()" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition">
+                Try Again
+            </button>
+        </div>
+
+        <!-- Reading Tasks Container -->
+        <div id="readingTasksContainer" class="hidden">
+            <h3 class="text-2xl font-bold mb-6 text-gray-800">Your Reading Tasks</h3>
+            <div id="tasksGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Reading tasks will be dynamically loaded here -->
+            </div>
+        </div>
+
+        <!-- No Tasks State -->
+        <div id="noTasksState" class="hidden bg-yellow-50 border border-yellow-200 rounded-xl p-8 text-center">
+            <div class="text-yellow-600 text-6xl mb-4">📚</div>
+            <h3 class="text-xl font-bold text-yellow-800 mb-2">No Reading Tasks Available</h3>
+            <p class="text-yellow-600 mb-4">We couldn't find reading tasks for your age group.</p>
+            <a href="/profile-setup" class="bg-yellow-600 text-white px-6 py-2 rounded-lg hover:bg-yellow-700 transition">
+                Update Profile
+            </a>
+        </div>
+    </div>
+
+    <!-- Footer -->
         <footer class="dark-bg text-white py-12 text-lg" style="background-color: #333333;">
             <div class="content-wrapper">
                 <div class="flex flex-col md:flex-row justify-between">
@@ -262,30 +312,239 @@
             });
     
             
-            // Task status logic for button
-           
+            // Reading Tasks Functionality
+            let currentUserAge = null;
+            let currentTasks = [];
+
             document.addEventListener('DOMContentLoaded', function() {
-                const btn = document.getElementById('startTaskBtn');
-                // Always check for saved progress
-                fetch('/api/get-saved-progress')
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success && data.saved_audio) {
-                        // There's saved progress, change button to "Continue Task"
-                        if (btn) {
-                            btn.textContent = 'Continue Task';
-                            btn.classList.add('bg-green-600', 'hover:bg-green-700');
-                            btn.classList.remove('primary-bg');
+                // Load reading tasks when page loads
+                loadReadingTasks();
+            });
+
+            function loadReadingTasks() {
+                const userId = {{ user_id }};
+                
+                // Show loading state
+                showState('loading');
+                
+                console.log('Loading reading tasks for user:', userId);
+                
+                fetch(`/api/reading-tasks/${userId}`)
+                    .then(response => {
+                        console.log('Response status:', response.status);
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Response data:', data);
+                        if (data.success) {
+                            currentUserAge = data.user_age;
+                            currentTasks = data.tasks;
+                            displayReadingTasks(data.tasks, data.user_age);
+                        } else {
+                            showError(data.message || 'Unknown error occurred');
                         }
+                    })
+                    .catch(error => {
+                        console.error('Error loading reading tasks:', error);
+                        showError('Network error. Please check your connection and try again.');
+                    });
+            }
+
+            function displayReadingTasks(tasks, userAge) {
+                // Update user age info
+                if (userAge === 'Not specified') {
+                    document.getElementById('userAgeInfo').innerHTML = `
+                        <span class="text-yellow-600">Age: Not specified</span>
+                        <br><span class="text-sm text-gray-500">Showing all available tasks</span>
+                    `;
+                    document.getElementById('ageMessage').innerHTML = `
+                        <span class="text-yellow-600">⚠️</span> 
+                        <a href="/profile-setup" class="text-blue-600 hover:underline">Complete your profile setup</a> 
+                        to get personalized reading tasks based on your age.
+                    `;
+                } else {
+                    document.getElementById('userAgeInfo').textContent = `Age: ${userAge} years`;
+                    document.getElementById('ageMessage').textContent = 'These tasks are personalized for your reading level.';
+                }
+                
+                if (!tasks || tasks.length === 0) {
+                    showState('noTasks');
+                    return;
+                }
+
+                const tasksGrid = document.getElementById('tasksGrid');
+                tasksGrid.innerHTML = '';
+
+                tasks.forEach((task, index) => {
+                    const taskCard = createTaskCard(task, index);
+                    tasksGrid.appendChild(taskCard);
+                });
+
+                showState('tasks');
+            }
+
+            function createTaskCard(task, index) {
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow';
+                
+                // Determine difficulty color
+                let difficultyColor = 'bg-gray-500';
+                let difficultyText = 'text-gray-500';
+                
+                switch(task.difficulty_level) {
+                    case 'Easy':
+                        difficultyColor = 'bg-green-500';
+                        difficultyText = 'text-green-500';
+                        break;
+                    case 'Medium':
+                        difficultyColor = 'bg-yellow-500';
+                        difficultyText = 'text-yellow-500';
+                        break;
+                    case 'Hard':
+                        difficultyColor = 'bg-red-500';
+                        difficultyText = 'text-red-500';
+                        break;
+                }
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <h3 class="text-xl font-bold text-gray-800">${task.task_name}</h3>
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold ${difficultyColor} text-white">
+                            ${task.difficulty_level}
+                        </span>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <p class="text-sm text-gray-600 mb-2">
+                            <strong>Instructions:</strong> ${task.instructions}
+                        </p>
+                        <p class="text-sm text-gray-600">
+                            <strong>Estimated Time:</strong> ${task.estimated_time} minutes
+                        </p>
+                    </div>
+                    
+                    <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                        <p class="text-sm font-medium text-gray-700 mb-2">Content to read:</p>
+                        <div class="text-sm text-gray-600 leading-relaxed max-h-32 overflow-y-auto">
+                            ${task.content}
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-3">
+                        <button onclick="startReadingTask(${task.id}, '${task.task_name}')" 
+                                class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium">
+                            Start Reading
+                        </button>
+                        <button onclick="previewTask(${index})" 
+                                class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                            Preview
+                        </button>
+                    </div>
+                `;
+                
+                return card;
+            }
+
+            function startReadingTask(taskId, taskName) {
+                // Mark task as started
+                fetch('/api/start-reading-task', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        task_id: taskId,
+                        task_name: taskName
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Redirect to the actual reading task page with task ID
+                        window.location.href = "{{ url_for('task11') }}?task_id=" + taskId;
+                    } else {
+                        alert('Failed to start task: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error starting task:', error);
+                    alert('Error starting task. Please try again.');
+                });
+            }
+
+            function previewTask(taskIndex) {
+                const task = currentTasks[taskIndex];
+                if (!task) return;
+
+                // Create a modal to preview the task
+                const modal = document.createElement('div');
+                modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                modal.innerHTML = `
+                    <div class="bg-white rounded-xl p-8 max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-2xl font-bold text-gray-800">${task.task_name}</h3>
+                            <button onclick="this.closest('.fixed').remove()" class="text-2xl text-gray-500 hover:text-gray-700">&times;</button>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <p class="text-gray-600 mb-4"><strong>Instructions:</strong> ${task.instructions}</p>
+                            <p class="text-gray-600"><strong>Estimated Time:</strong> ${task.estimated_time} minutes</p>
+                        </div>
+                        
+                        <div class="bg-gray-50 p-6 rounded-lg">
+                            <p class="text-lg font-medium text-gray-700 mb-3">Content to read:</p>
+                            <div class="text-gray-600 leading-relaxed">
+                                ${task.content}
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 text-center">
+                            <button onclick="startReadingTask(${task.id}, '${task.task_name}')" 
+                                    class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-medium">
+                                Start This Task
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                
+                // Close modal when clicking outside
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        modal.remove();
                     }
                 });
-                if (btn) {
-                    btn.addEventListener('click', function() {
-                        // Always redirect to task11.html (the actual task page)
-                                window.location.href = "{{ url_for('task11') }}";
-                    });
+            }
+
+            function showState(state) {
+                // Hide all states
+                document.getElementById('loadingState').classList.add('hidden');
+                document.getElementById('errorState').classList.add('hidden');
+                document.getElementById('readingTasksContainer').classList.add('hidden');
+                document.getElementById('noTasksState').classList.add('hidden');
+                
+                // Show the requested state
+                switch(state) {
+                    case 'loading':
+                        document.getElementById('loadingState').classList.remove('hidden');
+                        break;
+                    case 'error':
+                        document.getElementById('errorState').classList.remove('hidden');
+                        break;
+                    case 'tasks':
+                        document.getElementById('readingTasksContainer').classList.remove('hidden');
+                        break;
+                    case 'noTasks':
+                        document.getElementById('noTasksState').classList.remove('hidden');
+                        break;
                 }
-            });
+            }
+
+            function showError(message) {
+                document.getElementById('errorMessage').textContent = message;
+                showState('error');
+            }
 
 
     

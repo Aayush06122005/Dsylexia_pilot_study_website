@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aptitude Test - Dyslexia Research Study</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='landing_style.css') }}">
+    <style>
+        .question-container {
+            display: none;
+        }
+        .question-container.active {
+            display: block;
+        }
+        .option-btn {
+            transition: all 0.3s ease;
+        }
+        .option-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .option-btn.selected {
+            background-color: #1A237E;
+            color: white;
+        }
+        .progress-bar {
+            transition: width 0.5s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="primary-bg text-white py-6">
+        <div class="content-wrapper flex justify-between items-center">
+            <div class="flex items-center">
+                <img src="{{ url_for('static', filename='gauge.png') }}" alt="Dashboard Graphic" class="h-12 w-12 rounded-full mr-4 hidden md:block">
+                <h1 class="text-xl md:text-2xl font-bold">Aptitude Test</h1>
+            </div>
+            <nav>
+                <ul class="flex space-x-6 text-lg md:text-xl items-center">
+                    <li><a href="/participant-dashboard" class="hover:text-yellow-100 transition">Dashboard</a></li>
+                    <li><a href="/profile" class="hover:text-yellow-100 transition">Profile</a></li>
+                    <li><a href="#" id="logoutBtn" class="hover:text-yellow-100 transition">Logout</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="content-wrapper mt-8 mb-16">
+        <!-- Progress Bar -->
+        <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Test Progress</h2>
+                <span id="progressText" class="text-lg font-semibold text-blue-600">0%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-4">
+                <div id="progressBar" class="bg-blue-600 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div id="instructions" class="bg-white rounded-xl shadow-md p-8 mb-8">
+            <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Aptitude Test Instructions</h2>
+            <div class="max-w-3xl mx-auto space-y-4 text-gray-700">
+                <p class="text-lg">Welcome to the Aptitude Test! This test consists of four sections designed to assess different cognitive abilities:</p>
+                <ul class="list-disc list-inside space-y-2 ml-4">
+                    <li><strong>Logical Reasoning:</strong> Solve puzzles and identify patterns</li>
+                    <li><strong>Numerical Ability:</strong> Work with numbers and mathematical concepts</li>
+                    <li><strong>Verbal Ability:</strong> Understand and work with language</li>
+                    <li><strong>Spatial Reasoning:</strong> Visualize and manipulate spatial relationships</li>
+                </ul>
+                <p class="text-lg"><strong>Time:</strong> Each section takes approximately 10-15 minutes</p>
+                <p class="text-lg"><strong>Instructions:</strong> Read each question carefully and select the best answer</p>
+                <p class="text-lg"><strong>Note:</strong> You can save your progress and return later</p>
+            </div>
+            <div class="text-center mt-8">
+                <button id="startTest" class="primary-bg text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition">
+                    Start Test
+                </button>
+            </div>
+        </div>
+
+        <!-- Test Sections -->
+        <div id="testSections" class="hidden">
+            <!-- Section Navigation -->
+            <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+                <div class="flex flex-wrap justify-center gap-4">
+                    <button class="section-nav px-4 py-2 rounded-lg font-medium transition" data-section="logical">Logical Reasoning</button>
+                    <button class="section-nav px-4 py-2 rounded-lg font-medium transition" data-section="numerical">Numerical Ability</button>
+                    <button class="section-nav px-4 py-2 rounded-lg font-medium transition" data-section="verbal">Verbal Ability</button>
+                    <button class="section-nav px-4 py-2 rounded-lg font-medium transition" data-section="spatial">Spatial Reasoning</button>
+                </div>
+            </div>
+
+            <!-- Logical Reasoning Section -->
+            <div id="logicalSection" class="question-container active">
+                <div class="bg-white rounded-xl shadow-md p-8 mb-8">
+                    <h3 class="text-2xl font-bold mb-6 text-center text-gray-800">Logical Reasoning</h3>
+                    <div class="max-w-2xl mx-auto">
+                        <div class="question mb-8">
+                            <p class="text-lg font-medium mb-4">1. Which number comes next in the sequence: 2, 6, 12, 20, 30, ?</p>
+                            <div class="grid grid-cols-2 gap-4">
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="42">42</button>
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="44">44</button>
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="40">40</button>
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="38">38</button>
+                            </div>
+                        </div>
+                        <div class="question mb-8">
+                            <p class="text-lg font-medium mb-4">2. If all roses are flowers and some flowers are red, then:</p>
+                            <div class="space-y-3">
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-left hover:border-blue-500" data-value="all_roses_red">All roses are red</button>
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-left hover:border-blue-500" data-value="some_roses_red">Some roses are red</button>
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-left hover:border-blue-500" data-value="no_roses_red">No roses are red</button>
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-left hover:border-blue-500" data-value="cannot_determine">Cannot determine</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Numerical Ability Section -->
+            <div id="numericalSection" class="question-container">
+                <div class="bg-white rounded-xl shadow-md p-8 mb-8">
+                    <h3 class="text-2xl font-bold mb-6 text-center text-gray-800">Numerical Ability</h3>
+                    <div class="max-w-2xl mx-auto">
+                        <div class="question mb-8">
+                            <p class="text-lg font-medium mb-4">1. What is 25% of 80?</p>
+                            <div class="grid grid-cols-2 gap-4">
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="15">15</button>
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="20">20</button>
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="25">25</button>
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="30">30</button>
+                            </div>
+                        </div>
+                        <div class="question mb-8">
+                            <p class="text-lg font-medium mb-4">2. If a train travels 120 km in 2 hours, what is its speed in km/h?</p>
+                            <div class="grid grid-cols-2 gap-4">
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="40">40 km/h</button>
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="50">50 km/h</button>
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="60">60 km/h</button>
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="70">70 km/h</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Verbal Ability Section -->
+            <div id="verbalSection" class="question-container">
+                <div class="bg-white rounded-xl shadow-md p-8 mb-8">
+                    <h3 class="text-2xl font-bold mb-6 text-center text-gray-800">Verbal Ability</h3>
+                    <div class="max-w-2xl mx-auto">
+                        <div class="question mb-8">
+                            <p class="text-lg font-medium mb-4">1. Choose the word that best completes the analogy: Book is to Reading as Fork is to:</p>
+                            <div class="grid grid-cols-2 gap-4">
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="eating">Eating</button>
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="cooking">Cooking</button>
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="cutting">Cutting</button>
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="washing">Washing</button>
+                            </div>
+                        </div>
+                        <div class="question mb-8">
+                            <p class="text-lg font-medium mb-4">2. Which word is a synonym for "Eloquent"?</p>
+                            <div class="grid grid-cols-2 gap-4">
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="silent">Silent</button>
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="articulate">Articulate</button>
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="quiet">Quiet</button>
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="shy">Shy</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Spatial Reasoning Section -->
+            <div id="spatialSection" class="question-container">
+                <div class="bg-white rounded-xl shadow-md p-8 mb-8">
+                    <h3 class="text-2xl font-bold mb-6 text-center text-gray-800">Spatial Reasoning</h3>
+                    <div class="max-w-2xl mx-auto">
+                        <div class="question mb-8">
+                            <p class="text-lg font-medium mb-4">1. If you fold a piece of paper in half twice, how many layers will you have?</p>
+                            <div class="grid grid-cols-2 gap-4">
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="2">2 layers</button>
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="3">3 layers</button>
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="4">4 layers</button>
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="6">6 layers</button>
+                            </div>
+                        </div>
+                        <div class="question mb-8">
+                            <p class="text-lg font-medium mb-4">2. Which shape would you get if you rotate a square 90 degrees clockwise?</p>
+                            <div class="grid grid-cols-2 gap-4">
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="same_square">Same square</button>
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="rectangle">Rectangle</button>
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="diamond">Diamond</button>
+                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="triangle">Triangle</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <div class="flex justify-between items-center">
+                    <button id="saveProgress" class="bg-yellow-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-yellow-600 transition">
+                        Save Progress
+                    </button>
+                    <button id="submitTest" class="primary-bg text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
+                        Submit Test
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="dark-bg text-white py-12 text-lg" style="background-color: #333333;">
+        <div class="content-wrapper text-center">
+            <p>&copy; 2025 Leveraging NLP for Dyslexia Identification. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Test state
+        let currentSection = 'logical';
+        let answers = {
+            logical: {},
+            numerical: {},
+            verbal: {},
+            spatial: {}
+        };
+        let totalQuestions = 8; // 2 questions per section
+        let answeredQuestions = 0;
+
+        // DOM elements
+        const instructions = document.getElementById('instructions');
+        const testSections = document.getElementById('testSections');
+        const startTestBtn = document.getElementById('startTest');
+        const sectionNavs = document.querySelectorAll('.section-nav');
+        const sections = document.querySelectorAll('.question-container');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const saveProgressBtn = document.getElementById('saveProgress');
+        const submitTestBtn = document.getElementById('submitTest');
+
+        // Start test
+        startTestBtn.addEventListener('click', () => {
+            instructions.style.display = 'none';
+            testSections.classList.remove('hidden');
+            loadSavedProgress();
+        });
+
+        // Section navigation
+        sectionNavs.forEach(nav => {
+            nav.addEventListener('click', () => {
+                const section = nav.dataset.section;
+                showSection(section);
+                updateNavigation();
+            });
+        });
+
+        function showSection(sectionName) {
+            currentSection = sectionName;
+            sections.forEach(section => section.classList.remove('active'));
+            document.getElementById(sectionName + 'Section').classList.add('active');
+        }
+
+        function updateNavigation() {
+            sectionNavs.forEach(nav => {
+                if (nav.dataset.section === currentSection) {
+                    nav.classList.add('bg-blue-600', 'text-white');
+                    nav.classList.remove('bg-gray-200', 'text-gray-700');
+                } else {
+                    nav.classList.remove('bg-blue-600', 'text-white');
+                    nav.classList.add('bg-gray-200', 'text-gray-700');
+                }
+            });
+        }
+
+        // Handle option selection
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('option-btn')) {
+                const questionContainer = e.target.closest('.question');
+                const questionIndex = Array.from(questionContainer.parentNode.children).indexOf(questionContainer);
+                const section = currentSection;
+                
+                // Remove previous selection from this question
+                questionContainer.querySelectorAll('.option-btn').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+                
+                // Select new option
+                e.target.classList.add('selected');
+                
+                // Store answer
+                answers[section][questionIndex] = e.target.dataset.value;
+                
+                updateProgress();
+            }
+        });
+
+        function updateProgress() {
+            answeredQuestions = Object.values(answers).reduce((total, section) => {
+                return total + Object.keys(section).length;
+            }, 0);
+            
+            const progress = Math.round((answeredQuestions / totalQuestions) * 100);
+            progressBar.style.width = progress + '%';
+            progressText.textContent = progress + '%';
+        }
+
+        // Save progress
+        saveProgressBtn.addEventListener('click', () => {
+            const scores = calculateScores();
+            saveProgress(scores);
+        });
+
+        function calculateScores() {
+            const scores = {
+                logical_reasoning_score: 0,
+                numerical_ability_score: 0,
+                verbal_ability_score: 0,
+                spatial_reasoning_score: 0,
+                total_score: 0
+            };
+
+            // Calculate scores based on correct answers (simplified scoring)
+            Object.keys(answers).forEach(section => {
+                const sectionAnswers = answers[section];
+                let sectionScore = 0;
+                
+                Object.keys(sectionAnswers).forEach(questionIndex => {
+                    // Simple scoring - each answered question gets 1 point
+                    sectionScore += 1;
+                });
+                
+                scores[section + '_score'] = sectionScore;
+                scores.total_score += sectionScore;
+            });
+
+            return scores;
+        }
+
+        function saveProgress(scores) {
+            fetch('/api/save-aptitude-progress', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(scores)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Progress saved successfully!');
+                } else {
+                    alert('Failed to save progress: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error saving progress:', error);
+                alert('Error saving progress. Please try again.');
+            });
+        }
+
+        // Submit test
+        submitTestBtn.addEventListener('click', () => {
+            if (answeredQuestions < totalQuestions) {
+                if (!confirm('You have not answered all questions. Are you sure you want to submit?')) {
+                    return;
+                }
+            }
+            
+            const scores = calculateScores();
+            submitTest(scores);
+        });
+
+        function submitTest(scores) {
+            fetch('/api/submit-aptitude', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(scores)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Test submitted successfully! Your score: ' + scores.total_score + '/' + totalQuestions);
+                    window.location.href = '/participant-dashboard';
+                } else {
+                    alert('Failed to submit test: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error submitting test:', error);
+                alert('Error submitting test. Please try again.');
+            });
+        }
+
+        // Load saved progress
+        function loadSavedProgress() {
+            fetch('/api/get-aptitude-progress')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.progress) {
+                    // Restore answers from saved progress
+                    // This is a simplified restoration - in a real app you'd store the actual answers
+                    console.log('Loaded saved progress:', data.progress);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading progress:', error);
+            });
+        }
+
+        // Logout functionality
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            fetch('/api/logout', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                localStorage.clear();
+                window.location.href = '/';
+            })
+            .catch(() => {
+                localStorage.clear();
+                window.location.href = '/';
+            });
+        });
+
+        // Initialize
+        updateNavigation();
+    </script>
+</body>
+</html>
+

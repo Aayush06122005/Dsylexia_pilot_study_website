@@ -247,9 +247,14 @@
                     <div class="bg-white p-6 rounded-lg shadow-md mb-8">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-lg font-semibold text-gray-700">Current Tasks</h3>
-                            <button onclick="addNewTask()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-                                Add New Task
-                            </button>
+                            <div class="flex space-x-2">
+                                <button onclick="loadTaskData()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                                    Refresh Tasks
+                                </button>
+                                <button onclick="addNewTask()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                                    Add New Task
+                                </button>
+                            </div>
                         </div>
                         
                         <div class="overflow-x-auto">
@@ -259,14 +264,21 @@
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Task Name</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Participants</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estimated Time</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tasksTableBody" class="divide-y divide-gray-200">
-                                    <!-- Task data will be populated here -->
+                                    <tr>
+                                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                                            Loading tasks... Click "Refresh Tasks" to load data.
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
+                        </div>
+                        <div id="taskError" class="hidden mt-4 p-4 bg-red-100 border border-red-300 rounded-lg">
+                            <p class="text-red-700" id="taskErrorMessage"></p>
                         </div>
                     </div>
 
@@ -708,34 +720,67 @@
         // Task management functions
         async function loadTaskData() {
             try {
+                console.log('Loading task data...');
+                
+                // Hide any previous errors
+                document.getElementById('taskError').classList.add('hidden');
+                
                 const response = await fetch('/api/admin/tasks');
                 const data = await response.json();
                 
+                console.log('Task data response:', data);
+                
                 if (data.success) {
+                    console.log('Tasks found:', data.tasks);
                     displayTasks(data.tasks);
                     displayTaskParameters(data.tasks);
+                } else {
+                    console.error('Failed to load tasks:', data.message);
+                    showTaskError(data.message || 'Failed to load tasks');
                 }
             } catch (error) {
                 console.error('Error loading task data:', error);
+                showTaskError('Network error: ' + error.message);
             }
+        }
+
+        function showTaskError(message) {
+            const errorDiv = document.getElementById('taskError');
+            const errorMessage = document.getElementById('taskErrorMessage');
+            errorMessage.textContent = message;
+            errorDiv.classList.remove('hidden');
         }
 
         function displayTasks(tasks) {
             const tbody = document.getElementById('tasksTableBody');
             tbody.innerHTML = '';
             
+            // Clear any errors when tasks are displayed
+            document.getElementById('taskError').classList.add('hidden');
+            
+            if (!tasks || tasks.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                            No tasks found in the database
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
             tasks.forEach(task => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${task.task_name}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${task.type}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${task.task_name || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${task.description ? 'Core Task' : 'N/A'}</td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 py-1 text-xs rounded ${task.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">${task.status}</span>
+                        <span class="px-2 py-1 text-xs rounded bg-green-100 text-green-800">Active</span>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${task.participant_count}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${task.estimated_time || 'N/A'}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button onclick="editTask(${task.id})" class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-                        <button onclick="toggleTask(${task.id})" class="text-yellow-600 hover:text-yellow-900 mr-3">${task.status === 'Active' ? 'Disable' : 'Enable'}</button>
+                        <button onclick="viewTaskDetails(${task.id})" class="text-green-600 hover:text-green-900 mr-3">View</button>
                         <button onclick="deleteTask(${task.id})" class="text-red-600 hover:text-red-900">Delete</button>
                     </td>
                 `;
@@ -746,13 +791,22 @@
 
         function displayTaskParameters(tasks) {
             const container = document.getElementById('taskParameters');
+            container.innerHTML = '';
+            
+            if (!tasks || tasks.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center">No task parameters available</p>';
+                return;
+            }
+            
             container.innerHTML = tasks.map(task => `
                 <div class="border border-gray-200 rounded p-4">
-                    <h4 class="font-semibold text-gray-700 mb-2">${task.task_name}</h4>
+                    <h4 class="font-semibold text-gray-700 mb-2">${task.task_name || 'Unnamed Task'}</h4>
                     <div class="space-y-2 text-sm">
-                        <p><strong>Duration:</strong> ${task.duration || 'Variable'}</p>
-                        <p><strong>Instructions:</strong> ${task.instructions || 'Standard'}</p>
-                        <p><strong>Data Collection:</strong> ${task.data_collection || 'Automatic'}</p>
+                        <p><strong>Description:</strong> ${task.description || 'No description available'}</p>
+                        <p><strong>Estimated Time:</strong> ${task.estimated_time || 'Not specified'}</p>
+                        <p><strong>Instructions:</strong> ${task.instructions || 'Standard instructions'}</p>
+                        <p><strong>Devices Required:</strong> ${task.devices_required || 'Computer with internet'}</p>
+                        <p><strong>Example:</strong> ${task.example || 'No example provided'}</p>
                     </div>
                 </div>
             `).join('');
@@ -859,6 +913,32 @@
 
         function toggleTask(taskId) {
             alert(`Toggle task ${taskId} status functionality.`);
+        }
+
+        function viewTaskDetails(taskId) {
+            // Fetch current task details
+            fetch(`/api/admin/tasks`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const task = data.tasks.find(t => t.id === taskId);
+                        if (!task) return alert('Task not found');
+                        
+                        const details = `
+Task Name: ${task.task_name || 'N/A'}
+Description: ${task.description || 'N/A'}
+Instructions: ${task.instructions || 'N/A'}
+Estimated Time: ${task.estimated_time || 'N/A'}
+Devices Required: ${task.devices_required || 'N/A'}
+Example: ${task.example || 'N/A'}
+                        `;
+                        alert(details);
+                    }
+                })
+                .catch(err => {
+                    alert('Error loading task details');
+                    console.error(err);
+                });
         }
 
         // Utility functions

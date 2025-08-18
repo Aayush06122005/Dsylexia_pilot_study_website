@@ -32,6 +32,9 @@
                     <li>
                         <a href="/school-signup" class="hover:text-yellow-100 transition">Sign Up as School</a>
                     </li>
+                    <li>
+                        <a href="/admin/login" class="hover:text-yellow-100 transition bg-yellow-500 text-blue-900 px-3 py-1 rounded">Admin</a>
+                    </li>
                 </ul> 
             </nav>
         </div>    
@@ -421,6 +424,17 @@
                     Learn More
                 </button>
             </div>
+            
+            <!-- Admin Access Section -->
+            <div class="mt-12 pt-8 border-t border-white border-opacity-20">
+                <h3 class="text-xl font-semibold mb-4">Research Team Access</h3>
+                <p class="text-lg mb-4 text-blue-100">
+                    Are you a researcher or administrator? Access the research portal to monitor progress and manage data.
+                </p>
+                <a href="/admin/login" class="inline-block bg-yellow-500 text-blue-900 hover:bg-yellow-400 font-medium py-3 px-8 rounded-lg transition">
+                    Admin Portal
+                </a>
+            </div>
         </div>
     </section>
 
@@ -453,6 +467,7 @@
                         <ul class="space-y-2">
                             <li><a href="{{ url_for('learn_more') }}#faq" class="text-gray-400 hover:text-white transition">FAQs</a></li>
                             <li><a href="#" class="text-gray-400 hover:text-white transition">Privacy Policy</a></li>
+                            <li><a href="/admin/login" class="text-gray-400 hover:text-white transition">Admin Portal</a></li>
                             <!-- <li><a href="#" class="text-gray-400 hover:text-white transition">Terms of Service</a></li> -->
                         </ul>
                     </div>

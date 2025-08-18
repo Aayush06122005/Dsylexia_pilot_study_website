@@ -21,7 +21,7 @@ DB_CONFIG = {
     "host": os.getenv("MYSQLHOST", "localhost"),
     "user": os.getenv("MYSQLUSER", "root"),
     "password": os.getenv("MYSQLPASSWORD", ""),
-    "database": os.getenv("MYSQLDATABASE", "dyslexia_study"),
+    "database": os.getenv("MYSQLDATABASE", "aviendbnew"),
     "port": int(os.getenv("MYSQLPORT", 3306))
 }
 def connect_db():
@@ -35,7 +35,7 @@ def connect_db():
         return None
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
-ALLOWED_EXTENSIONS = {'wav', 'webm', 'mp3', 'ogg', 'm4a'}
+ALLOWED_EXTENSIONS = {'wav', 'webm', 'mp3', 'ogg', 'm4a', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'webp'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 if not os.path.exists(UPLOAD_FOLDER):
@@ -1022,6 +1022,23 @@ def test_db():
     except Exception as e:
         return jsonify({'success': False, 'message': f'Database error: {str(e)}'})
 
+@app.route('/test-tasks')
+def test_tasks():
+    """Test tasks table."""
+    try:
+        conn = connect_db()
+        if conn:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("SELECT * FROM tasks")
+            tasks = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            return jsonify({'success': True, 'message': f'Found {len(tasks)} tasks', 'tasks': tasks})
+        else:
+            return jsonify({'success': False, 'message': 'Database connection failed'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Database error: {str(e)}'})
+
 @app.route('/test-session')
 def test_session():
     """Test session data."""
@@ -1083,19 +1100,40 @@ def participant_dashboard():
         try:
             conn = connect_db()
             cursor = conn.cursor(dictionary=True)
-            # Get all tasks
+            
+            # Define the core tasks for progress calculation
+            core_tasks = [
+                'Reading Aloud Task 1',
+                'Typing Task', 
+                'Reading Comprehension',
+                'Mathematical Comprehension',
+                'Writing Task',
+                'Aptitude Test'
+            ]
+            
+            # Get all available tasks from database
             cursor.execute("SELECT task_name FROM tasks")
-            all_tasks = [row['task_name'] for row in cursor.fetchall()]
+            db_tasks = [row['task_name'] for row in cursor.fetchall()]
+            
             # Get user task statuses
             cursor.execute("SELECT task_name, status FROM user_tasks WHERE user_id = %s", (user_id,))
-            db_tasks = {t['task_name']: t['status'] for t in cursor.fetchall()}
-            # Merge
-            for t in all_tasks:
-                status = db_tasks.get(t, 'Not Started')
-                tasks.append({'task_name': t, 'status': status})
-            total_tasks = len(tasks)
-            completed = sum(1 for t in tasks if t['status'] == 'Completed')
+            user_task_statuses = {t['task_name']: t['status'] for t in cursor.fetchall()}
+            
+            # Create task list with statuses
+            for task_name in db_tasks:
+                status = user_task_statuses.get(task_name, 'Not Started')
+                tasks.append({'task_name': task_name, 'status': status})
+            
+            # Calculate progress based on core tasks only
+            core_task_statuses = []
+            for core_task in core_tasks:
+                status = user_task_statuses.get(core_task, 'Not Started')
+                core_task_statuses.append(status)
+            
+            total_tasks = len(core_tasks)
+            completed = sum(1 for status in core_task_statuses if status == 'Completed')
             progress = int((completed / total_tasks) * 100) if total_tasks > 0 else 0
+            
             cursor.close()
             conn.close()
         except Exception as e:
@@ -1118,6 +1156,9 @@ def extra2():
 
 @app.route('/admin')
 def admin_portal():
+    if not session.get('is_admin'):
+        flash('Please log in as admin to access this page', 'error')
+        return redirect(url_for('admin_login'))
     return render_template('admin.html')
 
 @app.route('/admin/login', methods=['GET', 'POST'])
@@ -1252,19 +1293,38 @@ def update_profile():
 
 @app.route('/task1.html')
 def task1():
-    return render_template('task1.html')
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('signin'))
+    return render_template('task1.html', user_id=user_id)
 
 @app.route('/task2.html')
 def task2():
-    return render_template('task2.html')
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('signin'))
+    return render_template('task2.html', user_id=user_id)
 
 @app.route('/task3.html')
 def task3():
-    return render_template('task3.html')
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('signin'))
+    return render_template('task3.html', user_id=user_id)
+
+@app.route('/task4.html')
+def task4():
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('signin'))
+    return render_template('task4.html', user_id=user_id)
 
 @app.route('/task11.html')
 def task11():
-    return render_template('task11.html')
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('signin'))
+    return render_template('task11.html', user_id=user_id)
 
 @app.route('/task22.html')
 def task22():
@@ -1273,6 +1333,38 @@ def task22():
 @app.route('/task33.html')
 def task33():
     return render_template('task33.html')
+
+@app.route('/task44.html')
+def task44():
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('signin'))
+    return render_template('task44.html', user_id=user_id)
+
+@app.route('/task5.html')
+def task5():
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('signin'))
+    return render_template('task5.html', user_id=user_id)
+
+@app.route('/task55.html')
+def task55():
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('signin'))
+    return render_template('task55.html', user_id=user_id)
+
+@app.route('/task6.html')
+def task6():
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('signin'))
+    return render_template('task6.html', user_id=user_id)
+
+@app.route('/aptitude.html')
+def aptitude():
+    return render_template('aptitude.html')
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -1390,6 +1482,7 @@ def save_typing_progress():
     text = data.get('text', '')
     keystrokes = data.get('keystrokes', '')
     timer = data.get('timer', '')
+    task_name = data.get('task_name', 'Typing Task')
     if not text:
         return jsonify({'success': False, 'message': 'No text provided'}), 400
     try:
@@ -1406,7 +1499,7 @@ def save_typing_progress():
             INSERT INTO user_tasks (user_id, task_name, status)
             VALUES (%s, %s, %s)
             ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
-        ''', (session['user_id'], 'Typing Task', 'In Progress'))
+        ''', (session['user_id'], task_name, 'In Progress'))
         conn.commit()
         cursor.close()
         conn.close()
@@ -1423,6 +1516,7 @@ def submit_typing_task():
     text = data.get('text', '')
     keystrokes = data.get('keystrokes', '')
     timer = data.get('timer', '')
+    task_name = data.get('task_name', 'Typing Task')
     if not text:
         return jsonify({'success': False, 'message': 'No text provided'}), 400
     try:
@@ -1439,7 +1533,7 @@ def submit_typing_task():
             INSERT INTO user_tasks (user_id, task_name, status)
             VALUES (%s, %s, %s)
             ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
-        ''', (session['user_id'], 'Typing Task', 'Completed'))
+        ''', (session['user_id'], task_name, 'Completed'))
         conn.commit()
         cursor.close()
         conn.close()
@@ -1477,6 +1571,7 @@ def save_comprehension_progress():
     q1 = data.get('q1', '')
     q2 = data.get('q2', '')
     q3 = data.get('q3', '')
+    task_name = data.get('task_name', 'Reading Comprehension')
     try:
         conn = connect_db()
         cursor = conn.cursor()
@@ -1490,7 +1585,7 @@ def save_comprehension_progress():
             INSERT INTO user_tasks (user_id, task_name, status)
             VALUES (%s, %s, %s)
             ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
-        ''', (session['user_id'], 'Reading Comprehension', 'In Progress'))
+        ''', (session['user_id'], task_name, 'In Progress'))
         conn.commit()
         cursor.close()
         conn.close()
@@ -1528,6 +1623,7 @@ def submit_comprehension():
     q1 = data.get('q1', '')
     q2 = data.get('q2', '')
     q3 = data.get('q3', '')
+    task_name = data.get('task_name', 'Reading Comprehension')
     try:
         conn = connect_db()
         cursor = conn.cursor()
@@ -1541,7 +1637,7 @@ def submit_comprehension():
             INSERT INTO user_tasks (user_id, task_name, status)
             VALUES (%s, %s, %s)
             ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
-        ''', (session['user_id'], 'Reading Comprehension', 'Completed'))
+        ''', (session['user_id'], task_name, 'Completed'))
         conn.commit()
         cursor.close()
         conn.close()
@@ -1551,17 +1647,1309 @@ def submit_comprehension():
         return jsonify({'success': False, 'message': 'Failed to submit task'}), 500
 
 
+@app.route('/api/save-aptitude-progress', methods=['POST'])
+def save_aptitude_progress():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    data = request.get_json()
+    logical_reasoning_score = data.get('logical_reasoning_score', 0)
+    numerical_ability_score = data.get('numerical_ability_score', 0)
+    verbal_ability_score = data.get('verbal_ability_score', 0)
+    spatial_reasoning_score = data.get('spatial_reasoning_score', 0)
+    total_score = data.get('total_score', 0)
+    
+    try:
+        conn = connect_db()
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO aptitude_progress (user_id, logical_reasoning_score, numerical_ability_score, verbal_ability_score, spatial_reasoning_score, total_score, status, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
+            ON DUPLICATE KEY UPDATE 
+                logical_reasoning_score=VALUES(logical_reasoning_score), 
+                numerical_ability_score=VALUES(numerical_ability_score), 
+                verbal_ability_score=VALUES(verbal_ability_score), 
+                spatial_reasoning_score=VALUES(spatial_reasoning_score), 
+                total_score=VALUES(total_score), 
+                status=VALUES(status), 
+                updated_at=NOW()
+        ''', (session['user_id'], logical_reasoning_score, numerical_ability_score, verbal_ability_score, spatial_reasoning_score, total_score, 'In Progress'))
+        # Mark task as In Progress
+        cursor.execute('''
+            INSERT INTO user_tasks (user_id, task_name, status)
+            VALUES (%s, %s, %s)
+            ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
+        ''', (session['user_id'], 'Aptitude Test', 'In Progress'))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({'success': True, 'message': 'Progress saved successfully'})
+    except Exception as e:
+        print(f"Save aptitude progress DB error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to save progress'}), 500
+
+
+@app.route('/api/get-aptitude-progress', methods=['GET'])
+def get_aptitude_progress():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    try:
+        conn = connect_db()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute('''
+            SELECT logical_reasoning_score, numerical_ability_score, verbal_ability_score, spatial_reasoning_score, total_score, status 
+            FROM aptitude_progress WHERE user_id = %s
+        ''', (session['user_id'],))
+        result = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        if result:
+            return jsonify({'success': True, 'progress': result})
+        else:
+            return jsonify({'success': True, 'progress': None})
+    except Exception as e:
+        print(f"Get aptitude progress error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to get progress'}), 500
+
+
+@app.route('/api/submit-aptitude', methods=['POST'])
+def submit_aptitude():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    data = request.get_json()
+    logical_reasoning_score = data.get('logical_reasoning_score', 0)
+    numerical_ability_score = data.get('numerical_ability_score', 0)
+    verbal_ability_score = data.get('verbal_ability_score', 0)
+    spatial_reasoning_score = data.get('spatial_reasoning_score', 0)
+    total_score = data.get('total_score', 0)
+    
+    try:
+        conn = connect_db()
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO aptitude_progress (user_id, logical_reasoning_score, numerical_ability_score, verbal_ability_score, spatial_reasoning_score, total_score, status, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
+            ON DUPLICATE KEY UPDATE 
+                logical_reasoning_score=VALUES(logical_reasoning_score), 
+                numerical_ability_score=VALUES(numerical_ability_score), 
+                verbal_ability_score=VALUES(verbal_ability_score), 
+                spatial_reasoning_score=VALUES(spatial_reasoning_score), 
+                total_score=VALUES(total_score), 
+                status=VALUES(status), 
+                updated_at=NOW()
+        ''', (session['user_id'], logical_reasoning_score, numerical_ability_score, verbal_ability_score, spatial_reasoning_score, total_score, 'Completed'))
+        # Mark task as Completed
+        cursor.execute('''
+            INSERT INTO user_tasks (user_id, task_name, status)
+            VALUES (%s, %s, %s)
+            ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
+        ''', (session['user_id'], 'Aptitude Test', 'Completed'))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({'success': True, 'message': 'Task submitted and marked as completed'})
+    except Exception as e:
+        print(f"Submit aptitude DB error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to submit task'}), 500
+
+
+@app.route('/api/reading-tasks/<int:user_id>', methods=['GET'])
+def get_reading_tasks(user_id):
+    """Get age-appropriate reading tasks for a user"""
+    try:
+        print(f"Fetching reading tasks for user_id: {user_id}")
+        
+        conn = connect_db()
+        if not conn:
+            print("Database connection failed")
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+            
+        cursor = conn.cursor(dictionary=True)
+        
+        # First check if user exists
+        cursor.execute("SELECT id FROM users WHERE id = %s", (user_id,))
+        user_exists = cursor.fetchone()
+        if not user_exists:
+            print(f"User {user_id} not found")
+            return jsonify({'success': False, 'message': 'User not found'}), 404
+        
+        # Get user's age from demographics
+        cursor.execute("SELECT age, date_of_birth FROM demographics WHERE user_id = %s", (user_id,))
+        result = cursor.fetchone()
+        
+        print(f"Demographics result: {result}")
+        
+        if not result:
+            print(f"No demographics found for user {user_id}")
+            # Return default tasks instead of error
+            return getDefaultReadingTasks()
+        
+        if not result['age'] and not result['date_of_birth']:
+            print(f"No age or date_of_birth found for user {user_id}")
+            # Return default tasks instead of error
+            return getDefaultReadingTasks()
+        
+        # Use age if available, otherwise calculate from date_of_birth
+        if result['age']:
+            user_age = result['age']
+        elif result['date_of_birth']:
+            from datetime import datetime
+            today = datetime.now()
+            birth_date = result['date_of_birth']
+            user_age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+        else:
+            user_age = None
+        
+        print(f"Calculated user age: {user_age}")
+        
+        if user_age is None or user_age <= 0:
+            return jsonify({'success': False, 'message': 'Invalid age. Please update your profile.'}), 400
+        
+        # Check if reading_tasks table exists
+        cursor.execute("SHOW TABLES LIKE 'reading_tasks'")
+        table_exists = cursor.fetchone()
+        if not table_exists:
+            print("reading_tasks table does not exist")
+            return jsonify({'success': False, 'message': 'Reading tasks not configured. Please contact administrator.'}), 500
+        
+        # Get appropriate reading tasks for user's age
+        cursor.execute("""
+            SELECT * FROM reading_tasks 
+            WHERE age_min <= %s AND age_max >= %s 
+            ORDER BY difficulty_level, age_min
+        """, (user_age, user_age))
+        
+        tasks = cursor.fetchall()
+        print(f"Found {len(tasks)} tasks for age {user_age}")
+        
+        cursor.close()
+        conn.close()
+        
+        if not tasks:
+            return jsonify({'success': False, 'message': f'No reading tasks found for age {user_age}. Please contact administrator.'}), 404
+        
+        return jsonify({
+            'success': True, 
+            'tasks': tasks, 
+            'user_age': user_age,
+            'total_tasks': len(tasks)
+        })
+        
+    except Exception as e:
+        print(f"Get reading tasks error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'Failed to fetch reading tasks: {str(e)}'}), 500
+
+
+def getDefaultReadingTasks():
+    """Return default reading tasks when user age is not available"""
+    try:
+        conn = connect_db()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+            
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get all available reading tasks
+        cursor.execute("SELECT * FROM reading_tasks ORDER BY difficulty_level, age_min")
+        tasks = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        if not tasks:
+            return jsonify({'success': False, 'message': 'No reading tasks available. Please contact administrator.'}), 404
+        
+        return jsonify({
+            'success': True, 
+            'tasks': tasks, 
+            'user_age': 'Not specified',
+            'total_tasks': len(tasks),
+            'message': 'Showing all available reading tasks. Please complete your profile setup for personalized tasks.'
+        })
+        
+    except Exception as e:
+        print(f"Get default reading tasks error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to fetch default reading tasks'}), 500
+
+
+@app.route('/api/reading-task/<int:task_id>', methods=['GET'])
+def get_reading_task_by_id(task_id):
+    """Get a specific reading task by ID"""
+    try:
+        conn = connect_db()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+            
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get the specific reading task
+        cursor.execute("SELECT * FROM reading_tasks WHERE id = %s", (task_id,))
+        task = cursor.fetchone()
+        
+        cursor.close()
+        conn.close()
+        
+        if not task:
+            return jsonify({'success': False, 'message': 'Reading task not found'}), 404
+        
+        return jsonify({
+            'success': True, 
+            'task': task
+        })
+        
+    except Exception as e:
+        print(f"Get reading task by ID error: {e}")
+        return jsonify({'success': False, 'message': f'Failed to fetch reading task: {str(e)}'}), 500
+
+
+@app.route('/api/reading-comprehension-tasks/<int:user_id>', methods=['GET'])
+def get_reading_comprehension_tasks(user_id):
+    """Get age-appropriate reading comprehension tasks for a user"""
+    try:
+        print(f"Fetching reading comprehension tasks for user_id: {user_id}")
+        
+        conn = connect_db()
+        if not conn:
+            print("Database connection failed")
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+            
+        cursor = conn.cursor(dictionary=True)
+        
+        # First check if user exists
+        cursor.execute("SELECT id FROM users WHERE id = %s", (user_id,))
+        user_exists = cursor.fetchone()
+        if not user_exists:
+            print(f"User {user_id} not found")
+            return jsonify({'success': False, 'message': 'User not found'}), 404
+        
+        # Get user's age from demographics
+        cursor.execute("SELECT age, date_of_birth FROM demographics WHERE user_id = %s", (user_id,))
+        result = cursor.fetchone()
+        
+        print(f"Demographics result: {result}")
+        
+        if not result:
+            print(f"No demographics found for user {user_id}")
+            # Return default tasks instead of error
+            return getDefaultReadingComprehensionTasks()
+        
+        if not result['age'] and not result['date_of_birth']:
+            print(f"No age or date_of_birth found for user {user_id}")
+            # Return default tasks instead of error
+            return getDefaultReadingComprehensionTasks()
+        
+        # Use age if available, otherwise calculate from date_of_birth
+        if result['age']:
+            user_age = result['age']
+        elif result['date_of_birth']:
+            from datetime import datetime
+            today = datetime.now()
+            birth_date = result['date_of_birth']
+            user_age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+        else:
+            user_age = None
+        
+        print(f"Calculated user age: {user_age}")
+        
+        if user_age is None or user_age <= 0:
+            return jsonify({'success': False, 'message': 'Invalid age. Please update your profile.'}), 400
+        
+        # Check if reading_comprehension_tasks table exists
+        cursor.execute("SHOW TABLES LIKE 'reading_comprehension_tasks'")
+        table_exists = cursor.fetchone()
+        if not table_exists:
+            print("reading_comprehension_tasks table does not exist")
+            return jsonify({'success': False, 'message': 'Reading comprehension tasks not configured. Please contact administrator.'}), 500
+        
+        # Get appropriate reading comprehension tasks for user's age
+        cursor.execute("""
+            SELECT * FROM reading_comprehension_tasks 
+            WHERE age_min <= %s AND age_max >= %s 
+            ORDER BY difficulty_level, age_min
+        """, (user_age, user_age))
+        
+        tasks = cursor.fetchall()
+        print(f"Found {len(tasks)} comprehension tasks for age {user_age}")
+        
+        cursor.close()
+        conn.close()
+        
+        if not tasks:
+            return jsonify({'success': False, 'message': f'No reading comprehension tasks found for age {user_age}. Please contact administrator.'}), 404
+        
+        return jsonify({
+            'success': True, 
+            'tasks': tasks, 
+            'user_age': user_age,
+            'total_tasks': len(tasks)
+        })
+        
+    except Exception as e:
+        print(f"Get reading comprehension tasks error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'Failed to fetch reading comprehension tasks: {str(e)}'}), 500
+
+
+def getDefaultReadingComprehensionTasks():
+    """Return default reading comprehension tasks when user age is not available"""
+    try:
+        conn = connect_db()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+            
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get all available reading comprehension tasks
+        cursor.execute("SELECT * FROM reading_comprehension_tasks ORDER BY difficulty_level, age_min")
+        tasks = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        if not tasks:
+            return jsonify({'success': False, 'message': 'No reading comprehension tasks available. Please contact administrator.'}), 404
+        
+        return jsonify({
+            'success': True, 
+            'tasks': tasks, 
+            'user_age': 'Not specified',
+            'total_tasks': len(tasks),
+            'message': 'Showing all available reading comprehension tasks. Please complete your profile setup for personalized tasks.'
+        })
+        
+    except Exception as e:
+        print(f"Get default reading comprehension tasks error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to fetch default reading comprehension tasks'}), 500
+
+
+@app.route('/api/reading-comprehension-task/<int:task_id>', methods=['GET'])
+def get_reading_comprehension_task_by_id(task_id):
+    """Get a specific reading comprehension task by ID"""
+    try:
+        conn = connect_db()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+            
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get the specific reading comprehension task
+        cursor.execute("SELECT * FROM reading_comprehension_tasks WHERE id = %s", (task_id,))
+        task = cursor.fetchone()
+        
+        cursor.close()
+        conn.close()
+        
+        if not task:
+            return jsonify({'success': False, 'message': 'Reading comprehension task not found'}), 404
+        
+        return jsonify({
+            'success': True, 
+            'task': task
+        })
+        
+    except Exception as e:
+        print(f"Get reading comprehension task by ID error: {e}")
+        return jsonify({'success': False, 'message': f'Failed to fetch reading comprehension task: {str(e)}'}), 500
+
+
+@app.route('/api/typing-tasks/<int:user_id>', methods=['GET'])
+def get_typing_tasks(user_id):
+    """Get age-appropriate typing tasks for a user"""
+    try:
+        print(f"Fetching typing tasks for user_id: {user_id}")
+        
+        conn = connect_db()
+        if not conn:
+            print("Database connection failed")
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+            
+        cursor = conn.cursor(dictionary=True)
+        
+        # First check if user exists
+        cursor.execute("SELECT id FROM users WHERE id = %s", (user_id,))
+        user_exists = cursor.fetchone()
+        if not user_exists:
+            print(f"User {user_id} not found")
+            return jsonify({'success': False, 'message': 'User not found'}), 404
+        
+        # Get user's age from demographics
+        cursor.execute("SELECT age, date_of_birth FROM demographics WHERE user_id = %s", (user_id,))
+        result = cursor.fetchone()
+        
+        print(f"Demographics result: {result}")
+        
+        if not result:
+            print(f"No demographics found for user {user_id}")
+            # Return default tasks instead of error
+            return getDefaultTypingTasks()
+        
+        if not result['age'] and not result['date_of_birth']:
+            print(f"No age or date_of_birth found for user {user_id}")
+            # Return default tasks instead of error
+            return getDefaultTypingTasks()
+        
+        # Use age if available, otherwise calculate from date_of_birth
+        if result['age']:
+            user_age = result['age']
+        elif result['date_of_birth']:
+            from datetime import datetime
+            today = datetime.now()
+            birth_date = result['date_of_birth']
+            user_age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+        else:
+            user_age = None
+        
+        print(f"Calculated user age: {user_age}")
+        
+        if user_age is None or user_age <= 0:
+            return jsonify({'success': False, 'message': 'Invalid age. Please update your profile.'}), 400
+        
+        # Check if typing_tasks table exists
+        cursor.execute("SHOW TABLES LIKE 'typing_tasks'")
+        table_exists = cursor.fetchone()
+        if not table_exists:
+            print("typing_tasks table does not exist")
+            return jsonify({'success': False, 'message': 'Typing tasks not configured. Please contact administrator.'}), 500
+        
+        # Get appropriate typing tasks for user's age
+        cursor.execute("""
+            SELECT * FROM typing_tasks 
+            WHERE age_min <= %s AND age_max >= %s 
+            ORDER BY difficulty_level, age_min
+        """, (user_age, user_age))
+        
+        tasks = cursor.fetchall()
+        print(f"Found {len(tasks)} typing tasks for age {user_age}")
+        
+        cursor.close()
+        conn.close()
+        
+        if not tasks:
+            return jsonify({'success': False, 'message': f'No typing tasks found for age {user_age}. Please contact administrator.'}), 404
+        
+        return jsonify({
+            'success': True, 
+            'tasks': tasks, 
+            'user_age': user_age,
+            'total_tasks': len(tasks)
+        })
+        
+    except Exception as e:
+        print(f"Get typing tasks error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'Failed to fetch typing tasks: {str(e)}'}), 500
+
+
+def getDefaultTypingTasks():
+    """Return default typing tasks when user age is not available"""
+    try:
+        conn = connect_db()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+            
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get all available typing tasks
+        cursor.execute("SELECT * FROM typing_tasks ORDER BY difficulty_level, age_min")
+        tasks = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        if not tasks:
+            return jsonify({'success': False, 'message': 'No typing tasks available. Please contact administrator.'}), 404
+        
+        return jsonify({
+            'success': True, 
+            'tasks': tasks, 
+            'user_age': 'Not specified',
+            'total_tasks': len(tasks),
+            'message': 'Showing all available typing tasks. Please complete your profile setup for personalized tasks.'
+        })
+        
+    except Exception as e:
+        print(f"Get default typing tasks error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to fetch default typing tasks'}), 500
+
+
+@app.route('/api/typing-task/<int:task_id>', methods=['GET'])
+def get_typing_task_by_id(task_id):
+    """Get a specific typing task by ID"""
+    try:
+        conn = connect_db()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+            
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get the specific typing task
+        cursor.execute("SELECT * FROM typing_tasks WHERE id = %s", (task_id,))
+        task = cursor.fetchone()
+        
+        cursor.close()
+        conn.close()
+        
+        if not task:
+            return jsonify({'success': False, 'message': 'Typing task not found'}), 404
+        
+        return jsonify({
+            'success': True, 
+            'task': task
+        })
+        
+    except Exception as e:
+        print(f"Get typing task by ID error: {e}")
+        return jsonify({'success': False, 'message': f'Failed to fetch typing task: {str(e)}'}), 500
+
+
+@app.route('/api/start-typing-task', methods=['POST'])
+def start_typing_task():
+    """Mark a typing task as started"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    
+    data = request.get_json()
+    task_id = data.get('task_id')
+    task_name = data.get('task_name')
+    
+    if not task_id or not task_name:
+        return jsonify({'success': False, 'message': 'Task information required'}), 400
+    
+    try:
+        conn = connect_db()
+        cursor = conn.cursor()
+        
+        # Mark task as In Progress
+        cursor.execute('''
+            INSERT INTO user_tasks (user_id, task_name, status)
+            VALUES (%s, %s, %s)
+            ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
+        ''', (session['user_id'], f'Typing Task {task_name}', 'In Progress'))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'Task started successfully'})
+        
+    except Exception as e:
+        print(f"Start typing task error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to start task'}), 500
+
+
+@app.route('/api/start-reading-comprehension-task', methods=['POST'])
+def start_reading_comprehension_task():
+    """Mark a reading comprehension task as started"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    
+    data = request.get_json()
+    task_id = data.get('task_id')
+    task_name = data.get('task_name')
+    
+    if not task_id or not task_name:
+        return jsonify({'success': False, 'message': 'Task information required'}), 400
+    
+    try:
+        conn = connect_db()
+        cursor = conn.cursor()
+        
+        # Mark task as In Progress
+        cursor.execute('''
+            INSERT INTO user_tasks (user_id, task_name, status)
+            VALUES (%s, %s, %s)
+            ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
+        ''', (session['user_id'], f'Reading Comprehension Task {task_name}', 'In Progress'))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'Task started successfully'})
+        
+    except Exception as e:
+        print(f"Start reading comprehension task error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to start task'}), 500
+
+
+@app.route('/api/start-reading-task', methods=['POST'])
+def start_reading_task():
+    """Mark a reading task as started"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    
+    data = request.get_json()
+    task_id = data.get('task_id')
+    task_name = data.get('task_name')
+    
+    if not task_id or not task_name:
+        return jsonify({'success': False, 'message': 'Task information required'}), 400
+    
+    try:
+        conn = connect_db()
+        cursor = conn.cursor()
+        
+        # Mark task as In Progress
+        cursor.execute('''
+            INSERT INTO user_tasks (user_id, task_name, status)
+            VALUES (%s, %s, %s)
+            ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
+        ''', (session['user_id'], f'Reading Task {task_name}', 'In Progress'))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'Task started successfully'})
+        
+    except Exception as e:
+        print(f"Start reading task error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to start task'}), 500
+
+
+@app.route('/api/mathematical-comprehension-tasks/<int:user_id>', methods=['GET'])
+def get_mathematical_comprehension_tasks(user_id):
+    """Get age-appropriate mathematical comprehension tasks for a user"""
+    try:
+        print(f"Fetching mathematical comprehension tasks for user_id: {user_id}")
+        
+        conn = connect_db()
+        if not conn:
+            print("Database connection failed")
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+            
+        cursor = conn.cursor(dictionary=True)
+        
+        # First check if user exists
+        cursor.execute("SELECT id FROM users WHERE id = %s", (user_id,))
+        user_exists = cursor.fetchone()
+        if not user_exists:
+            print(f"User {user_id} not found")
+            return jsonify({'success': False, 'message': 'User not found'}), 404
+        
+        # Get user's age from demographics
+        cursor.execute("SELECT age, date_of_birth FROM demographics WHERE user_id = %s", (user_id,))
+        result = cursor.fetchone()
+        
+        print(f"Demographics result: {result}")
+        
+        if not result:
+            print(f"No demographics found for user {user_id}")
+            # Return default tasks instead of error
+            return getDefaultMathematicalComprehensionTasks()
+        
+        if not result['age'] and not result['date_of_birth']:
+            print(f"No age or date_of_birth found for user {user_id}")
+            # Return default tasks instead of error
+            return getDefaultMathematicalComprehensionTasks()
+        
+        # Use age if available, otherwise calculate from date_of_birth
+        if result['age']:
+            user_age = result['age']
+        elif result['date_of_birth']:
+            from datetime import datetime
+            today = datetime.now()
+            birth_date = result['date_of_birth']
+            user_age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+        else:
+            user_age = None
+        
+        print(f"Calculated user age: {user_age}")
+        
+        if user_age is None or user_age <= 0:
+            return jsonify({'success': False, 'message': 'Invalid age. Please update your profile.'}), 400
+        
+        # Check if mathematical_comprehension_tasks table exists
+        cursor.execute("SHOW TABLES LIKE 'mathematical_comprehension_tasks'")
+        table_exists = cursor.fetchone()
+        if not table_exists:
+            print("mathematical_comprehension_tasks table does not exist")
+            return jsonify({'success': False, 'message': 'Mathematical comprehension tasks not configured. Please contact administrator.'}), 500
+        
+        # Get appropriate mathematical comprehension tasks for user's age
+        cursor.execute("""
+            SELECT * FROM mathematical_comprehension_tasks 
+            WHERE age_min <= %s AND age_max >= %s 
+            ORDER BY difficulty_level, age_min
+        """, (user_age, user_age))
+        
+        tasks = cursor.fetchall()
+        print(f"Found {len(tasks)} mathematical comprehension tasks for age {user_age}")
+        
+        cursor.close()
+        conn.close()
+        
+        if not tasks:
+            return jsonify({'success': False, 'message': f'No mathematical comprehension tasks found for age {user_age}. Please contact administrator.'}), 404
+        
+        return jsonify({
+            'success': True, 
+            'tasks': tasks, 
+            'user_age': user_age,
+            'total_tasks': len(tasks)
+        })
+        
+    except Exception as e:
+        print(f"Get mathematical comprehension tasks error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'Failed to fetch mathematical comprehension tasks: {str(e)}'}), 500
+
+
+def getDefaultMathematicalComprehensionTasks():
+    """Return default mathematical comprehension tasks when user age is not available"""
+    try:
+        conn = connect_db()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+            
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get all available mathematical comprehension tasks
+        cursor.execute("SELECT * FROM mathematical_comprehension_tasks ORDER BY difficulty_level, age_min")
+        tasks = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        if not tasks:
+            return jsonify({'success': False, 'message': 'No mathematical comprehension tasks available. Please contact administrator.'}), 404
+        
+        return jsonify({
+            'success': True, 
+            'tasks': tasks, 
+            'user_age': 'Not specified',
+            'total_tasks': len(tasks),
+            'message': 'Showing all available mathematical comprehension tasks. Please complete your profile setup for personalized tasks.'
+        })
+        
+    except Exception as e:
+        print(f"Get default mathematical comprehension tasks error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to fetch default mathematical comprehension tasks'}), 500
+
+
+@app.route('/api/mathematical-comprehension-task/<int:task_id>', methods=['GET'])
+def get_mathematical_comprehension_task_by_id(task_id):
+    """Get a specific mathematical comprehension task by ID"""
+    try:
+        conn = connect_db()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+            
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get the specific mathematical comprehension task
+        cursor.execute("SELECT * FROM mathematical_comprehension_tasks WHERE id = %s", (task_id,))
+        task = cursor.fetchone()
+        
+        cursor.close()
+        conn.close()
+        
+        if not task:
+            return jsonify({'success': False, 'message': 'Mathematical comprehension task not found'}), 404
+        
+        return jsonify({
+            'success': True, 
+            'task': task
+        })
+        
+    except Exception as e:
+        print(f"Get mathematical comprehension task by ID error: {e}")
+        return jsonify({'success': False, 'message': f'Failed to fetch mathematical comprehension task: {str(e)}'}), 500
+
+
+@app.route('/api/start-mathematical-comprehension-task', methods=['POST'])
+def start_mathematical_comprehension_task():
+    """Mark a mathematical comprehension task as started"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    
+    data = request.get_json()
+    task_id = data.get('task_id')
+    task_name = data.get('task_name')
+    
+    if not task_id or not task_name:
+        return jsonify({'success': False, 'message': 'Task information required'}), 400
+    
+    try:
+        conn = connect_db()
+        cursor = conn.cursor()
+        
+        # Mark task as In Progress
+        cursor.execute('''
+            INSERT INTO user_tasks (user_id, task_name, status)
+            VALUES (%s, %s, %s)
+            ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
+        ''', (session['user_id'], f'Mathematical Comprehension Task {task_name}', 'In Progress'))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'Task started successfully'})
+        
+    except Exception as e:
+        print(f"Start mathematical comprehension task error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to start task'}), 500
+
+@app.route('/api/writing-tasks/<int:user_id>', methods=['GET'])
+def get_writing_tasks(user_id):
+    """Get age-appropriate writing tasks for a user"""
+    try:
+        conn = connect_db()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+            
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get user's age from demographics table
+        cursor.execute("SELECT age FROM demographics WHERE user_id = %s", (user_id,))
+        age_result = cursor.fetchone()
+        
+        user_age = None
+        if age_result and age_result['age']:
+            user_age = age_result['age']
+        
+        # Get writing tasks based on age
+        if user_age:
+            cursor.execute("""
+                SELECT * FROM writing_tasks 
+                WHERE age_min <= %s AND age_max >= %s 
+                ORDER BY difficulty_level, age_min
+            """, (user_age, user_age))
+            tasks = cursor.fetchall()
+            
+            if tasks:
+                return jsonify({
+                    'success': True,
+                    'tasks': tasks,
+                    'user_age': user_age,
+                    'message': f'Showing writing tasks for age {user_age}'
+                })
+            else:
+                # If no tasks found for specific age, get default tasks
+                return getDefaultWritingTasks()
+        else:
+            # If no age found, get default tasks
+            return getDefaultWritingTasks()
+            
+    except Exception as e:
+        print(f"Get writing tasks error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to load writing tasks'}), 500
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+
+def getDefaultWritingTasks():
+    """Get default writing tasks when user age is not available"""
+    try:
+        conn = connect_db()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get all writing tasks ordered by difficulty
+        cursor.execute("""
+            SELECT * FROM writing_tasks 
+            ORDER BY difficulty_level, age_min
+        """)
+        tasks = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'tasks': tasks,
+            'user_age': 'Not specified',
+            'message': 'Showing all available writing tasks'
+        })
+        
+    except Exception as e:
+        print(f"Get default writing tasks error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to load writing tasks'}), 500
+
+@app.route('/api/writing-task/<int:task_id>', methods=['GET'])
+def get_writing_task_by_id(task_id):
+    """Get a specific writing task by ID"""
+    try:
+        conn = connect_db()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+            
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get the specific writing task
+        cursor.execute("SELECT * FROM writing_tasks WHERE id = %s", (task_id,))
+        task = cursor.fetchone()
+        
+        cursor.close()
+        conn.close()
+        
+        if not task:
+            return jsonify({'success': False, 'message': 'Writing task not found'}), 404
+        
+        return jsonify({
+            'success': True, 
+            'task': task
+        })
+        
+    except Exception as e:
+        print(f"Get writing task by ID error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to load writing task'}), 500
+
+@app.route('/api/start-writing-task', methods=['POST'])
+def start_writing_task():
+    """Mark a writing task as started"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    
+    data = request.get_json()
+    task_id = data.get('task_id')
+    task_name = data.get('task_name')
+    
+    if not task_id or not task_name:
+        return jsonify({'success': False, 'message': 'Task information required'}), 400
+    
+    try:
+        conn = connect_db()
+        cursor = conn.cursor()
+        
+        # Mark task as In Progress
+        cursor.execute('''
+            INSERT INTO user_tasks (user_id, task_name, status)
+            VALUES (%s, %s, %s)
+            ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
+        ''', (session['user_id'], f'Writing Task {task_name}', 'In Progress'))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'Task started successfully'})
+        
+    except Exception as e:
+        print(f"Start writing task DB error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to start task'}), 500
+
+@app.route('/api/aptitude-tasks/<int:user_id>', methods=['GET'])
+def get_aptitude_tasks(user_id):
+    """Get age-appropriate aptitude tasks for a user"""
+    try:
+        print(f"Fetching aptitude tasks for user_id: {user_id}")
+        
+        conn = connect_db()
+        if not conn:
+            print("Database connection failed")
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+            
+        cursor = conn.cursor(dictionary=True)
+        
+        # First check if user exists
+        cursor.execute("SELECT id FROM users WHERE id = %s", (user_id,))
+        user_exists = cursor.fetchone()
+        if not user_exists:
+            print(f"User {user_id} not found")
+            return jsonify({'success': False, 'message': 'User not found'}), 404
+        
+        # Get user's age from demographics
+        cursor.execute("SELECT age, date_of_birth FROM demographics WHERE user_id = %s", (user_id,))
+        result = cursor.fetchone()
+        
+        print(f"Demographics result: {result}")
+        
+        if not result:
+            print(f"No demographics found for user {user_id}")
+            # Return default tasks instead of error
+            return getDefaultAptitudeTasks()
+        
+        if not result['age'] and not result['date_of_birth']:
+            print(f"No age or date_of_birth found for user {user_id}")
+            # Return default tasks instead of error
+            return getDefaultAptitudeTasks()
+        
+        # Use age if available, otherwise calculate from date_of_birth
+        if result['age']:
+            user_age = result['age']
+        elif result['date_of_birth']:
+            from datetime import datetime
+            today = datetime.now()
+            birth_date = result['date_of_birth']
+            user_age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+        else:
+            user_age = None
+        
+        print(f"Calculated user age: {user_age}")
+        
+        if user_age is None or user_age <= 0:
+            return jsonify({'success': False, 'message': 'Invalid age. Please update your profile.'}), 400
+        
+        # Check if aptitude_tasks table exists
+        cursor.execute("SHOW TABLES LIKE 'aptitude_tasks'")
+        table_exists = cursor.fetchone()
+        if not table_exists:
+            print("aptitude_tasks table does not exist")
+            return jsonify({'success': False, 'message': 'Aptitude tasks not configured. Please contact administrator.'}), 500
+        
+        # Get appropriate aptitude tasks for user's age
+        cursor.execute("""
+            SELECT * FROM aptitude_tasks 
+            WHERE age_min <= %s AND age_max >= %s 
+            ORDER BY difficulty_level, age_min
+        """, (user_age, user_age))
+        
+        tasks = cursor.fetchall()
+        print(f"Found {len(tasks)} aptitude tasks for age {user_age}")
+        
+        cursor.close()
+        conn.close()
+        
+        if not tasks:
+            return jsonify({'success': False, 'message': f'No aptitude tasks found for age {user_age}. Please contact administrator.'}), 404
+        
+        return jsonify({
+            'success': True, 
+            'tasks': tasks, 
+            'user_age': user_age,
+            'total_tasks': len(tasks)
+        })
+        
+    except Exception as e:
+        print(f"Get aptitude tasks error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'Failed to fetch aptitude tasks: {str(e)}'}), 500
+
+
+def getDefaultAptitudeTasks():
+    """Return default aptitude tasks when user age is not available"""
+    try:
+        conn = connect_db()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+            
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get all available aptitude tasks
+        cursor.execute("SELECT * FROM aptitude_tasks ORDER BY difficulty_level, age_min")
+        tasks = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        if not tasks:
+            return jsonify({'success': False, 'message': 'No aptitude tasks available. Please contact administrator.'}), 404
+        
+        return jsonify({
+            'success': True, 
+            'tasks': tasks, 
+            'user_age': 'Not specified',
+            'total_tasks': len(tasks),
+            'message': 'Showing all available aptitude tasks. Please complete your profile setup for personalized tasks.'
+        })
+        
+    except Exception as e:
+        print(f"Get default aptitude tasks error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to fetch default aptitude tasks'}), 500
+
+
+@app.route('/api/aptitude-task/<int:task_id>', methods=['GET'])
+def get_aptitude_task_by_id(task_id):
+    """Get a specific aptitude task by ID"""
+    try:
+        conn = connect_db()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+            
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get the specific aptitude task
+        cursor.execute("SELECT * FROM aptitude_tasks WHERE id = %s", (task_id,))
+        task = cursor.fetchone()
+        
+        cursor.close()
+        conn.close()
+        
+        if not task:
+            return jsonify({'success': False, 'message': 'Aptitude task not found'}), 404
+        
+        return jsonify({
+            'success': True, 
+            'task': task
+        })
+        
+    except Exception as e:
+        print(f"Get aptitude task by ID error: {e}")
+        return jsonify({'success': False, 'message': f'Failed to fetch aptitude task: {str(e)}'}), 500
+
+
+@app.route('/api/start-aptitude-task', methods=['POST'])
+def start_aptitude_task():
+    """Mark an aptitude task as started"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    
+    data = request.get_json()
+    task_id = data.get('task_id')
+    task_name = data.get('task_name')
+    
+    if not task_id or not task_name:
+        return jsonify({'success': False, 'message': 'Task information required'}), 400
+    
+    try:
+        conn = connect_db()
+        cursor = conn.cursor()
+        
+        # Mark task as In Progress
+        cursor.execute('''
+            INSERT INTO user_tasks (user_id, task_name, status)
+            VALUES (%s, %s, %s)
+            ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
+        ''', (session['user_id'], f'Aptitude Test {task_name}', 'In Progress'))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'Task started successfully'})
+        
+    except Exception as e:
+        print(f"Start aptitude task error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to start task'}), 500
+
+@app.route('/api/upload-writing', methods=['POST'])
+def upload_writing():
+    """Upload writing sample image"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    
+    if 'writing_image' not in request.files:
+        return jsonify({'success': False, 'message': 'No image file provided'}), 400
+    
+    file = request.files['writing_image']
+    task_id = request.form.get('task_id')
+    
+    if file.filename == '':
+        return jsonify({'success': False, 'message': 'No selected file'}), 400
+    
+    if not task_id:
+        return jsonify({'success': False, 'message': 'Task ID required'}), 400
+    
+    # Check if file is an image
+    if file and allowed_file(file.filename):
+        filename = secure_filename(f"writing_user{session['user_id']}_task{task_id}_" + datetime.now().strftime('%Y%m%d%H%M%S') + '_' + file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+        
+        try:
+            conn = connect_db()
+            cursor = conn.cursor()
+            
+            # Save writing sample to database
+            cursor.execute("""
+                INSERT INTO writing_samples (user_id, task_id, filename, status)
+                VALUES (%s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE filename = VALUES(filename), status = VALUES(status), uploaded_at = NOW()
+            """, (session['user_id'], task_id, filename, 'Completed'))
+            
+            # Mark task as completed
+            cursor.execute("""
+                INSERT INTO user_tasks (user_id, task_name, status)
+                VALUES (%s, %s, %s)
+                ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
+            """, (session['user_id'], 'Writing Task', 'Completed'))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            return jsonify({'success': True, 'message': 'Writing sample uploaded successfully', 'filename': filename})
+            
+        except Exception as e:
+            print(f"Upload writing DB error: {e}")
+            return jsonify({'success': False, 'message': 'Failed to save writing sample'}), 500
+    else:
+        return jsonify({'success': False, 'message': 'Invalid file type. Please upload an image.'}), 400
+
+@app.route('/api/save-writing-progress', methods=['POST'])
+def save_writing_progress():
+    """Save writing task progress without marking as completed"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    
+    if 'writing_image' not in request.files:
+        return jsonify({'success': False, 'message': 'No image file provided'}), 400
+    
+    file = request.files['writing_image']
+    task_id = request.form.get('task_id')
+    
+    if file.filename == '':
+        return jsonify({'success': False, 'message': 'No selected file'}), 400
+    
+    if not task_id:
+        return jsonify({'success': False, 'message': 'Task ID required'}), 400
+    
+    # Check if file is an image
+    if file and allowed_file(file.filename):
+        filename = secure_filename(f"writing_user{session['user_id']}_task{task_id}_" + datetime.now().strftime('%Y%m%d%H%M%S') + '_' + file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+        
+        try:
+            conn = connect_db()
+            cursor = conn.cursor()
+            
+            # Save writing sample to database with In Progress status
+            cursor.execute("""
+                INSERT INTO writing_samples (user_id, task_id, filename, status)
+                VALUES (%s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE filename = VALUES(filename), uploaded_at = NOW()
+            """, (session['user_id'], task_id, filename, 'In Progress'))
+            
+            # Mark task as In Progress
+            cursor.execute("""
+                INSERT INTO user_tasks (user_id, task_name, status)
+                VALUES (%s, %s, %s)
+                ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
+            """, (session['user_id'], 'Writing Task', 'In Progress'))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            return jsonify({'success': True, 'message': 'Writing progress saved successfully', 'filename': filename})
+            
+        except Exception as e:
+            print(f"Save writing progress DB error: {e}")
+            return jsonify({'success': False, 'message': 'Failed to save writing progress'}), 500
+    else:
+        return jsonify({'success': False, 'message': 'Invalid file type. Please upload an image.'}), 400
+
+
 @app.route('/api/admin/tasks', methods=['GET'])
 def get_all_tasks():
     if not session.get('is_admin'):
         return jsonify({'success': False, 'message': 'Unauthorized'}), 401
-    conn = connect_db()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute('SELECT * FROM tasks')
-    tasks = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return jsonify({'success': True, 'tasks': tasks})
+    
+    try:
+        conn = connect_db()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute('SELECT * FROM tasks ORDER BY id')
+        tasks = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        print(f"Found {len(tasks)} tasks in database")
+        for task in tasks:
+            print(f"Task: {task}")
+        
+        return jsonify({'success': True, 'tasks': tasks})
+    except Exception as e:
+        print(f"Error in get_all_tasks: {e}")
+        return jsonify({'success': False, 'message': f'Database error: {str(e)}'}), 500
 
 # @app.route('/api/admin/tasks', methods=['POST'])
 # def add_task():
@@ -1696,7 +3084,7 @@ def admin_users_list():
         ''')
         users = cursor.fetchall()
         # Define the set of all tasks
-        all_tasks = ['Reading Aloud Task 1', 'Typing Task', 'Reading Comprehension']
+        all_tasks = ['Reading Aloud Task 1', 'Typing Task', 'Reading Comprehension', 'Aptitude Test']
         total_tasks = len(all_tasks)
         for user in users:
             # Get completed tasks for this user (only those in all_tasks)
@@ -1848,6 +3236,12 @@ def admin_set_user_task_status():
 @app.route('/stats')
 def stats():
     return render_template('stats.html')
+
+@app.route('/admin/logout')
+def admin_logout_page():
+    session.pop('is_admin', None)
+    flash('Admin logged out successfully', 'success')
+    return redirect(url_for('landing'))
 
 @app.route('/api/admin/logout', methods=['POST'])
 def admin_logout():

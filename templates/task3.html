@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Participant Dashboard - Dyslexia Research Study</title>
+    <title>Reading Comprehension Tasks - Dyslexia Research Study</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='landing_style.css') }}">
 </head>
@@ -12,8 +12,8 @@
     <header class="primary-bg text-white py-6">
         <div class="content-wrapper flex justify-between items-center">
             <div class="flex items-center">
-                <img src="{{ url_for('static', filename='comprehend.jpg') }}" alt="Dashboard Graphic" class="h-12 w-12 rounded-full mr-4 hidden md:block">
-                <h1 class="text-xl md:text-2xl font-bold">Welcome to Task</h1>
+                <img src="{{ url_for('static', filename='comprehend.jpg') }}" alt="Comprehension Tasks" class="h-12 w-12 rounded-full mr-4 hidden md:block">
+                <h1 class="text-xl md:text-2xl font-bold">Reading Comprehension Tasks</h1>
             </div>
             <nav>
                 <ul class="flex space-x-6 text-lg md:text-xl items-center">
@@ -92,32 +92,97 @@
         </div>
     </div>
 
-    <main class="flex justify-center items-center min-h-[60vh] bg-transparent my-16">
-        <div class="w-full max-w-xl bg-white rounded-2xl shadow-lg p-8 flex flex-col items-center border border-gray-200">
-            <h2 class="text-2xl font-bold mb-4 text-[#1A237E]">Task instructions</h2>
-            <h2 class="text-2xl font-bold mb-4 text-[#1A237E]">Reading Comprehension</h2>
-            <p class="mb-4 text-lg text-gray-700">Read the passage and answer the questions that follow.<br> Your answers will help us understand your reading comprehension skills.</p>
-            <ul class="mb-4 list-disc pl-6 text-gray-700 self-start">
-                <li><strong>Estimated time:</strong> 4-6 minutes</li>
-                <li><strong>Device requirements:</strong> Please use a device with a screen large enough to read comfortably.</li>
-            </ul>
-            <div class="mb-4 p-4 bg-gray-50 rounded w-full text-gray-800">
-                <strong>Example:</strong> <br>
-                <div class="mb-2"><span class="font-semibold">Passage:</span> <br>
-                <span class="italic">"Anna looked out the window and saw that the sky was dark and cloudy. She remembered her mother's words: 'Don't forget your umbrella today!' As she walked to school, big raindrops began to fall, but Anna was ready."</span></div>
-                <div class="mt-2">
-                    <span class="font-semibold">Questions:</span>
-                    <ol class="list-decimal pl-6 mt-1">
-                        <li>What did Anna see when she looked out the window?</li>
-                        <li>What advice did Anna's mother give her?</li>
-                        <li>Was Anna prepared for the rain? How do you know?</li>
-                    </ol>
+    <main class="min-h-[60vh] bg-transparent my-16">
+        <div class="content-wrapper">
+            <!-- Welcome Section -->
+            <div class="text-center mb-8">
+                <div class="flex items-center justify-center gap-4 mb-4">
+                    <img src="{{ url_for('static', filename='comprehend.jpg') }}" alt="Reading Comprehension" class="w-16 h-16 object-cover rounded-xl shadow-md">
+                    <h2 class="text-3xl font-bold text-[#1A237E]">Reading Comprehension Tasks</h2>
+                </div>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                    Welcome! We've selected reading comprehension tasks that are appropriate for your age. 
+                    Read the passages carefully and answer the questions that follow.
+                </p>
+                <div id="userAgeInfo" class="mt-4 text-sm text-gray-500"></div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loadingState" class="flex justify-center items-center py-12">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1A237E]"></div>
+                <span class="ml-3 text-lg text-gray-600">Loading your personalized tasks...</span>
+            </div>
+
+            <!-- Error State -->
+            <div id="errorState" class="hidden text-center py-12">
+                <div class="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto">
+                    <svg class="w-12 h-12 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <h3 class="text-lg font-semibold text-red-800 mb-2">Unable to Load Tasks</h3>
+                    <p id="errorMessage" class="text-red-600 mb-4"></p>
+                    <button onclick="location.reload()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">
+                        Try Again
+                    </button>
                 </div>
             </div>
-            <button id="startTaskBtn" class="primary-bg text-white px-8 py-3 rounded-lg font-semibold text-lg transition w-full mt-2">Start Task</button>
-            <div id="taskStatusMsg" class="mt-4 text-green-700 font-semibold hidden"></div>
+
+            <!-- No Tasks State -->
+            <div id="noTasksState" class="hidden text-center py-12">
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 max-w-md mx-auto">
+                    <svg class="w-12 h-12 text-yellow-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                    <h3 class="text-lg font-semibold text-yellow-800 mb-2">No Tasks Available</h3>
+                    <p class="text-yellow-600 mb-4">No reading comprehension tasks are available for your age group at this time.</p>
+                    <a href="/participant-dashboard" class="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition">
+                        Return to Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <!-- Tasks Grid -->
+            <div id="tasksGrid" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Task cards will be dynamically inserted here -->
+            </div>
         </div>
     </main>
+
+    <!-- Task Preview Modal -->
+    <div id="taskPreviewModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="modalTaskName" class="text-xl font-bold text-[#1A237E]"></h3>
+                    <button id="closeModal" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+                </div>
+                <div class="mb-4">
+                    <span class="font-semibold">Instructions:</span>
+                    <p id="modalInstructions" class="mt-1 text-gray-700"></p>
+                </div>
+                <div class="mb-4">
+                    <span class="font-semibold">Estimated Time:</span>
+                    <span id="modalTime" class="ml-2 text-gray-700"></span>
+                </div>
+                <div class="mb-6">
+                    <span class="font-semibold">Passage:</span>
+                    <div id="modalPassage" class="mt-2 p-4 bg-gray-50 rounded-lg text-gray-800 leading-relaxed"></div>
+                </div>
+                <div class="mb-6">
+                    <span class="font-semibold">Questions:</span>
+                    <div id="modalQuestions" class="mt-2 space-y-3"></div>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button id="cancelPreview" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                        Cancel
+                    </button>
+                    <button id="startFromPreview" class="primary-bg text-white px-6 py-2 rounded-lg font-semibold transition">
+                        Start Task
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Footer -->
     <footer class="dark-bg text-white py-12 text-lg" style="background-color: #333333;">
@@ -125,7 +190,6 @@
             <div class="flex flex-col md:flex-row justify-between">
                 <div class="mb-8 md:mb-0">
                     <div class="flex items-center">
-                        
                         <h2 class="text-xl font-bold">Dyslexia Research Initiative</h2>
                     </div>
                     <p class="mt-4 text-gray-400 max-w-md">
@@ -147,7 +211,6 @@
                         <ul class="space-y-2">
                             <li><a href="learn_more.html#faq" class="text-gray-400 hover:text-white transition">FAQs</a></li>
                             <li><a href="#" class="text-gray-400 hover:text-white transition">Privacy Policy</a></li>
-                            <!-- <li><a href="#" class="text-gray-400 hover:text-white transition">Terms of Service</a></li> -->
                         </ul>
                     </div>
                     
@@ -176,6 +239,9 @@
     </footer>
     
     <script>
+        const USER_ID = {{ user_id }};
+        let currentTaskId = null;
+
         // Accessibility functionality
         const root = document.documentElement;
         const panel = document.getElementById('accessibilityPanel');
@@ -284,33 +350,191 @@
             });
         });
 
-        // Task status logic for button
-        document.addEventListener('DOMContentLoaded', function() {
-            const btn = document.getElementById('startTaskBtn');
-            if (btn) {
-                // Check for saved comprehension progress
-                fetch('/api/get-comprehension-progress')
+        // Load reading comprehension tasks
+        function loadReadingComprehensionTasks() {
+            fetch(`/api/reading-comprehension-tasks/${USER_ID}`)
                 .then(res => res.json())
                 .then(data => {
-                    if (
-                        data.success &&
-                        data.progress &&
-                        data.progress.status &&
-                        data.progress.status.toLowerCase() === 'in progress'
-                    ) {
-                        btn.textContent = 'Continue Task';
-                        btn.classList.add('bg-green-600', 'hover:bg-green-700');
-                        btn.classList.remove('primary-bg');
+                    document.getElementById('loadingState').classList.add('hidden');
+                    
+                    if (data.success) {
+                        if (data.tasks && data.tasks.length > 0) {
+                            displayTasks(data.tasks, data.user_age);
+                        } else {
+                            document.getElementById('noTasksState').classList.remove('hidden');
+                        }
+                    } else {
+                        showError(data.message || 'Failed to load tasks');
                     }
                 })
-                .catch(() => {
-                    console.log('Could not check for saved comprehension progress');
+                .catch(error => {
+                    console.error('Error loading tasks:', error);
+                    document.getElementById('loadingState').classList.add('hidden');
+                    showError('Failed to load tasks. Please try again.');
                 });
+        }
 
-                btn.addEventListener('click', function() {
-                    window.location.href = "{{ url_for('task33') }}";
-                });
+        function displayTasks(tasks, userAge) {
+            const tasksGrid = document.getElementById('tasksGrid');
+            const userAgeInfo = document.getElementById('userAgeInfo');
+            
+            // Show user age info
+            if (userAge && userAge !== 'Not specified') {
+                userAgeInfo.textContent = `Showing tasks appropriate for age ${userAge}`;
             }
+            
+            tasksGrid.innerHTML = '';
+            
+            tasks.forEach(task => {
+                const taskCard = createTaskCard(task);
+                tasksGrid.appendChild(taskCard);
+            });
+            
+            tasksGrid.classList.remove('hidden');
+        }
+
+        function createTaskCard(task) {
+            const card = document.createElement('div');
+            card.className = 'bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-shadow';
+            
+            const difficultyColor = getDifficultyColor(task.difficulty_level);
+            
+            card.innerHTML = `
+                <div class="p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <h3 class="text-lg font-bold text-[#1A237E]">${task.task_name}</h3>
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full ${difficultyColor}">${task.difficulty_level}</span>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <p class="text-gray-600 text-sm mb-2"><strong>Instructions:</strong></p>
+                        <p class="text-gray-700">${task.instructions}</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <p class="text-gray-600 text-sm mb-2"><strong>Estimated Time:</strong> ${task.estimated_time} minutes</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <p class="text-gray-600 text-sm mb-2"><strong>Passage Preview:</strong></p>
+                        <div class="bg-gray-50 p-3 rounded text-sm text-gray-700 max-h-24 overflow-y-auto">
+                            ${task.passage.substring(0, 150)}${task.passage.length > 150 ? '...' : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-3">
+                        <button onclick="previewTask(${task.id})" class="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition">
+                            Preview
+                        </button>
+                        <button onclick="startComprehensionTask(${task.id}, '${task.task_name}')" class="flex-1 primary-bg text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">
+                            Start Task
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        function getDifficultyColor(difficulty) {
+            switch (difficulty) {
+                case 'Easy': return 'bg-green-100 text-green-800';
+                case 'Medium': return 'bg-yellow-100 text-yellow-800';
+                case 'Hard': return 'bg-red-100 text-red-800';
+                default: return 'bg-gray-100 text-gray-800';
+            }
+        }
+
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorState').classList.remove('hidden');
+        }
+
+        function previewTask(taskId) {
+            fetch(`/api/reading-comprehension-task/${taskId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showTaskPreview(data.task);
+                    } else {
+                        alert('Failed to load task preview');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading task preview:', error);
+                    alert('Failed to load task preview');
+                });
+        }
+
+        function showTaskPreview(task) {
+            currentTaskId = task.id;
+            
+            document.getElementById('modalTaskName').textContent = task.task_name;
+            document.getElementById('modalInstructions').textContent = task.instructions;
+            document.getElementById('modalTime').textContent = `${task.estimated_time} minutes`;
+            document.getElementById('modalPassage').textContent = task.passage;
+            
+            // Display questions
+            const questionsContainer = document.getElementById('modalQuestions');
+            questionsContainer.innerHTML = '';
+            
+            [task.question1, task.question2, task.question3].forEach((question, index) => {
+                const questionDiv = document.createElement('div');
+                questionDiv.className = 'p-3 bg-gray-50 rounded';
+                questionDiv.innerHTML = `<strong>Question ${index + 1}:</strong> ${question}`;
+                questionsContainer.appendChild(questionDiv);
+            });
+            
+            document.getElementById('taskPreviewModal').classList.remove('hidden');
+        }
+
+        function startComprehensionTask(taskId, taskName) {
+            fetch('/api/start-reading-comprehension-task', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ task_id: taskId, task_name: taskName })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = `/task33.html?task_id=${taskId}`;
+                } else {
+                    alert('Failed to start task: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error starting task:', error);
+                alert('Failed to start task');
+            });
+        }
+
+        // Modal functionality
+        document.getElementById('closeModal').addEventListener('click', () => {
+            document.getElementById('taskPreviewModal').classList.add('hidden');
+        });
+
+        document.getElementById('cancelPreview').addEventListener('click', () => {
+            document.getElementById('taskPreviewModal').classList.add('hidden');
+        });
+
+        document.getElementById('startFromPreview').addEventListener('click', () => {
+            if (currentTaskId) {
+                // Get task name from modal
+                const taskName = document.getElementById('modalTaskName').textContent;
+                startComprehensionTask(currentTaskId, taskName);
+            }
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('taskPreviewModal').addEventListener('click', (e) => {
+            if (e.target.id === 'taskPreviewModal') {
+                document.getElementById('taskPreviewModal').classList.add('hidden');
+            }
+        });
+
+        // Load tasks when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadReadingComprehensionTasks();
         });
     </script>
 </body>

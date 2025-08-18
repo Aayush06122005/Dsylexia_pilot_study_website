@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Participant Dashboard - Dyslexia Research Study</title>
+    <title>Aptitude Tasks - Dyslexia Research Study</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='landing_style.css') }}">
 </head>
@@ -12,15 +12,15 @@
     <header class="primary-bg text-white py-6">
         <div class="content-wrapper flex justify-between items-center">
             <div class="flex items-center">
-                <img src="{{ url_for('static', filename='type.jpg') }}" alt="Dashboard Graphic" class="h-12 w-12 rounded-full mr-4 hidden md:block">
-                <h1 class="text-xl md:text-2xl font-bold">Welcome to Typing Tasks</h1>
+                <img src="{{ url_for('static', filename='aptitude.png') }}" alt="Aptitude Tasks" class="h-12 w-12 rounded-full mr-4 hidden md:block">
+                <h1 class="text-xl md:text-2xl font-bold">Aptitude Tasks</h1>
             </div>
             <nav>
                 <ul class="flex space-x-6 text-lg md:text-xl items-center">
                     <li><a href="{{ url_for('landing') }}#about" class="hover:text-yellow-100 transition">About</a></li>
                     <li><a href="{{ url_for('landing') }}#contact" class="hover:text-yellow-100 transition">Contact</a></li>
-                    <li><a href="/participant-dashboard" class="hover:text-yellow-100 transition ">Dashboard</a></li>
-                    <li><a href="#" id="logoutBtn" class="hover:text-yellow-100 transition ">Logout</a></li>
+                    <li><a href="/participant-dashboard" class="hover:text-yellow-100 transition">Dashboard</a></li>
+                    <li><a href="#" id="logoutBtn" class="hover:text-yellow-100 transition">Logout</a></li>
                 </ul>
             </nav>
         </div>
@@ -96,10 +96,10 @@
     <div class="content-wrapper mt-8 mb-16">
         <!-- Welcome Section -->
         <div class="bg-white rounded-xl shadow-md p-8 mb-8">
-            <h2 class="text-3xl font-bold mb-4 text-center text-gray-800">Welcome to Your Typing Tasks!</h2>
+            <h2 class="text-3xl font-bold mb-4 text-center text-gray-800">Welcome to Your Aptitude Assessment!</h2>
             <p class="text-lg text-gray-600 text-center mb-6">
-                Based on your age, we've prepared personalized typing tasks just for you. 
-                Each task is designed to help improve your typing skills at your level.
+                Based on your age, we've prepared personalized aptitude tasks to assess your cognitive abilities. 
+                Each task covers logical reasoning, numerical ability, verbal ability, and spatial reasoning.
             </p>
             <div id="userAgeInfo" class="text-center text-blue-600 font-semibold text-lg">
                 <!-- User age will be displayed here -->
@@ -112,38 +112,38 @@
         <!-- Loading State -->
         <div id="loadingState" class="text-center py-12">
             <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            <p class="mt-4 text-gray-600">Loading your personalized typing tasks...</p>
+            <p class="mt-4 text-gray-600">Loading your personalized aptitude tasks...</p>
         </div>
 
         <!-- Error State -->
         <div id="errorState" class="hidden bg-red-50 border border-red-200 rounded-xl p-8 text-center">
             <div class="text-red-600 text-6xl mb-4">⚠️</div>
             <h3 class="text-xl font-bold text-red-800 mb-2">Oops! Something went wrong</h3>
-            <p id="errorMessage" class="text-red-600 mb-4">We couldn't load your typing tasks.</p>
-            <button onclick="loadTypingTasks()" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition">
+            <p id="errorMessage" class="text-red-600 mb-4">We couldn't load your aptitude tasks.</p>
+            <button onclick="loadAptitudeTasks()" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition">
                 Try Again
             </button>
         </div>
 
-        <!-- Typing Tasks Container -->
-        <div id="typingTasksContainer" class="hidden">
-            <h3 class="text-2xl font-bold mb-6 text-gray-800">Your Typing Tasks</h3>
-            <div id="tasksGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Typing tasks will be dynamically loaded here -->
+        <!-- Aptitude Tasks Container -->
+        <div id="aptitudeTasksContainer" class="hidden">
+            <h3 class="text-2xl font-bold mb-6 text-gray-800">Your Aptitude Assessment</h3>
+            <div id="tasksGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+                <!-- Aptitude tasks will be dynamically loaded here -->
             </div>
         </div>
 
         <!-- No Tasks State -->
         <div id="noTasksState" class="hidden bg-yellow-50 border border-yellow-200 rounded-xl p-8 text-center">
-            <div class="text-yellow-600 text-6xl mb-4">⌨️</div>
-            <h3 class="text-xl font-bold text-yellow-800 mb-2">No Typing Tasks Available</h3>
-            <p class="text-yellow-600 mb-4">We couldn't find typing tasks for your age group.</p>
+            <div class="text-yellow-600 text-6xl mb-4">🧠</div>
+            <h3 class="text-xl font-bold text-yellow-800 mb-2">No Aptitude Tasks Available</h3>
+            <p class="text-yellow-600 mb-4">We couldn't find aptitude tasks for your age group.</p>
             <a href="/profile-setup" class="bg-yellow-600 text-white px-6 py-2 rounded-lg hover:bg-yellow-700 transition">
                 Update Profile
             </a>
-        </div>
-    </div>
-
+                        </div>
+                    </div>
+    
     <!-- Footer -->
     <footer class="dark-bg text-white py-12 text-lg" style="background-color: #333333;">
         <div class="content-wrapper">
@@ -184,7 +184,7 @@
                             </a>
                             <a href="#" class="text-gray-400 hover:text-white transition">
                                 <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z" clip-rule="evenodd"></path>
+                                    <path fill-rule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v-.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z" clip-rule="evenodd"></path>
                                 </svg>
                             </a>
                         </div>
@@ -197,7 +197,7 @@
             </div>
         </div>
     </footer>
-
+    
     <script>
         // Accessibility functionality
         const root = document.documentElement;
@@ -307,24 +307,24 @@
             });
         });
 
-        // Typing Tasks Functionality
+        // Aptitude Tasks Functionality
         let currentUserAge = null;
         let currentTasks = [];
 
         document.addEventListener('DOMContentLoaded', function() {
-            // Load typing tasks when page loads
-            loadTypingTasks();
+            // Load aptitude tasks when page loads
+            loadAptitudeTasks();
         });
 
-        function loadTypingTasks() {
+        function loadAptitudeTasks() {
             const userId = {{ user_id }};
             
             // Show loading state
             showState('loading');
             
-            console.log('Loading typing tasks for user:', userId);
+            console.log('Loading aptitude tasks for user:', userId);
             
-            fetch(`/api/typing-tasks/${userId}`)
+            fetch(`/api/aptitude-tasks/${userId}`)
                 .then(response => {
                     console.log('Response status:', response.status);
                     return response.json();
@@ -334,18 +334,18 @@
                     if (data.success) {
                         currentUserAge = data.user_age;
                         currentTasks = data.tasks;
-                        displayTypingTasks(data.tasks, data.user_age);
+                        displayAptitudeTasks(data.tasks, data.user_age);
                     } else {
                         showError(data.message || 'Unknown error occurred');
                     }
                 })
                 .catch(error => {
-                    console.error('Error loading typing tasks:', error);
+                    console.error('Error loading aptitude tasks:', error);
                     showError('Network error. Please check your connection and try again.');
                 });
         }
 
-        function displayTypingTasks(tasks, userAge) {
+        function displayAptitudeTasks(tasks, userAge) {
             // Update user age info
             if (userAge === 'Not specified') {
                 document.getElementById('userAgeInfo').innerHTML = `
@@ -355,11 +355,11 @@
                 document.getElementById('ageMessage').innerHTML = `
                     <span class="text-yellow-600">⚠️</span> 
                     <a href="/profile-setup" class="text-blue-600 hover:underline">Complete your profile setup</a> 
-                    to get personalized typing tasks based on your age.
+                    to get personalized aptitude tasks based on your age.
                 `;
             } else {
                 document.getElementById('userAgeInfo').textContent = `Age: ${userAge} years`;
-                document.getElementById('ageMessage').textContent = 'These tasks are personalized for your typing level.';
+                document.getElementById('ageMessage').textContent = 'These tasks are personalized for your cognitive level.';
             }
             
             if (!tasks || tasks.length === 0) {
@@ -371,14 +371,14 @@
             tasksGrid.innerHTML = '';
 
             tasks.forEach((task, index) => {
-                const taskCard = createTaskCard(task, index);
+                const taskCard = createAptitudeTaskCard(task, index);
                 tasksGrid.appendChild(taskCard);
             });
 
             showState('tasks');
         }
 
-        function createTaskCard(task, index) {
+        function createAptitudeTaskCard(task, index) {
             const card = document.createElement('div');
             card.className = 'bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow';
             
@@ -401,51 +401,73 @@
                     break;
             }
 
+            // Parse questions to count them
+            let logicalCount = 0, numericalCount = 0, verbalCount = 0, spatialCount = 0;
+            try {
+                if (task.logical_reasoning_questions) {
+                    logicalCount = JSON.parse(task.logical_reasoning_questions).length;
+                }
+                if (task.numerical_ability_questions) {
+                    numericalCount = JSON.parse(task.numerical_ability_questions).length;
+                }
+                if (task.verbal_ability_questions) {
+                    verbalCount = JSON.parse(task.verbal_ability_questions).length;
+                }
+                if (task.spatial_reasoning_questions) {
+                    spatialCount = JSON.parse(task.spatial_reasoning_questions).length;
+                }
+            } catch (e) {
+                console.error('Error parsing questions:', e);
+            }
+
+            const totalQuestions = logicalCount + numericalCount + verbalCount + spatialCount;
+
             card.innerHTML = `
-                <div class="flex justify-between items-start mb-4">
+                    <div class="flex justify-between items-start mb-4">
                     <h3 class="text-xl font-bold text-gray-800">${task.task_name}</h3>
                     <span class="px-3 py-1 rounded-full text-xs font-semibold ${difficultyColor} text-white">
-                        ${task.difficulty_level}
-                    </span>
-                </div>
-                
+                            ${task.difficulty_level}
+                        </span>
+                    </div>
+                    
                 <div class="mb-4">
                     <p class="text-sm text-gray-600 mb-2">
                         <strong>Instructions:</strong> ${task.instructions}
                     </p>
-                    <p class="text-sm text-gray-600 mb-2">
-                        <strong>Word Limit:</strong> ${task.word_limit_min}-${task.word_limit_max} words
-                    </p>
                     <p class="text-sm text-gray-600">
                         <strong>Estimated Time:</strong> ${task.estimated_time} minutes
                     </p>
-                </div>
-                
+                        </div>
+                        
                 <div class="bg-gray-50 p-4 rounded-lg mb-4">
-                    <p class="text-sm font-medium text-gray-700 mb-2">Writing Prompt:</p>
-                    <div class="text-sm text-gray-600 leading-relaxed max-h-32 overflow-y-auto">
-                        ${task.prompt}
+                    <p class="text-sm font-medium text-gray-700 mb-2">Test Sections:</p>
+                    <div class="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                        <div>🧠 Logical Reasoning: ${logicalCount} questions</div>
+                        <div>🔢 Numerical Ability: ${numericalCount} questions</div>
+                        <div>📝 Verbal Ability: ${verbalCount} questions</div>
+                        <div>🔷 Spatial Reasoning: ${spatialCount} questions</div>
                     </div>
-                </div>
-                
+                    <p class="text-xs text-gray-500 mt-2">Total: ${totalQuestions} questions</p>
+                    </div>
+                    
                 <div class="flex space-x-3">
-                    <button onclick="startTypingTask(${task.id}, '${task.task_name}')" 
+                    <button onclick="startAptitudeTask(${task.id}, '${task.task_name}')" 
                             class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium">
-                        Start Typing
+                        Start Assessment
                     </button>
-                    <button onclick="previewTask(${index})" 
+                    <button onclick="previewAptitudeTask(${index})" 
                             class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-                        Preview
-                    </button>
+                            Preview
+                        </button>
                 </div>
             `;
             
             return card;
         }
 
-        function startTypingTask(taskId, taskName) {
+        function startAptitudeTask(taskId, taskName) {
             // Mark task as started
-            fetch('/api/start-typing-task', {
+            fetch('/api/start-aptitude-task', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -458,8 +480,8 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Redirect to the actual typing task page with task ID
-                    window.location.href = "{{ url_for('task22') }}?task_id=" + taskId;
+                    // Redirect to the aptitude test page with task ID
+                    window.location.href = "/aptitude.html?task_id=" + taskId;
                 } else {
                     alert('Failed to start task: ' + data.message);
                 }
@@ -470,13 +492,76 @@
             });
         }
 
-        function previewTask(taskIndex) {
+        function previewAptitudeTask(taskIndex) {
             const task = currentTasks[taskIndex];
             if (!task) return;
 
             // Create a modal to preview the task
             const modal = document.createElement('div');
             modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            
+            // Parse questions to get sample questions
+            let sampleQuestions = [];
+            try {
+                if (task.logical_reasoning_questions) {
+                    const logicalQuestions = JSON.parse(task.logical_reasoning_questions);
+                    if (logicalQuestions.length > 0) {
+                        sampleQuestions.push({
+                            section: 'Logical Reasoning',
+                            question: logicalQuestions[0].question,
+                            options: logicalQuestions[0].options
+                        });
+                    }
+                }
+                if (task.numerical_ability_questions) {
+                    const numericalQuestions = JSON.parse(task.numerical_ability_questions);
+                    if (numericalQuestions.length > 0) {
+                        sampleQuestions.push({
+                            section: 'Numerical Ability',
+                            question: numericalQuestions[0].question,
+                            options: numericalQuestions[0].options
+                        });
+                    }
+                }
+                if (task.verbal_ability_questions) {
+                    const verbalQuestions = JSON.parse(task.verbal_ability_questions);
+                    if (verbalQuestions.length > 0) {
+                        sampleQuestions.push({
+                            section: 'Verbal Ability',
+                            question: verbalQuestions[0].question,
+                            options: verbalQuestions[0].options
+                        });
+                    }
+                }
+                if (task.spatial_reasoning_questions) {
+                    const spatialQuestions = JSON.parse(task.spatial_reasoning_questions);
+                    if (spatialQuestions.length > 0) {
+                        sampleQuestions.push({
+                            section: 'Spatial Reasoning',
+                            question: spatialQuestions[0].question,
+                            options: spatialQuestions[0].options
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error('Error parsing sample questions:', e);
+            }
+
+            let sampleQuestionsHTML = '';
+            sampleQuestions.forEach(sample => {
+                sampleQuestionsHTML += `
+                    <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                        <h4 class="font-semibold text-gray-800 mb-2">${sample.section}</h4>
+                        <p class="text-gray-700 mb-2">${sample.question}</p>
+                        <div class="text-sm text-gray-600">
+                            ${sample.options.map((option, idx) => 
+                                `<div class="ml-4">${String.fromCharCode(65 + idx)}. ${option}</div>`
+                            ).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
             modal.innerHTML = `
                 <div class="bg-white rounded-xl p-8 max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
                     <div class="flex justify-between items-center mb-6">
@@ -486,21 +571,19 @@
                     
                     <div class="mb-6">
                         <p class="text-gray-600 mb-4"><strong>Instructions:</strong> ${task.instructions}</p>
-                        <p class="text-gray-600 mb-4"><strong>Word Limit:</strong> ${task.word_limit_min}-${task.word_limit_max} words</p>
                         <p class="text-gray-600"><strong>Estimated Time:</strong> ${task.estimated_time} minutes</p>
+                        <p class="text-gray-600"><strong>Difficulty:</strong> ${task.difficulty_level}</p>
                     </div>
                     
-                    <div class="bg-gray-50 p-6 rounded-lg">
-                        <p class="text-lg font-medium text-gray-700 mb-3">Writing Prompt:</p>
-                        <div class="text-gray-600 leading-relaxed">
-                            ${task.prompt}
-                        </div>
+                    <div class="mb-6">
+                        <h4 class="font-semibold text-gray-800 mb-3">Sample Questions:</h4>
+                        ${sampleQuestionsHTML}
                     </div>
                     
                     <div class="mt-6 text-center">
-                        <button onclick="startTypingTask(${task.id}, '${task.task_name}')" 
+                        <button onclick="startAptitudeTask(${task.id}, '${task.task_name}')" 
                                 class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-medium">
-                            Start This Task
+                            Start This Assessment
                         </button>
                     </div>
                 </div>
@@ -520,7 +603,7 @@
             // Hide all states
             document.getElementById('loadingState').classList.add('hidden');
             document.getElementById('errorState').classList.add('hidden');
-            document.getElementById('typingTasksContainer').classList.add('hidden');
+            document.getElementById('aptitudeTasksContainer').classList.add('hidden');
             document.getElementById('noTasksState').classList.add('hidden');
             
             // Show the requested state
@@ -532,7 +615,7 @@
                     document.getElementById('errorState').classList.remove('hidden');
                     break;
                 case 'tasks':
-                    document.getElementById('typingTasksContainer').classList.remove('hidden');
+                    document.getElementById('aptitudeTasksContainer').classList.remove('hidden');
                     break;
                 case 'noTasks':
                     document.getElementById('noTasksState').classList.remove('hidden');
