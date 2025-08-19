@@ -394,58 +394,140 @@
             });
     }
 
-    function displayMathematicalContent(task) {
-        // Update the title to show the task name
-        const titleElement = document.querySelector('h2');
-        if (titleElement) {
-            titleElement.textContent = task.task_name;
-        }
+    // function displayMathematicalContent(task) {
+    //     // Update the title to show the task name
+    //     const titleElement = document.querySelector('h2');
+    //     if (titleElement) {
+    //         titleElement.textContent = task.task_name;
+    //     }
 
-        // Display the problem text
-        const problemDiv = document.getElementById('problemText');
-        problemDiv.innerHTML = `<p>${task.problem_text}</p>`;
+    //     // Display the problem text
+    //     const problemDiv = document.getElementById('problemText');
+    //     problemDiv.innerHTML = `<p>${task.problem_text}</p>`;
 
-        // Generate questions dynamically
-        const questionsContainer = document.getElementById('questionsContainer');
-        questionsContainer.innerHTML = '';
+    //     // Generate questions dynamically
+    //     const questionsContainer = document.getElementById('questionsContainer');
+    //     questionsContainer.innerHTML = '';
 
-        // Question 1
-        const q1Div = document.createElement('div');
-        q1Div.innerHTML = `
-            <label for="q1" class="block font-semibold mb-2">1. ${task.question1}</label>
-            ${task.answer1_options ? 
-                `<select id="q1" name="q1" class="w-full border border-gray-300 rounded p-2 text-lg" required>
-                    <option value="">Select an answer</option>
-                    ${JSON.parse(task.answer1_options).map(option => `<option value="${option}">${option}</option>`).join('')}
-                </select>` :
-                `<input type="number" id="q1" name="q1" class="w-full border border-gray-300 rounded p-2 text-lg" required>`
-            }
-        `;
-        questionsContainer.appendChild(q1Div);
+    //     // Question 1
+    //     const q1Div = document.createElement('div');
+    //     q1Div.innerHTML = `
+    //         <label for="q1" class="block font-semibold mb-2">1. ${task.question1}</label>
+    //         ${task.answer1_options ? 
+    //             `<select id="q1" name="q1" class="w-full border border-gray-300 rounded p-2 text-lg" required>
+    //                 <option value="">Select an answer</option>
+    //                 ${JSON.parse(task.answer1_options).map(option => `<option value="${option}">${option}</option>`).join('')}
+    //             </select>` :
+    //             `<input type="number" id="q1" name="q1" class="w-full border border-gray-300 rounded p-2 text-lg" required>`
+    //         }
+    //     `;
+    //     questionsContainer.appendChild(q1Div);
 
-        // Question 2
-        const q2Div = document.createElement('div');
-        q2Div.innerHTML = `
-            <label for="q2" class="block font-semibold mb-2">2. ${task.question2}</label>
-            ${task.answer2_options ? 
-                `<select id="q2" name="q2" class="w-full border border-gray-300 rounded p-2 text-lg" required>
-                    <option value="">Select an answer</option>
-                    ${JSON.parse(task.answer2_options).map(option => `<option value="${option}">${option}</option>`).join('')}
-                </select>` :
-                `<input type="number" id="q2" name="q2" class="w-full border border-gray-300 rounded p-2 text-lg" required>`
-            }
-        `;
-        questionsContainer.appendChild(q2Div);
+    //     // Question 2
+    //     const q2Div = document.createElement('div');
+    //     q2Div.innerHTML = `
+    //         <label for="q2" class="block font-semibold mb-2">2. ${task.question2}</label>
+    //         ${task.answer2_options ? 
+    //             `<select id="q2" name="q2" class="w-full border border-gray-300 rounded p-2 text-lg" required>
+    //                 <option value="">Select an answer</option>
+    //                 ${JSON.parse(task.answer2_options).map(option => `<option value="${option}">${option}</option>`).join('')}
+    //             </select>` :
+    //             `<input type="number" id="q2" name="q2" class="w-full border border-gray-300 rounded p-2 text-lg" required>`
+    //         }
+    //     `;
+    //     questionsContainer.appendChild(q2Div);
 
-        // Question 3
-        const q3Div = document.createElement('div');
-        const inputType = task.answer3_type === 'number' ? 'number' : 'text';
-        q3Div.innerHTML = `
-            <label for="q3" class="block font-semibold mb-2">3. ${task.question3}</label>
-            <input type="${inputType}" id="q3" name="q3" class="w-full border border-gray-300 rounded p-2 text-lg" required>
-        `;
-        questionsContainer.appendChild(q3Div);
+    //     // Question 3
+    //     const q3Div = document.createElement('div');
+    //     const inputType = task.answer3_type === 'number' ? 'number' : 'text';
+    //     q3Div.innerHTML = `
+    //         <label for="q3" class="block font-semibold mb-2">3. ${task.question3}</label>
+    //         <input type="${inputType}" id="q3" name="q3" class="w-full border border-gray-300 rounded p-2 text-lg" required>
+    //     `;
+    //     questionsContainer.appendChild(q3Div);
+    // }
+
+    // ...existing code...
+
+function displayMathematicalContent(task) {
+    // Update the title to show the task name
+    const titleElement = document.querySelector('h2');
+    if (titleElement) {
+        titleElement.textContent = task.task_name;
     }
+
+    // Display the problem text
+    const problemDiv = document.getElementById('problemText');
+    problemDiv.innerHTML = `<p>${task.problem_text}</p>`;
+
+    // Generate questions dynamically
+    const questionsContainer = document.getElementById('questionsContainer');
+    questionsContainer.innerHTML = '';
+
+    // Question 1
+    const q1Div = document.createElement('div');
+    q1Div.innerHTML = `
+        <label for="q1" class="block font-semibold mb-2">1. ${task.question1}</label>
+        ${task.answer1_options ? 
+            `<select id="q1" name="q1" class="w-full border border-gray-300 rounded p-2 text-lg" required>
+                <option value="">Select an answer</option>
+                ${JSON.parse(task.answer1_options).map(option => `<option value="${option}">${option}</option>`).join('')}
+            </select>` :
+            `<input type="number" id="q1" name="q1" class="w-full border border-gray-300 rounded p-2 text-lg" required>`
+        }
+    `;
+    questionsContainer.appendChild(q1Div);
+
+    // Question 2
+    const q2Div = document.createElement('div');
+    q2Div.innerHTML = `
+        <label for="q2" class="block font-semibold mb-2">2. ${task.question2}</label>
+        ${task.answer2_options ? 
+            `<select id="q2" name="q2" class="w-full border border-gray-300 rounded p-2 text-lg" required>
+                <option value="">Select an answer</option>
+                ${JSON.parse(task.answer2_options).map(option => `<option value="${option}">${option}</option>`).join('')}
+            </select>` :
+            `<input type="number" id="q2" name="q2" class="w-full border border-gray-300 rounded p-2 text-lg" required>`
+        }
+    `;
+    questionsContainer.appendChild(q2Div);
+
+    // Question 3
+    const q3Div = document.createElement('div');
+    const inputType = task.answer3_type === 'number' ? 'number' : 'text';
+    q3Div.innerHTML = `
+        <label for="q3" class="block font-semibold mb-2">3. ${task.question3}</label>
+        <input type="${inputType}" id="q3" name="q3" class="w-full border border-gray-300 rounded p-2 text-lg" required>
+    `;
+    questionsContainer.appendChild(q3Div);
+
+    // --- FIX: Load saved progress after rendering the form fields ---
+    fetch('/api/get-comprehension-progress')
+    .then(res => res.json())
+    .then(data => {
+        if (data.success && data.progress) {
+            const q1Input = document.getElementById('q1');
+            const q2Input = document.getElementById('q2');
+            const q3Input = document.getElementById('q3');
+            if (q1Input) q1Input.value = data.progress.q1 || '';
+            if (q2Input) q2Input.value = data.progress.q2 || '';
+            if (q3Input) q3Input.value = data.progress.q3 || '';
+            if (data.progress.status === 'Completed') {
+                taskCompleted = true;
+                document.getElementById('saveProgressBtn').disabled = true;
+                document.getElementById('submitBtn').disabled = true;
+                document.getElementById('formMsg').textContent = 'This task has already been submitted.';
+                document.getElementById('formMsg').classList.remove('hidden', 'text-red-600');
+                document.getElementById('formMsg').classList.add('text-green-700');
+            }
+        }
+    })
+    .catch(() => {
+        console.log('Could not load saved progress');
+    });
+}
+
+// ...existing code...
 
     function showError(message) {
         const problemDiv = document.getElementById('problemText');

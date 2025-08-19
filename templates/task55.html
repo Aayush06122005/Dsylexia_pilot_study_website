@@ -403,6 +403,7 @@
             document.getElementById('wordLimit').textContent = `${task.word_limit_min}-${task.word_limit_max} words`;
             document.getElementById('estimatedTime').textContent = task.estimated_time;
             document.getElementById('difficulty').textContent = task.difficulty_level;
+            loadSavedProgress(task.id);
         }
 
         function showError(message) {
@@ -531,6 +532,26 @@
                 this.disabled = false;
             });
         });
+
+        function loadSavedProgress(taskId) {
+    fetch(`/api/get-writing-progress?task_id=${taskId}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.progress && data.progress.filename) {
+                // Show the saved image and status
+                const imageUrl = `/uploads/${data.progress.filename}`;
+                previewImg.src = imageUrl;
+                imagePreview.classList.remove('hidden');
+                uploadArea.classList.add('hidden');
+                document.getElementById('saveProgressBtn').disabled = false;
+                document.getElementById('submitBtn').disabled = false;
+                showSuccess('You have a saved draft for this task. You can continue or submit.');
+            }
+        })
+        .catch(() => {
+            // Ignore errors, just don't show saved progress
+        });
+}
 
         // Submit functionality
         document.getElementById('submitBtn').addEventListener('click', function() {

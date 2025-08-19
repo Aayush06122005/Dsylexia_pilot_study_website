@@ -3309,6 +3309,32 @@ def admin_dashboard_stats():
         cursor.close()
         conn.close()
 
+@app.route('/api/get-writing-progress', methods=['GET'])
+def get_writing_progress():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    task_id = request.args.get('task_id')
+    if not task_id:
+        return jsonify({'success': False, 'message': 'No task_id provided'}), 400
+    try:
+        conn = connect_db()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT filename, status FROM writing_samples
+            WHERE user_id = %s AND task_id = %s
+            ORDER BY uploaded_at DESC LIMIT 1
+        """, (session['user_id'], task_id))
+        result = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        if result:
+            return jsonify({'success': True, 'progress': result})
+        else:
+            return jsonify({'success': True, 'progress': None})
+    except Exception as e:
+        print(f"Get writing progress error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to get writing progress'}), 500
+
 
 @app.route('/api/admin/set-user-task-status', methods=['POST'])
 def admin_set_user_task_status():
