@@ -3281,7 +3281,7 @@ def admin_dashboard_stats():
     cursor = conn.cursor(dictionary=True)
     try:
         # Total participants
-        cursor.execute('SELECT COUNT(*) as total FROM users')
+        cursor.execute("SELECT COUNT(*) as total FROM users WHERE user_type = 'child'")
         total_participants = cursor.fetchone()['total']
         # Average completion rate (average progress across all users)
         cursor.execute('SELECT id FROM users')
