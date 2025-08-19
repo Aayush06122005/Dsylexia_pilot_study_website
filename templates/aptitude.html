@@ -345,12 +345,19 @@
         }
 
         function saveProgress(scores) {
+            const payload = {
+                ...scores,
+                answers,
+                current_section: currentSection,
+                answered_count: answeredQuestions,
+                progress_percent: Math.round((answeredQuestions / totalQuestions) * 100)
+            };
             fetch('/api/save-aptitude-progress', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(scores)
+                body: JSON.stringify(payload)
             })
             .then(response => response.json())
             .then(data => {
@@ -407,9 +414,52 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success && data.progress) {
-                    // Restore answers from saved progress
-                    // This is a simplified restoration - in a real app you'd store the actual answers
-                    console.log('Loaded saved progress:', data.progress);
+                    try {
+                        const saved = data.progress;
+                        // Restore answers
+                        if (saved.answers) {
+                            const savedAnswers = typeof saved.answers === 'string' ? JSON.parse(saved.answers) : saved.answers;
+                            if (savedAnswers && typeof savedAnswers === 'object') {
+                                answers = savedAnswers;
+                            }
+                        }
+
+                        // Restore current section if available
+                        if (saved.current_section) {
+                            showSection(saved.current_section);
+                            updateNavigation();
+                        }
+
+                        // Paint selections in UI
+                        Object.keys(answers).forEach(sectionKey => {
+                            const sectionEl = document.getElementById(sectionKey + 'Section');
+                            if (!sectionEl) return;
+                            const questions = Array.from(sectionEl.querySelectorAll('.question'));
+                            Object.keys(answers[sectionKey]).forEach(idx => {
+                                const qIndex = parseInt(idx, 10);
+                                const qEl = questions[qIndex];
+                                if (!qEl) return;
+                                const val = answers[sectionKey][idx];
+                                const btn = qEl.querySelector(`.option-btn[data-value="${val}"]`);
+                                if (btn) {
+                                    qEl.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+                                    btn.classList.add('selected');
+                                }
+                            });
+                        });
+
+                        // Restore progress bar/text
+                        if (typeof saved.answered_count === 'number') {
+                            answeredQuestions = saved.answered_count;
+                        } else {
+                            updateProgress();
+                        }
+                        const pct = saved.progress_percent || Math.round((answeredQuestions / totalQuestions) * 100);
+                        progressBar.style.width = pct + '%';
+                        progressText.textContent = pct + '%';
+                    } catch (e) {
+                        console.error('Error restoring aptitude progress:', e);
+                    }
                 }
             })
             .catch(error => {

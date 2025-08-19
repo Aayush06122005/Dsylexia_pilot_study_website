@@ -26,6 +26,9 @@
         </div>
     </header>
 
+    <!-- Hidden root element to carry server values without breaking JS linting -->
+    <div id="aptitudeRoot" data-user-id="{{ user_id }}" class="hidden"></div>
+
     <!-- Accessibility Button with Label -->
     <div class="fixed bottom-4 left-4 z-50 flex flex-col items-center space-y-1">
         <button id="togglePanel"
@@ -317,7 +320,9 @@
         });
 
         function loadAptitudeTasks() {
-            const userId = {{ user_id }};
+            const rootEl = document.getElementById('aptitudeRoot');
+            const userIdAttr = rootEl ? rootEl.getAttribute('data-user-id') : null;
+            const userId = userIdAttr ? parseInt(userIdAttr, 10) : null;
             
             // Show loading state
             showState('loading');

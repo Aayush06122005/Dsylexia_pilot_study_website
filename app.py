@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, session, flash, redirect, url_for, re
 from flask_cors import CORS
 import mysql.connector
 from datetime import datetime
+import json
 import bcrypt
 import os
 from werkzeug.utils import secure_filename
@@ -1364,6 +1365,9 @@ def task6():
 
 @app.route('/aptitude.html')
 def aptitude():
+    # Require login to access the aptitude test so progress can be saved to a user
+    if 'user_id' not in session:
+        return redirect(url_for('signin'))
     return render_template('aptitude.html')
 
 def allowed_file(filename):
@@ -1657,13 +1661,49 @@ def save_aptitude_progress():
     verbal_ability_score = data.get('verbal_ability_score', 0)
     spatial_reasoning_score = data.get('spatial_reasoning_score', 0)
     total_score = data.get('total_score', 0)
+    # New detailed progress fields
+    answers = data.get('answers')  # expected dict of {section: {questionIndex: value}}
+    current_section = data.get('current_section')
+    answered_count = data.get('answered_count', 0)
+    progress_percent = data.get('progress_percent', 0)
     
     try:
         conn = connect_db()
         cursor = conn.cursor()
+
+        # Ensure schema has columns to store detailed progress (idempotent on MySQL 8+)
+        try:
+            cursor.execute(
+                """
+                ALTER TABLE aptitude_progress
+                ADD COLUMN IF NOT EXISTS answers JSON NULL,
+                ADD COLUMN IF NOT EXISTS current_section VARCHAR(50) NULL,
+                ADD COLUMN IF NOT EXISTS answered_count INT DEFAULT 0,
+                ADD COLUMN IF NOT EXISTS progress_percent INT DEFAULT 0
+                """
+            )
+            conn.commit()
+        except Exception as _e:
+            # Ignore if DB doesn't support IF NOT EXISTS or columns already exist
+            pass
+
+        # Insert/Update progress with answers/state
         cursor.execute('''
-            INSERT INTO aptitude_progress (user_id, logical_reasoning_score, numerical_ability_score, verbal_ability_score, spatial_reasoning_score, total_score, status, updated_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
+            INSERT INTO aptitude_progress (
+                user_id,
+                logical_reasoning_score,
+                numerical_ability_score,
+                verbal_ability_score,
+                spatial_reasoning_score,
+                total_score,
+                status,
+                answers,
+                current_section,
+                answered_count,
+                progress_percent,
+                updated_at
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
             ON DUPLICATE KEY UPDATE 
                 logical_reasoning_score=VALUES(logical_reasoning_score), 
                 numerical_ability_score=VALUES(numerical_ability_score), 
@@ -1671,8 +1711,24 @@ def save_aptitude_progress():
                 spatial_reasoning_score=VALUES(spatial_reasoning_score), 
                 total_score=VALUES(total_score), 
                 status=VALUES(status), 
+                answers=VALUES(answers),
+                current_section=VALUES(current_section),
+                answered_count=VALUES(answered_count),
+                progress_percent=VALUES(progress_percent),
                 updated_at=NOW()
-        ''', (session['user_id'], logical_reasoning_score, numerical_ability_score, verbal_ability_score, spatial_reasoning_score, total_score, 'In Progress'))
+        ''', (
+            session['user_id'],
+            logical_reasoning_score,
+            numerical_ability_score,
+            verbal_ability_score,
+            spatial_reasoning_score,
+            total_score,
+            'In Progress',
+            json.dumps(answers) if answers is not None else None,
+            current_section,
+            answered_count,
+            progress_percent
+        ))
         # Mark task as In Progress
         cursor.execute('''
             INSERT INTO user_tasks (user_id, task_name, status)
@@ -1695,11 +1751,59 @@ def get_aptitude_progress():
     try:
         conn = connect_db()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute('''
-            SELECT logical_reasoning_score, numerical_ability_score, verbal_ability_score, spatial_reasoning_score, total_score, status 
-            FROM aptitude_progress WHERE user_id = %s
-        ''', (session['user_id'],))
-        result = cursor.fetchone()
+        # Try to ensure extended columns exist; ignore errors on older MySQL
+        try:
+            cursor.execute(
+                """
+                ALTER TABLE aptitude_progress
+                ADD COLUMN IF NOT EXISTS answers JSON NULL,
+                ADD COLUMN IF NOT EXISTS current_section VARCHAR(50) NULL,
+                ADD COLUMN IF NOT EXISTS answered_count INT DEFAULT 0,
+                ADD COLUMN IF NOT EXISTS progress_percent INT DEFAULT 0
+                """
+            )
+            conn.commit()
+        except Exception:
+            pass
+
+        # Attempt full select including extended columns; fall back if unavailable
+        try:
+            cursor.execute('''
+                SELECT 
+                    logical_reasoning_score,
+                    numerical_ability_score,
+                    verbal_ability_score,
+                    spatial_reasoning_score,
+                    total_score,
+                    status,
+                    answers,
+                    current_section,
+                    answered_count,
+                    progress_percent
+                FROM aptitude_progress WHERE user_id = %s
+            ''', (session['user_id'],))
+            result = cursor.fetchone()
+        except Exception:
+            cursor.close()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute('''
+                SELECT 
+                    logical_reasoning_score,
+                    numerical_ability_score,
+                    verbal_ability_score,
+                    spatial_reasoning_score,
+                    total_score,
+                    status
+                FROM aptitude_progress WHERE user_id = %s
+            ''', (session['user_id'],))
+            base = cursor.fetchone()
+            if base:
+                # Provide default None/0s for missing fields
+                base['answers'] = None
+                base['current_section'] = None
+                base['answered_count'] = 0
+                base['progress_percent'] = 0
+            result = base
         cursor.close()
         conn.close()
         if result:
