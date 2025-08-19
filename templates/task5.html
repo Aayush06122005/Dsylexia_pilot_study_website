@@ -448,12 +448,14 @@
                     </div>
                     
                     <div class="flex gap-3">
-                        <button onclick="previewTask(${task.id})" class="bg-gray-600 text-white px-4 py-2 rounded-lg font-semibold transition hover:bg-gray-700 flex-1">
-                            Preview
-                        </button>
                         <button onclick="startTask(${task.id}, '${task.task_name}')" class="primary-bg text-white px-4 py-2 rounded-lg font-semibold transition hover:bg-blue-700 flex-1">
                             Start Task
                         </button>
+                        
+                        <button onclick="previewTask(${task.id})" class="bg-gray-600 text-white px-4 py-2 rounded-lg font-semibold transition hover:bg-gray-700 flex-1">
+                            Preview
+                        </button>
+                        
                     </div>
                 </div>
             `;
