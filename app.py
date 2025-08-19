@@ -1503,7 +1503,7 @@ def save_typing_progress():
             INSERT INTO user_tasks (user_id, task_name, status)
             VALUES (%s, %s, %s)
             ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
-        ''', (session['user_id'], task_name, 'In Progress'))
+        ''', (session['user_id'], 'Typing Task', 'In Progress'))
         conn.commit()
         cursor.close()
         conn.close()
@@ -2587,7 +2587,7 @@ def start_mathematical_comprehension_task():
             INSERT INTO user_tasks (user_id, task_name, status)
             VALUES (%s, %s, %s)
             ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
-        ''', (session['user_id'], f'Mathematical Comprehension Task {task_name}', 'In Progress'))
+        ''', (session['user_id'], f'Mathematical Comprehension', 'In Progress'))
         
         conn.commit()
         cursor.close()

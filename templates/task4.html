@@ -444,18 +444,44 @@
                     </div>
                     
                     <div class="flex gap-3">
-                        <button onclick="previewTask(${task.id})" class="bg-gray-600 text-white px-4 py-2 rounded-lg font-semibold transition hover:bg-gray-700 flex-1">
-                            Preview
-                        </button>
                         <button onclick="startTask(${task.id}, '${task.task_name}')" class="primary-bg text-white px-4 py-2 rounded-lg font-semibold transition hover:bg-blue-700 flex-1">
                             Start Task
                         </button>
+
+                        <button onclick="previewTask(${task.id})" class="bg-gray-600 text-white px-4 py-2 rounded-lg font-semibold transition hover:bg-gray-700 flex-1">
+                            Preview
+                        </button>
+                        
                     </div>
                 </div>
             `;
             
             return card;
         }
+
+        function startTask(taskId, taskName) {
+            // Mark task as started
+            fetch('/api/start-mathematical-comprehension-task', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ task_id: taskId, task_name: taskName })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Close modal and redirect to task execution page
+                    document.getElementById('taskPreviewModal').classList.add('hidden');
+                    window.location.href = `/task44.html?task_id=${taskId}`;
+                } else {
+                    alert('Failed to start task: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error starting task:', error);
+                alert('Failed to start task. Please try again.');
+            });
+        }
+
 
         function previewTask(taskId) {
             const task = currentTasks.find(t => t.id === taskId);
@@ -484,29 +510,7 @@
             document.getElementById('taskPreviewModal').classList.remove('hidden');
         }
 
-        function startTask(taskId, taskName) {
-            // Mark task as started
-            fetch('/api/start-mathematical-comprehension-task', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ task_id: taskId, task_name: taskName })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Close modal and redirect to task execution page
-                    document.getElementById('taskPreviewModal').classList.add('hidden');
-                    window.location.href = `/task44.html?task_id=${taskId}`;
-                } else {
-                    alert('Failed to start task: ' + (data.message || 'Unknown error'));
-                }
-            })
-            .catch(error => {
-                console.error('Error starting task:', error);
-                alert('Failed to start task. Please try again.');
-            });
-        }
-
+        
         // Modal controls
         document.getElementById('closeModal').addEventListener('click', () => {
             document.getElementById('taskPreviewModal').classList.add('hidden');
