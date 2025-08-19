@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin | {{ category_title }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='landing_style.css') }}">
+    <style>
+        .content-wrapper { max-width: 1100px; margin: 0 auto; padding: 0 1rem; }
+    </style>
+ </head>
+<body class="bg-gray-50">
+    <header class="primary-bg text-white py-4 shadow-lg">
+        <div class="content-wrapper flex justify-between items-center">
+            <div class="flex items-center">
+                <img src="{{ url_for('static', filename='admin.jpg') }}" alt="Admin" class="h-12 w-12 rounded-full mr-4 object-cover">
+                <h1 class="text-xl md:text-2xl font-bold">{{ category_title }} Tasks</h1>
+            </div>
+            <nav>
+                <ul class="flex space-x-4 text-lg items-center">
+                    <li><a class="hover:underline" href="{{ url_for('admin_portal') }}">Back to Admin</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="content-wrapper py-8">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">{{ category_title }} (by Age Groups)</h2>
+            <button class="px-4 py-2 rounded bg-green-600 text-white" onclick="addTask()">Add Task</button>
+        </div>
+        {% if age_groups and age_groups|length > 0 %}
+            <div class="space-y-8">
+                {% for group in age_groups %}
+                    <div class="bg-white rounded-lg shadow-md border border-gray-200">
+                        <div class="px-6 py-4 border-b">
+                            <h2 class="text-lg font-semibold text-gray-800">{{ group.label }}</h2>
+                        </div>
+                        <div class="p-6 overflow-x-auto">
+                            <table class="min-w-full border border-gray-200 rounded-lg">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Task Name</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Info</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estimated Time</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200">
+                                    {% for task in group.tasks %}
+                                        <tr>
+                                            <td class="align-top px-6 py-4 text-sm text-gray-900">
+                                                <div class="font-semibold">{{ task.task_name }}</div>
+                                                <div class="text-xs text-gray-500">{{ task.difficulty_level }}</div>
+                                            </td>
+                                            <td class="align-top px-6 py-4 text-sm text-gray-900">
+                                                {% if category_slug == 'reading-aloud' %}
+                                                    <div class="text-xs text-gray-500 mb-1">Instructions:</div>
+                                                    <div class="text-sm text-gray-700 mb-2">{{ task.instructions }}</div>
+                                                    <div class="text-xs text-gray-500 mb-1">Passage:</div>
+                                                    <div class="text-sm text-gray-700 max-h-28 overflow-y-auto whitespace-pre-wrap">{{ task.content }}</div>
+                                                {% elif category_slug in ['typing', 'writing'] %}
+                                                    <div class="text-xs text-gray-500 mb-1">Instructions:</div>
+                                                    <div class="text-sm text-gray-700 mb-2">{{ task.instructions }}</div>
+                                                    <div class="text-xs text-gray-500 mb-1">Prompt/Topic:</div>
+                                                    <div class="text-sm text-gray-700 max-h-28 overflow-y-auto whitespace-pre-wrap">{{ task.prompt }}</div>
+                                                {% elif category_slug == 'reading-comprehension' %}
+                                                    <div class="text-xs text-gray-500 mb-1">Instructions:</div>
+                                                    <div class="text-sm text-gray-700 mb-2">{{ task.instructions }}</div>
+                                                    <div class="text-xs text-gray-500 mb-1">Passage:</div>
+                                                    <div class="text-sm text-gray-700 mb-2 max-h-28 overflow-y-auto whitespace-pre-wrap">{{ task.passage }}</div>
+                                                    <div class="text-xs text-gray-500 mb-1">Questions:</div>
+                                                    <ol class="list-decimal list-inside text-sm text-gray-700 space-y-1">
+                                                        <li>{{ task.question1 }}</li>
+                                                        <li>{{ task.question2 }}</li>
+                                                        <li>{{ task.question3 }}</li>
+                                                    </ol>
+                                                    {% if task.answer1_options %}
+                                                        <div class="mt-2 text-xs text-gray-500">Options for Q1:</div>
+                                                        <ul class="list-disc list-inside text-sm text-gray-700">
+                                                            {% for opt in task.answer1_options %}
+                                                                <li>{{ opt }}</li>
+                                                            {% endfor %}
+                                                        </ul>
+                                                    {% endif %}
+                                                    {% if task.answer2_options %}
+                                                        <div class="mt-2 text-xs text-gray-500">Options for Q2:</div>
+                                                        <ul class="list-disc list-inside text-sm text-gray-700">
+                                                            {% for opt in task.answer2_options %}
+                                                                <li>{{ opt }}</li>
+                                                            {% endfor %}
+                                                        </ul>
+                                                    {% endif %}
+                                                    <div class="mt-2 text-xs text-gray-500">Answer 3 type:</div>
+                                                    <div class="text-sm text-gray-700">{{ task.answer3_type }}</div>
+                                                {% elif category_slug == 'mathematical-comprehension' %}
+                                                    <div class="text-xs text-gray-500 mb-1">Instructions:</div>
+                                                    <div class="text-sm text-gray-700 mb-2">{{ task.instructions }}</div>
+                                                    <div class="text-xs text-gray-500 mb-1">Problem:</div>
+                                                    <div class="text-sm text-gray-700 mb-2 max-h-28 overflow-y-auto whitespace-pre-wrap">{{ task.problem_text }}</div>
+                                                    <div class="text-xs text-gray-500 mb-1">Questions:</div>
+                                                    <ol class="list-decimal list-inside text-sm text-gray-700 space-y-1">
+                                                        <li>{{ task.question1 }}</li>
+                                                        <li>{{ task.question2 }}</li>
+                                                        <li>{{ task.question3 }}</li>
+                                                    </ol>
+                                                    {% if task.answer1_options %}
+                                                        <div class="mt-2 text-xs text-gray-500">Options for Q1:</div>
+                                                        <ul class="list-disc list-inside text-sm text-gray-700">
+                                                            {% for opt in task.answer1_options %}
+                                                                <li>{{ opt }}</li>
+                                                            {% endfor %}
+                                                        </ul>
+                                                    {% endif %}
+                                                    {% if task.answer2_options %}
+                                                        <div class="mt-2 text-xs text-gray-500">Options for Q2:</div>
+                                                        <ul class="list-disc list-inside text-sm text-gray-700">
+                                                            {% for opt in task.answer2_options %}
+                                                                <li>{{ opt }}</li>
+                                                            {% endfor %}
+                                                        </ul>
+                                                    {% endif %}
+                                                    <div class="mt-2 text-xs text-gray-500">Answer 3 type:</div>
+                                                    <div class="text-sm text-gray-700">{{ task.answer3_type }}</div>
+                                                                                                 {% elif category_slug == 'aptitude' %}
+                                                     <div class="text-xs text-gray-500 mb-1">Instructions:</div>
+                                                     <div class="text-sm text-gray-700 mb-2">{{ task.instructions }}</div>
+                                                     <div class="text-xs text-gray-500 mb-1">Estimated Time:</div>
+                                                     <div class="text-sm text-gray-700 mb-2">{{ task.estimated_time }}</div>
+                                                     <div class="text-xs text-gray-500 mb-1">Example:</div>
+                                                     <div class="text-sm text-gray-700 mb-2">{{ task.example }}</div>
+                                                     
+                                                     <div class="text-xs text-gray-500 mb-1">Logical Reasoning:</div>
+                                                     <ol class="list-decimal list-inside text-sm text-gray-700 space-y-1 mb-2">
+                                                         <li>{{ task.logical_question1 }}</li>
+                                                         <li>{{ task.logical_question2 }}</li>
+                                                     </ol>
+                                                     {% if task.logical_question1_options %}
+                                                         <div class="text-xs text-gray-500">Options for Q1:</div>
+                                                         <ul class="list-disc list-inside text-sm text-gray-700 mb-2">
+                                                             {% for opt in task.logical_question1_options %}
+                                                                 <li>{{ opt }}</li>
+                                                             {% endfor %}
+                                                         </ul>
+                                                     {% endif %}
+                                                     {% if task.logical_question2_options %}
+                                                         <div class="text-xs text-gray-500">Options for Q2:</div>
+                                                         <ul class="list-disc list-inside text-sm text-gray-700 mb-2">
+                                                             {% for opt in task.logical_question2_options %}
+                                                                 <li>{{ opt }}</li>
+                                                             {% endfor %}
+                                                         </ul>
+                                                     {% endif %}
+                                                     
+                                                     <div class="text-xs text-gray-500 mb-1">Numerical Ability:</div>
+                                                     <ol class="list-decimal list-inside text-sm text-gray-700 space-y-1 mb-2">
+                                                         <li>{{ task.numerical_question1 }}</li>
+                                                         <li>{{ task.numerical_question2 }}</li>
+                                                     </ol>
+                                                     {% if task.numerical_question1_options %}
+                                                         <div class="text-xs text-gray-500">Options for Q1:</div>
+                                                         <ul class="list-disc list-inside text-sm text-gray-700 mb-2">
+                                                             {% for opt in task.numerical_question1_options %}
+                                                                 <li>{{ opt }}</li>
+                                                             {% endfor %}
+                                                         </ul>
+                                                     {% endif %}
+                                                     {% if task.numerical_question2_options %}
+                                                         <div class="text-xs text-gray-500">Options for Q2:</div>
+                                                         <ul class="list-disc list-inside text-sm text-gray-700 mb-2">
+                                                             {% for opt in task.numerical_question2_options %}
+                                                                 <li>{{ opt }}</li>
+                                                             {% endfor %}
+                                                         </ul>
+                                                     {% endif %}
+                                                     
+                                                     <div class="text-xs text-gray-500 mb-1">Verbal Ability:</div>
+                                                     <ol class="list-decimal list-inside text-sm text-gray-700 space-y-1 mb-2">
+                                                         <li>{{ task.verbal_question1 }}</li>
+                                                         <li>{{ task.verbal_question2 }}</li>
+                                                     </ol>
+                                                     {% if task.verbal_question1_options %}
+                                                         <div class="text-xs text-gray-500">Options for Q1:</div>
+                                                         <ul class="list-disc list-inside text-sm text-gray-700 mb-2">
+                                                             {% for opt in task.verbal_question1_options %}
+                                                                 <li>{{ opt }}</li>
+                                                             {% endfor %}
+                                                         </ul>
+                                                     {% endif %}
+                                                     {% if task.verbal_question2_options %}
+                                                         <div class="text-xs text-gray-500">Options for Q2:</div>
+                                                         <ul class="list-disc list-inside text-sm text-gray-700 mb-2">
+                                                             {% for opt in task.verbal_question2_options %}
+                                                                 <li>{{ opt }}</li>
+                                                             {% endfor %}
+                                                         </ul>
+                                                     {% endif %}
+                                                     
+                                                     <div class="text-xs text-gray-500 mb-1">Spatial Reasoning:</div>
+                                                     <ol class="list-decimal list-inside text-sm text-gray-700 space-y-1 mb-2">
+                                                         <li>{{ task.spatial_question1 }}</li>
+                                                         <li>{{ task.spatial_question2 }}</li>
+                                                     </ol>
+                                                     {% if task.spatial_question1_options %}
+                                                         <div class="text-xs text-gray-500">Options for Q1:</div>
+                                                         <ul class="list-disc list-inside text-sm text-gray-700 mb-2">
+                                                             {% for opt in task.spatial_question1_options %}
+                                                                 <li>{{ opt }}</li>
+                                                             {% endfor %}
+                                                         </ul>
+                                                     {% endif %}
+                                                     {% if task.spatial_question2_options %}
+                                                         <div class="text-xs text-gray-500">Options for Q2:</div>
+                                                         <ul class="list-disc list-inside text-sm text-gray-700 mb-2">
+                                                             {% for opt in task.spatial_question2_options %}
+                                                                 <li>{{ opt }}</li>
+                                                             {% endfor %}
+                                                         </ul>
+                                                     {% endif %}
+                                                {% endif %}
+                                            </td>
+                                            <td class="align-top px-6 py-4 text-sm text-gray-900">{{ task.estimated_time }}</td>
+                                            <td class="align-top px-6 py-4 text-sm text-gray-900 space-x-2">
+                                                <button class="px-3 py-1 rounded bg-blue-600 text-white" onclick="editTask({{ task.id }})">Edit</button>
+                                                <button class="px-3 py-1 rounded bg-red-600 text-white" onclick="deleteTask({{ task.id }})">Delete</button>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="bg-white rounded-lg shadow p-6">
+                <p class="text-gray-600">No tasks found for this category.</p>
+            </div>
+        {% endif %}
+    </main>
+
+    <footer class="dark-bg text-white py-8 text-center">
+        <div class="content-wrapper">
+            <p>&copy; 2025 Dyslexia Research Study - Admin Portal</p>
+        </div>
+    </footer>
+
+    <script>
+        async function deleteTask(taskId) {
+            if (!confirm('Delete this task?')) return;
+            const res = await fetch(`/api/admin/categories/{{ category_slug }}/tasks/${taskId}`, { method: 'DELETE' });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && data.success !== false) {
+                location.reload();
+            } else {
+                alert(data.message || 'Failed to delete');
+            }
+        }
+
+        async function editTask(taskId) {
+            const payload = await openEditPrompt(taskId);
+            if (!payload) return;
+            const res = await fetch(`/api/admin/categories/{{ category_slug }}/tasks/${taskId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && data.success !== false) {
+                location.reload();
+            } else {
+                alert(data.message || 'Failed to update');
+            }
+        }
+
+        async function openEditPrompt(taskId) {
+            // Prefill current task and only ask for content-like fields
+            const category = '{{ category_slug }}';
+            // Fetch current task
+            let current = null;
+            try {
+                const res = await fetch(`/api/admin/categories/${category}/tasks/${taskId}`);
+                const data = await res.json();
+                current = data.task || {};
+            } catch (e) {}
+            const base = {};
+            if (category === 'reading-aloud') {
+                base.instructions = prompt('Instructions:', current.instructions || '') ?? current.instructions;
+                base.estimated_time = parseInt(prompt('Estimated time (min):', current.estimated_time || '') || (current.estimated_time || 0));
+                base.content = prompt('Passage/content:', current.content || '') ?? current.content;
+            } else if (category === 'typing' || category === 'writing') {
+                base.instructions = prompt('Instructions:', current.instructions || '') ?? current.instructions;
+                base.prompt = prompt('Prompt/topic:', current.prompt || '') ?? current.prompt;
+                base.word_limit_min = parseInt(prompt('Word limit min:', current.word_limit_min || '') || (current.word_limit_min || 0));
+                base.word_limit_max = parseInt(prompt('Word limit max:', current.word_limit_max || '') || (current.word_limit_max || 0));
+                base.estimated_time = parseInt(prompt('Estimated time (min):', current.estimated_time || '') || (current.estimated_time || 0));
+            } else if (category === 'reading-comprehension') {
+                base.instructions = prompt('Instructions:', current.instructions || '') ?? current.instructions;
+                base.passage = prompt('Passage:', current.passage || '') ?? current.passage;
+                base.question1 = prompt('Question 1:', current.question1 || '') ?? current.question1;
+                base.question2 = prompt('Question 2:', current.question2 || '') ?? current.question2;
+                base.question3 = prompt('Question 3:', current.question3 || '') ?? current.question3;
+                // Handle options properly - parse JSON if it's a string, or use array directly
+                let currentOpt1 = current.answer1_options || [];
+                let currentOpt2 = current.answer2_options || [];
+                if (typeof currentOpt1 === 'string') {
+                    try { currentOpt1 = JSON.parse(currentOpt1); } catch(e) { currentOpt1 = []; }
+                }
+                if (typeof currentOpt2 === 'string') {
+                    try { currentOpt2 = JSON.parse(currentOpt2); } catch(e) { currentOpt2 = []; }
+                }
+                const opt1Input = prompt('Options for Q1 (comma-separated):', currentOpt1.join(', '));
+                const opt2Input = prompt('Options for Q2 (comma-separated):', currentOpt2.join(', '));
+                base.answer1_options = opt1Input ? opt1Input.split(',').map(x => x.trim()).filter(Boolean) : currentOpt1;
+                base.answer2_options = opt2Input ? opt2Input.split(',').map(x => x.trim()).filter(Boolean) : currentOpt2;
+                base.estimated_time = parseInt(prompt('Estimated time (min):', current.estimated_time || '') || (current.estimated_time || 0));
+            } else if (category === 'mathematical-comprehension') {
+                base.instructions = prompt('Instructions:', current.instructions || '') ?? current.instructions;
+                base.problem_text = prompt('Problem text:', current.problem_text || '') ?? current.problem_text;
+                base.question1 = prompt('Question 1:', current.question1 || '') ?? current.question1;
+                base.question2 = prompt('Question 2:', current.question2 || '') ?? current.question2;
+                base.question3 = prompt('Question 3:', current.question3 || '') ?? current.question3;
+                // Handle options properly - parse JSON if it's a string, or use array directly
+                let currentOpt1 = current.answer1_options || [];
+                let currentOpt2 = current.answer2_options || [];
+                if (typeof currentOpt1 === 'string') {
+                    try { currentOpt1 = JSON.parse(currentOpt1); } catch(e) { currentOpt1 = []; }
+                }
+                if (typeof currentOpt2 === 'string') {
+                    try { currentOpt2 = JSON.parse(currentOpt2); } catch(e) { currentOpt2 = []; }
+                }
+                const opt1Input = prompt('Options for Q1 (comma-separated):', currentOpt1.join(', '));
+                const opt2Input = prompt('Options for Q2 (comma-separated):', currentOpt2.join(', '));
+                base.answer1_options = opt1Input ? opt1Input.split(',').map(x => x.trim()).filter(Boolean) : currentOpt1;
+                base.answer2_options = opt2Input ? opt2Input.split(',').map(x => x.trim()).filter(Boolean) : currentOpt2;
+                base.estimated_time = parseInt(prompt('Estimated time (min):', current.estimated_time || '') || (current.estimated_time || 0));
+                         } else if (category === 'aptitude') {
+                 base.instructions = prompt('Instructions:', current.instructions || '') ?? current.instructions;
+                 base.estimated_time = prompt('Estimated time:', current.estimated_time || '') ?? current.estimated_time;
+                 base.example = prompt('Example:', current.example || '') ?? current.example;
+                 
+                 // Logical Reasoning Section
+                 base.logical_question1 = prompt('Logical Q1:', current.logical_question1 || '') ?? current.logical_question1;
+                 let currentLogicalOpt1 = current.logical_question1_options || [];
+                 if (typeof currentLogicalOpt1 === 'string') {
+                     try { currentLogicalOpt1 = JSON.parse(currentLogicalOpt1); } catch(e) { currentLogicalOpt1 = []; }
+                 }
+                 const logicalOpt1Input = prompt('Options for Logical Q1 (comma-separated):', currentLogicalOpt1.join(', '));
+                 base.logical_question1_options = logicalOpt1Input ? logicalOpt1Input.split(',').map(x => x.trim()).filter(Boolean) : currentLogicalOpt1;
+                 
+                 base.logical_question2 = prompt('Logical Q2:', current.logical_question2 || '') ?? current.logical_question2;
+                 let currentLogicalOpt2 = current.logical_question2_options || [];
+                 if (typeof currentLogicalOpt2 === 'string') {
+                     try { currentLogicalOpt2 = JSON.parse(currentLogicalOpt2); } catch(e) { currentLogicalOpt2 = []; }
+                 }
+                 const logicalOpt2Input = prompt('Options for Logical Q2 (comma-separated):', currentLogicalOpt2.join(', '));
+                 base.logical_question2_options = logicalOpt2Input ? logicalOpt2Input.split(',').map(x => x.trim()).filter(Boolean) : currentLogicalOpt2;
+                 
+                 // Numerical Ability Section
+                 base.numerical_question1 = prompt('Numerical Q1:', current.numerical_question1 || '') ?? current.numerical_question1;
+                 let currentNumericalOpt1 = current.numerical_question1_options || [];
+                 if (typeof currentNumericalOpt1 === 'string') {
+                     try { currentNumericalOpt1 = JSON.parse(currentNumericalOpt1); } catch(e) { currentNumericalOpt1 = []; }
+                 }
+                 const numericalOpt1Input = prompt('Options for Numerical Q1 (comma-separated):', currentNumericalOpt1.join(', '));
+                 base.numerical_question1_options = numericalOpt1Input ? numericalOpt1Input.split(',').map(x => x.trim()).filter(Boolean) : currentNumericalOpt1;
+                 
+                 base.numerical_question2 = prompt('Numerical Q2:', current.numerical_question2 || '') ?? current.numerical_question2;
+                 let currentNumericalOpt2 = current.numerical_question2_options || [];
+                 if (typeof currentNumericalOpt2 === 'string') {
+                     try { currentNumericalOpt2 = JSON.parse(currentNumericalOpt2); } catch(e) { currentNumericalOpt2 = []; }
+                 }
+                 const numericalOpt2Input = prompt('Options for Numerical Q2 (comma-separated):', currentNumericalOpt2.join(', '));
+                 base.numerical_question2_options = numericalOpt2Input ? numericalOpt2Input.split(',').map(x => x.trim()).filter(Boolean) : currentNumericalOpt2;
+                 
+                 // Verbal Ability Section
+                 base.verbal_question1 = prompt('Verbal Q1:', current.verbal_question1 || '') ?? current.verbal_question1;
+                 let currentVerbalOpt1 = current.verbal_question1_options || [];
+                 if (typeof currentVerbalOpt1 === 'string') {
+                     try { currentVerbalOpt1 = JSON.parse(currentVerbalOpt1); } catch(e) { currentVerbalOpt1 = []; }
+                 }
+                 const verbalOpt1Input = prompt('Options for Verbal Q1 (comma-separated):', currentVerbalOpt1.join(', '));
+                 base.verbal_question1_options = verbalOpt1Input ? verbalOpt1Input.split(',').map(x => x.trim()).filter(Boolean) : currentVerbalOpt1;
+                 
+                 base.verbal_question2 = prompt('Verbal Q2:', current.verbal_question2 || '') ?? current.verbal_question2;
+                 let currentVerbalOpt2 = current.verbal_question2_options || [];
+                 if (typeof currentVerbalOpt2 === 'string') {
+                     try { currentVerbalOpt2 = JSON.parse(currentVerbalOpt2); } catch(e) { currentVerbalOpt2 = []; }
+                 }
+                 const verbalOpt2Input = prompt('Options for Verbal Q2 (comma-separated):', currentVerbalOpt2.join(', '));
+                 base.verbal_question2_options = verbalOpt2Input ? verbalOpt2Input.split(',').map(x => x.trim()).filter(Boolean) : currentVerbalOpt2;
+                 
+                 // Spatial Reasoning Section
+                 base.spatial_question1 = prompt('Spatial Q1:', current.spatial_question1 || '') ?? current.spatial_question1;
+                 let currentSpatialOpt1 = current.spatial_question1_options || [];
+                 if (typeof currentSpatialOpt1 === 'string') {
+                     try { currentSpatialOpt1 = JSON.parse(currentSpatialOpt1); } catch(e) { currentSpatialOpt1 = []; }
+                 }
+                 const spatialOpt1Input = prompt('Options for Spatial Q1 (comma-separated):', currentSpatialOpt1.join(', '));
+                 base.spatial_question1_options = spatialOpt1Input ? spatialOpt1Input.split(',').map(x => x.trim()).filter(Boolean) : currentSpatialOpt1;
+                 
+                 base.spatial_question2 = prompt('Spatial Q2:', current.spatial_question2 || '') ?? current.spatial_question2;
+                 let currentSpatialOpt2 = current.spatial_question2_options || [];
+                 if (typeof currentSpatialOpt2 === 'string') {
+                     try { currentSpatialOpt2 = JSON.parse(currentSpatialOpt2); } catch(e) { currentSpatialOpt2 = []; }
+                 }
+                 const spatialOpt2Input = prompt('Options for Spatial Q2 (comma-separated):', currentSpatialOpt2.join(', '));
+                 base.spatial_question2_options = spatialOpt2Input ? spatialOpt2Input.split(',').map(x => x.trim()).filter(Boolean) : currentSpatialOpt2;
+             }
+            return base;
+        }
+
+        async function addTask() {
+            const category = '{{ category_slug }}';
+            const payload = {};
+            if (category === 'reading-aloud') {
+                payload.task_name = prompt('Task name:');
+                payload.age_min = parseInt(prompt('Age min:') || '0');
+                payload.age_max = parseInt(prompt('Age max:') || '0');
+                payload.difficulty_level = prompt('Difficulty (Easy/Medium/Hard):');
+                payload.instructions = prompt('Instructions:');
+                payload.estimated_time = parseInt(prompt('Estimated time (min):') || '0');
+                payload.content = prompt('Passage/content:');
+            } else if (category === 'typing' || category === 'writing') {
+                payload.task_name = prompt('Task name:');
+                payload.age_min = parseInt(prompt('Age min:') || '0');
+                payload.age_max = parseInt(prompt('Age max:') || '0');
+                payload.difficulty_level = prompt('Difficulty (Easy/Medium/Hard):');
+                payload.instructions = prompt('Instructions:');
+                payload.prompt = prompt('Prompt/topic:');
+                payload.word_limit_min = parseInt(prompt('Word limit min:') || '0');
+                payload.word_limit_max = parseInt(prompt('Word limit max:') || '0');
+                payload.estimated_time = parseInt(prompt('Estimated time (min):') || '0');
+            } else if (category === 'reading-comprehension') {
+                payload.task_name = prompt('Task name:');
+                payload.age_min = parseInt(prompt('Age min:') || '0');
+                payload.age_max = parseInt(prompt('Age max:') || '0');
+                payload.difficulty_level = prompt('Difficulty (Easy/Medium/Hard):');
+                payload.instructions = prompt('Instructions:');
+                payload.passage = prompt('Passage:');
+                payload.question1 = prompt('Question 1:');
+                payload.question2 = prompt('Question 2:');
+                payload.question3 = prompt('Question 3:');
+                payload.answer1_options = (prompt('Options for Q1 (comma-separated):') || '')
+                    .split(',').map(x => x.trim()).filter(Boolean);
+                payload.answer2_options = (prompt('Options for Q2 (comma-separated):') || '')
+                    .split(',').map(x => x.trim()).filter(Boolean);
+                payload.answer3_type = prompt('Answer3 type (text/multiple_choice):');
+                payload.estimated_time = parseInt(prompt('Estimated time (min):') || '0');
+            } else if (category === 'mathematical-comprehension') {
+                payload.task_name = prompt('Task name:');
+                payload.age_min = parseInt(prompt('Age min:') || '0');
+                payload.age_max = parseInt(prompt('Age max:') || '0');
+                payload.difficulty_level = prompt('Difficulty (Easy/Medium/Hard):');
+                payload.instructions = prompt('Instructions:');
+                payload.problem_text = prompt('Problem text:');
+                payload.question1 = prompt('Question 1:');
+                payload.question2 = prompt('Question 2:');
+                payload.question3 = prompt('Question 3:');
+                payload.answer1_options = (prompt('Options for Q1 (comma-separated):') || '')
+                    .split(',').map(x => x.trim()).filter(Boolean);
+                payload.answer2_options = (prompt('Options for Q2 (comma-separated):') || '')
+                    .split(',').map(x => x.trim()).filter(Boolean);
+                payload.answer3_type = prompt('Answer3 type (number/text/multiple_choice):');
+                payload.estimated_time = parseInt(prompt('Estimated time (min):') || '0');
+                         } else if (category === 'aptitude') {
+                 payload.task_name = prompt('Task name:');
+                 payload.age_min = parseInt(prompt('Age min:') || '0');
+                 payload.age_max = parseInt(prompt('Age max:') || '0');
+                 payload.difficulty_level = prompt('Difficulty (Easy/Medium/Hard):');
+                 payload.instructions = prompt('Instructions:');
+                 payload.estimated_time = prompt('Estimated time:');
+                 payload.example = prompt('Example:');
+                 
+                 // Logical Reasoning Section
+                 payload.logical_question1 = prompt('Logical Q1:');
+                 payload.logical_question1_options = (prompt('Options for Logical Q1 (comma-separated):') || '')
+                     .split(',').map(x => x.trim()).filter(Boolean);
+                 payload.logical_question2 = prompt('Logical Q2:');
+                 payload.logical_question2_options = (prompt('Options for Logical Q2 (comma-separated):') || '')
+                     .split(',').map(x => x.trim()).filter(Boolean);
+                 
+                 // Numerical Ability Section
+                 payload.numerical_question1 = prompt('Numerical Q1:');
+                 payload.numerical_question1_options = (prompt('Options for Numerical Q1 (comma-separated):') || '')
+                     .split(',').map(x => x.trim()).filter(Boolean);
+                 payload.numerical_question2 = prompt('Numerical Q2:');
+                 payload.numerical_question2_options = (prompt('Options for Numerical Q2 (comma-separated):') || '')
+                     .split(',').map(x => x.trim()).filter(Boolean);
+                 
+                 // Verbal Ability Section
+                 payload.verbal_question1 = prompt('Verbal Q1:');
+                 payload.verbal_question1_options = (prompt('Options for Verbal Q1 (comma-separated):') || '')
+                     .split(',').map(x => x.trim()).filter(Boolean);
+                 payload.verbal_question2 = prompt('Verbal Q2:');
+                 payload.verbal_question2_options = (prompt('Options for Verbal Q2 (comma-separated):') || '')
+                     .split(',').map(x => x.trim()).filter(Boolean);
+                 
+                 // Spatial Reasoning Section
+                 payload.spatial_question1 = prompt('Spatial Q1:');
+                 payload.spatial_question1_options = (prompt('Options for Spatial Q1 (comma-separated):') || '')
+                     .split(',').map(x => x.trim()).filter(Boolean);
+                 payload.spatial_question2 = prompt('Spatial Q2:');
+                 payload.spatial_question2_options = (prompt('Options for Spatial Q2 (comma-separated):') || '')
+                     .split(',').map(x => x.trim()).filter(Boolean);
+             }
+            const res = await fetch(`/api/admin/categories/${category}/tasks`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && data.success !== false) {
+                location.reload();
+            } else {
+                alert(data.message || 'Failed to add task');
+            }
+        }
+    </script>
+</body>
+</html>
+
+

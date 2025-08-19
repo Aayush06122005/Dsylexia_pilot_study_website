@@ -435,6 +435,10 @@
                                 class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium">
                             Start Reading
                         </button>
+                        <button onclick="startRandomReadingTask()"
+                                class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+                            Random Task
+                        </button>
                         <button onclick="previewTask(${index})" 
                                 class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
                             Preview
@@ -515,6 +519,21 @@
                         modal.remove();
                     }
                 });
+            }
+
+            async function startRandomReadingTask() {
+                const userId = {{ user_id }};
+                try {
+                    const res = await fetch(`/api/reading-tasks-random/${userId}`);
+                    const data = await res.json();
+                    if (data.success) {
+                        window.location.href = "{{ url_for('task11') }}?task_id=" + data.task_id;
+                    } else {
+                        alert(data.message || 'No random task available');
+                    }
+                } catch (e) {
+                    alert('Failed to start random task');
+                }
             }
 
             function showState(state) {

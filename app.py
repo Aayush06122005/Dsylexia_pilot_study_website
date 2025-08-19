@@ -1162,6 +1162,486 @@ def admin_portal():
         return redirect(url_for('admin_login'))
     return render_template('admin.html')
 
+# --- Admin task categories pages ---
+@app.route('/admin/tasks/category/<string:category_slug>')
+def admin_tasks_by_category(category_slug: str):
+    if not session.get('is_admin'):
+        flash('Please log in as admin to access this page', 'error')
+        return redirect(url_for('admin_login'))
+
+    category_map = {
+        'reading-aloud': {
+            'title': 'Reading Aloud',
+            'table': 'reading_tasks'
+        },
+        'typing': {
+            'title': 'Typing Task',
+            'table': 'typing_tasks'
+        },
+        'writing': {
+            'title': 'Writing Task',
+            'table': 'writing_tasks'
+        },
+        'reading-comprehension': {
+            'title': 'Reading Comprehension',
+            'table': 'reading_comprehension_tasks'
+        },
+        'mathematical-comprehension': {
+            'title': 'Mathematical Comprehension',
+            'table': 'mathematical_comprehension_tasks'
+        },
+        'aptitude': {
+            'title': 'Aptitude Test',
+            'table': 'aptitude_tasks'
+        }
+    }
+
+    cfg = category_map.get(category_slug)
+    if not cfg:
+        flash('Unknown task category', 'error')
+        return redirect(url_for('admin_portal'))
+
+    try:
+        conn = connect_db()
+        cursor = conn.cursor(dictionary=True)
+
+        # Build base query per category
+        base_table = cfg['table']
+
+        cursor.execute(f"""
+            SELECT *
+            FROM {base_table}
+            ORDER BY age_min, id
+        """)
+        rows = cursor.fetchall()
+        cursor.close()
+        conn.close()
+
+        # Group by age ranges (age_min, age_max)
+        groups = {}
+        for row in rows:
+            age_min = row.get('age_min')
+            age_max = row.get('age_max')
+            key = (age_min, age_max)
+            if key not in groups:
+                label = f"Ages {age_min}+" if age_max is not None and int(age_max) >= 99 else f"Ages {age_min}-{age_max}"
+                groups[key] = {
+                    'label': label,
+                    'age_min': age_min,
+                    'tasks': []
+                }
+            # Common fields
+            task_common = {
+                'id': row.get('id'),
+                'task_name': row.get('task_name'),
+                'difficulty_level': row.get('difficulty_level') or '-',
+                'estimated_time': row.get('estimated_time') or '-',
+            }
+            # Add category-specific content fields for display
+            if category_slug == 'reading-aloud':
+                task_common['content'] = row.get('content')
+                task_common['instructions'] = row.get('instructions')
+            elif category_slug == 'typing':
+                task_common['prompt'] = row.get('prompt')
+                task_common['instructions'] = row.get('instructions')
+            elif category_slug == 'writing':
+                task_common['prompt'] = row.get('prompt')
+                task_common['instructions'] = row.get('instructions')
+            elif category_slug == 'reading-comprehension':
+                task_common['passage'] = row.get('passage')
+                task_common['question1'] = row.get('question1')
+                task_common['question2'] = row.get('question2')
+                task_common['question3'] = row.get('question3')
+                # Parse JSON options if needed
+                import json as _json
+                a1 = row.get('answer1_options')
+                a2 = row.get('answer2_options')
+                try:
+                    if isinstance(a1, str):
+                        a1 = _json.loads(a1)
+                except Exception:
+                    pass
+                try:
+                    if isinstance(a2, str):
+                        a2 = _json.loads(a2)
+                except Exception:
+                    pass
+                task_common['answer1_options'] = a1
+                task_common['answer2_options'] = a2
+                task_common['answer3_type'] = row.get('answer3_type')
+                task_common['instructions'] = row.get('instructions')
+            elif category_slug == 'mathematical-comprehension':
+                task_common['problem_text'] = row.get('problem_text')
+                task_common['question1'] = row.get('question1')
+                task_common['question2'] = row.get('question2')
+                task_common['question3'] = row.get('question3')
+                import json as _json
+                a1 = row.get('answer1_options')
+                a2 = row.get('answer2_options')
+                try:
+                    if isinstance(a1, str):
+                        a1 = _json.loads(a1)
+                except Exception:
+                    pass
+                try:
+                    if isinstance(a2, str):
+                        a2 = _json.loads(a2)
+                except Exception:
+                    pass
+                task_common['answer1_options'] = a1
+                task_common['answer2_options'] = a2
+                task_common['answer3_type'] = row.get('answer3_type')
+                task_common['instructions'] = row.get('instructions')
+            elif category_slug == 'aptitude':
+                task_common['content'] = row.get('example')  # Use example as content for display
+                task_common['instructions'] = row.get('instructions')
+                task_common['estimated_time'] = row.get('estimated_time')
+                task_common['example'] = row.get('example')
+                # Add all the questions and options
+                task_common['logical_question1'] = row.get('logical_question1')
+                task_common['logical_question2'] = row.get('logical_question2')
+                task_common['numerical_question1'] = row.get('numerical_question1')
+                task_common['numerical_question2'] = row.get('numerical_question2')
+                task_common['verbal_question1'] = row.get('verbal_question1')
+                task_common['verbal_question2'] = row.get('verbal_question2')
+                task_common['spatial_question1'] = row.get('spatial_question1')
+                task_common['spatial_question2'] = row.get('spatial_question2')
+                # Parse JSON options
+                import json as _json
+                for field in ['logical_question1_options', 'logical_question2_options', 
+                             'numerical_question1_options', 'numerical_question2_options',
+                             'verbal_question1_options', 'verbal_question2_options',
+                             'spatial_question1_options', 'spatial_question2_options']:
+                    options = row.get(field)
+                    try:
+                        if isinstance(options, str):
+                            options = _json.loads(options)
+                    except Exception:
+                        options = []
+                    task_common[field] = options
+            groups[key]['tasks'].append(task_common)
+
+        # Sort groups by age_min
+        age_groups = [groups[k] for k in sorted(groups.keys(), key=lambda t: (t[0], t[1]))]
+
+        return render_template(
+            'admin_tasks_category.html',
+            category_title=cfg['title'],
+            category_slug=category_slug,
+            age_groups=age_groups
+        )
+    except Exception as e:
+        print(f"Admin tasks by category error: {e}")
+        flash('Failed to load tasks for this category', 'error')
+        return redirect(url_for('admin_portal'))
+
+
+# --- Admin category CRUD APIs ---
+def _category_config(category_slug: str):
+    return {
+        'reading-aloud': {'table': 'reading_tasks'},
+        'typing': {'table': 'typing_tasks'},
+        'writing': {'table': 'writing_tasks'},
+        'reading-comprehension': {'table': 'reading_comprehension_tasks'},
+        'mathematical-comprehension': {'table': 'mathematical_comprehension_tasks'},
+        'aptitude': {'table': 'aptitude_tasks'}
+    }.get(category_slug)
+
+
+@app.route('/api/admin/categories/<string:category_slug>/tasks', methods=['GET', 'POST'])
+def admin_category_tasks(category_slug: str):
+    if not session.get('is_admin'):
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+    cfg = _category_config(category_slug)
+    if not cfg:
+        return jsonify({'success': False, 'message': 'Unknown category'}), 400
+    try:
+        conn = connect_db()
+        cursor = conn.cursor(dictionary=True)
+        table = cfg['table']
+        if request.method == 'GET':
+            cursor.execute(f"SELECT * FROM {table}")
+            return jsonify({'success': True, 'tasks': cursor.fetchall()})
+        else:
+            data = request.get_json() or {}
+            if category_slug == 'reading-aloud':
+                cursor.execute(
+                    """
+                    INSERT INTO reading_tasks (task_name, age_min, age_max, difficulty_level, content, instructions, estimated_time)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        data.get('task_name'), data.get('age_min'), data.get('age_max'), data.get('difficulty_level'),
+                        data.get('content'), data.get('instructions'), data.get('estimated_time')
+                    )
+                )
+            elif category_slug == 'typing':
+                cursor.execute(
+                    """
+                    INSERT INTO typing_tasks (task_name, age_min, age_max, difficulty_level, prompt, instructions, word_limit_min, word_limit_max, estimated_time)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        data.get('task_name'), data.get('age_min'), data.get('age_max'), data.get('difficulty_level'),
+                        data.get('prompt'), data.get('instructions'), data.get('word_limit_min'), data.get('word_limit_max'), data.get('estimated_time')
+                    )
+                )
+            elif category_slug == 'writing':
+                cursor.execute(
+                    """
+                    INSERT INTO writing_tasks (task_name, age_min, age_max, difficulty_level, prompt, instructions, word_limit_min, word_limit_max, estimated_time)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        data.get('task_name'), data.get('age_min'), data.get('age_max'), data.get('difficulty_level'),
+                        data.get('prompt'), data.get('instructions'), data.get('word_limit_min'), data.get('word_limit_max'), data.get('estimated_time')
+                    )
+                )
+            elif category_slug == 'reading-comprehension':
+                import json as _json
+                cursor.execute(
+                    """
+                    INSERT INTO reading_comprehension_tasks (task_name, age_min, age_max, difficulty_level, passage, question1, question2, question3, answer1_options, answer2_options, answer3_type, instructions, estimated_time)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        data.get('task_name'), data.get('age_min'), data.get('age_max'), data.get('difficulty_level'),
+                        data.get('passage'), data.get('question1'), data.get('question2'), data.get('question3'),
+                        _json.dumps(data.get('answer1_options') or []), _json.dumps(data.get('answer2_options') or []),
+                        data.get('answer3_type'), data.get('instructions'), data.get('estimated_time')
+                    )
+                )
+            elif category_slug == 'mathematical-comprehension':
+                import json as _json
+                cursor.execute(
+                    """
+                    INSERT INTO mathematical_comprehension_tasks (task_name, age_min, age_max, difficulty_level, problem_text, question1, question2, question3, answer1_options, answer2_options, answer3_type, instructions, estimated_time)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        data.get('task_name'), data.get('age_min'), data.get('age_max'), data.get('difficulty_level'),
+                        data.get('problem_text'), data.get('question1'), data.get('question2'), data.get('question3'),
+                        _json.dumps(data.get('answer1_options') or []), _json.dumps(data.get('answer2_options') or []),
+                        data.get('answer3_type'), data.get('instructions'), data.get('estimated_time')
+                    )
+                )
+            elif category_slug == 'aptitude':
+                import json as _json
+                cursor.execute(
+                    """
+                    INSERT INTO aptitude_tasks (
+                        task_name, age_min, age_max, difficulty_level, instructions, estimated_time, example,
+                        logical_question1, logical_question1_options, logical_question2, logical_question2_options,
+                        numerical_question1, numerical_question1_options, numerical_question2, numerical_question2_options,
+                        verbal_question1, verbal_question1_options, verbal_question2, verbal_question2_options,
+                        spatial_question1, spatial_question1_options, spatial_question2, spatial_question2_options
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        data.get('task_name'), data.get('age_min'), data.get('age_max'), data.get('difficulty_level'),
+                        data.get('instructions'), data.get('estimated_time'), data.get('example'),
+                        data.get('logical_question1'), _json.dumps(data.get('logical_question1_options') or []),
+                        data.get('logical_question2'), _json.dumps(data.get('logical_question2_options') or []),
+                        data.get('numerical_question1'), _json.dumps(data.get('numerical_question1_options') or []),
+                        data.get('numerical_question2'), _json.dumps(data.get('numerical_question2_options') or []),
+                        data.get('verbal_question1'), _json.dumps(data.get('verbal_question1_options') or []),
+                        data.get('verbal_question2'), _json.dumps(data.get('verbal_question2_options') or []),
+                        data.get('spatial_question1'), _json.dumps(data.get('spatial_question1_options') or []),
+                        data.get('spatial_question2'), _json.dumps(data.get('spatial_question2_options') or [])
+                    )
+                )
+            conn.commit()
+            return jsonify({'success': True})
+    except Exception as e:
+        if 'conn' in locals():
+            conn.rollback()
+        print(f"Admin category POST error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to save task'}), 500
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+
+
+@app.route('/api/admin/categories/<string:category_slug>/tasks/<int:task_id>', methods=['PUT', 'DELETE'])
+def admin_category_task_detail(category_slug: str, task_id: int):
+    if not session.get('is_admin'):
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+    cfg = _category_config(category_slug)
+    if not cfg:
+        return jsonify({'success': False, 'message': 'Unknown category'}), 400
+    try:
+        conn = connect_db()
+        cursor = conn.cursor()
+        table = cfg['table']
+        if request.method == 'DELETE':
+            cursor.execute(f"DELETE FROM {table} WHERE id = %s", (task_id,))
+            conn.commit()
+            return jsonify({'success': True})
+        else:
+            # Partial update: fetch existing row first and merge
+            data = request.get_json() or {}
+            curd = conn.cursor(dictionary=True)
+            if category_slug == 'aptitude':
+                curd.execute("SELECT id, description, instructions, estimated_time, devices_required, example FROM tasks WHERE id=%s AND task_name='Aptitude Test'", (task_id,))
+            else:
+                curd.execute(f"SELECT * FROM {table} WHERE id = %s", (task_id,))
+            existing = curd.fetchone() or {}
+            curd.close()
+            if category_slug == 'reading-aloud':
+                cursor.execute(
+                    """
+                    UPDATE reading_tasks SET task_name=%s, age_min=%s, age_max=%s, difficulty_level=%s, content=%s, instructions=%s, estimated_time=%s WHERE id=%s
+                    """,
+                    (
+                        existing.get('task_name'), existing.get('age_min'), existing.get('age_max'), existing.get('difficulty_level'),
+                        data.get('content', existing.get('content')), data.get('instructions', existing.get('instructions')), data.get('estimated_time', existing.get('estimated_time')), task_id
+                    )
+                )
+            elif category_slug == 'typing':
+                cursor.execute(
+                    """
+                    UPDATE typing_tasks SET task_name=%s, age_min=%s, age_max=%s, difficulty_level=%s, prompt=%s, instructions=%s, word_limit_min=%s, word_limit_max=%s, estimated_time=%s WHERE id=%s
+                    """,
+                    (
+                        existing.get('task_name'), existing.get('age_min'), existing.get('age_max'), existing.get('difficulty_level'),
+                        data.get('prompt', existing.get('prompt')), data.get('instructions', existing.get('instructions')), data.get('word_limit_min', existing.get('word_limit_min')), data.get('word_limit_max', existing.get('word_limit_max')), data.get('estimated_time', existing.get('estimated_time')), task_id
+                    )
+                )
+            elif category_slug == 'writing':
+                cursor.execute(
+                    """
+                    UPDATE writing_tasks SET task_name=%s, age_min=%s, age_max=%s, difficulty_level=%s, prompt=%s, instructions=%s, word_limit_min=%s, word_limit_max=%s, estimated_time=%s WHERE id=%s
+                    """,
+                    (
+                        existing.get('task_name'), existing.get('age_min'), existing.get('age_max'), existing.get('difficulty_level'),
+                        data.get('prompt', existing.get('prompt')), data.get('instructions', existing.get('instructions')), data.get('word_limit_min', existing.get('word_limit_min')), data.get('word_limit_max', existing.get('word_limit_max')), data.get('estimated_time', existing.get('estimated_time')), task_id
+                    )
+                )
+            elif category_slug == 'reading-comprehension':
+                import json as _json
+                cursor.execute(
+                    """
+                    UPDATE reading_comprehension_tasks SET task_name=%s, age_min=%s, age_max=%s, difficulty_level=%s, passage=%s, question1=%s, question2=%s, question3=%s, answer1_options=%s, answer2_options=%s, answer3_type=%s, instructions=%s, estimated_time=%s WHERE id=%s
+                    """,
+                    (
+                        existing.get('task_name'), existing.get('age_min'), existing.get('age_max'), existing.get('difficulty_level'), data.get('passage', existing.get('passage')),
+                        data.get('question1', existing.get('question1')), data.get('question2', existing.get('question2')), data.get('question3', existing.get('question3')), _json.dumps(data.get('answer1_options', existing.get('answer1_options') or [])), _json.dumps(data.get('answer2_options', existing.get('answer2_options') or [])),
+                        existing.get('answer3_type'), data.get('instructions', existing.get('instructions')), data.get('estimated_time', existing.get('estimated_time')), task_id
+                    )
+                )
+            elif category_slug == 'mathematical-comprehension':
+                import json as _json
+                cursor.execute(
+                    """
+                    UPDATE mathematical_comprehension_tasks SET task_name=%s, age_min=%s, age_max=%s, difficulty_level=%s, problem_text=%s, question1=%s, question2=%s, question3=%s, answer1_options=%s, answer2_options=%s, answer3_type=%s, instructions=%s, estimated_time=%s WHERE id=%s
+                    """,
+                    (
+                        existing.get('task_name'), existing.get('age_min'), existing.get('age_max'), existing.get('difficulty_level'), data.get('problem_text', existing.get('problem_text')),
+                        data.get('question1', existing.get('question1')), data.get('question2', existing.get('question2')), data.get('question3', existing.get('question3')), _json.dumps(data.get('answer1_options', existing.get('answer1_options') or [])), _json.dumps(data.get('answer2_options', existing.get('answer2_options') or [])),
+                        existing.get('answer3_type'), data.get('instructions', existing.get('instructions')), data.get('estimated_time', existing.get('estimated_time')), task_id
+                    )
+                )
+            elif category_slug == 'aptitude':
+                import json as _json
+                cursor.execute(
+                    """
+                    UPDATE aptitude_tasks SET 
+                        task_name=%s, age_min=%s, age_max=%s, difficulty_level=%s, instructions=%s, estimated_time=%s, example=%s,
+                        logical_question1=%s, logical_question1_options=%s, logical_question2=%s, logical_question2_options=%s,
+                        numerical_question1=%s, numerical_question1_options=%s, numerical_question2=%s, numerical_question2_options=%s,
+                        verbal_question1=%s, verbal_question1_options=%s, verbal_question2=%s, verbal_question2_options=%s,
+                        spatial_question1=%s, spatial_question1_options=%s, spatial_question2=%s, spatial_question2_options=%s
+                    WHERE id=%s
+                    """,
+                    (
+                        existing.get('task_name'), existing.get('age_min'), existing.get('age_max'), existing.get('difficulty_level'),
+                        data.get('instructions', existing.get('instructions')), data.get('estimated_time', existing.get('estimated_time')), 
+                        data.get('example', existing.get('example')),
+                        data.get('logical_question1', existing.get('logical_question1')), _json.dumps(data.get('logical_question1_options', existing.get('logical_question1_options') or [])),
+                        data.get('logical_question2', existing.get('logical_question2')), _json.dumps(data.get('logical_question2_options', existing.get('logical_question2_options') or [])),
+                        data.get('numerical_question1', existing.get('numerical_question1')), _json.dumps(data.get('numerical_question1_options', existing.get('numerical_question1_options') or [])),
+                        data.get('numerical_question2', existing.get('numerical_question2')), _json.dumps(data.get('numerical_question2_options', existing.get('numerical_question2_options') or [])),
+                        data.get('verbal_question1', existing.get('verbal_question1')), _json.dumps(data.get('verbal_question1_options', existing.get('verbal_question1_options') or [])),
+                        data.get('verbal_question2', existing.get('verbal_question2')), _json.dumps(data.get('verbal_question2_options', existing.get('verbal_question2_options') or [])),
+                        data.get('spatial_question1', existing.get('spatial_question1')), _json.dumps(data.get('spatial_question1_options', existing.get('spatial_question1_options') or [])),
+                        data.get('spatial_question2', existing.get('spatial_question2')), _json.dumps(data.get('spatial_question2_options', existing.get('spatial_question2_options') or [])),
+                        task_id
+                    )
+                )
+            conn.commit()
+            return jsonify({'success': True})
+    except Exception as e:
+        if 'conn' in locals():
+            conn.rollback()
+        print(f"Admin category PUT/DELETE error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to update task'}), 500
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+
+
+@app.route('/api/admin/categories/<string:category_slug>/tasks/<int:task_id>', methods=['GET'])
+def admin_category_task_get(category_slug: str, task_id: int):
+    if not session.get('is_admin'):
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+    cfg = _category_config(category_slug)
+    if not cfg:
+        return jsonify({'success': False, 'message': 'Unknown category'}), 400
+    try:
+        conn = connect_db()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(f"SELECT * FROM {cfg['table']} WHERE id=%s", (task_id,))
+        row = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        if not row:
+            return jsonify({'success': False, 'message': 'Task not found'}), 404
+        return jsonify({'success': True, 'task': row})
+    except Exception as e:
+        print(f"Admin get single task error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to fetch task'}), 500
+
+
+# Random task selection for Reading Aloud
+@app.route('/api/reading-tasks-random/<int:user_id>', methods=['GET'])
+def get_random_reading_task(user_id: int):
+    try:
+        conn = connect_db()
+        cursor = conn.cursor(dictionary=True)
+        # Resolve age
+        cursor.execute("SELECT age, date_of_birth FROM demographics WHERE user_id = %s", (user_id,))
+        demo = cursor.fetchone()
+        from datetime import datetime
+        user_age = None
+        if demo:
+            if demo.get('age'):
+                user_age = demo['age']
+            elif demo.get('date_of_birth'):
+                today = datetime.now()
+                dob = demo['date_of_birth']
+                user_age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+        if not user_age:
+            # fallback to any
+            cursor.execute("SELECT id FROM reading_tasks ORDER BY RAND() LIMIT 1")
+        else:
+            cursor.execute("""
+                SELECT id FROM reading_tasks WHERE age_min <= %s AND age_max >= %s ORDER BY RAND() LIMIT 1
+            """, (user_age, user_age))
+        row = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        if not row:
+            return jsonify({'success': False, 'message': 'No reading tasks available'}), 404
+        return jsonify({'success': True, 'task_id': row['id']})
+    except Exception as e:
+        print(f"Random reading task error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to get random task'}), 500
+
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
