@@ -380,7 +380,7 @@
                 });
         }
 
-        function displayTasks(data) {
+        async function displayTasks(data) {
             const tasksGrid = document.getElementById('tasksGrid');
             const userAgeInfo = document.getElementById('userAgeInfo');
             
@@ -397,16 +397,16 @@
             tasksGrid.innerHTML = '';
 
             // Create task cards
-            data.tasks.forEach(task => {
-                const taskCard = createTaskCard(task);
-                tasksGrid.appendChild(taskCard);
+            const taskCards = await Promise.all(data.tasks.map(task => createTaskCard(task)));
+            taskCards.forEach(card => {
+                tasksGrid.appendChild(card);
             });
 
             hideLoading();
             tasksGrid.classList.remove('hidden');
         }
 
-        function createTaskCard(task) {
+        async function createTaskCard(task) {
             const card = document.createElement('div');
             card.className = 'bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-shadow duration-300';
             
@@ -416,6 +416,28 @@
                 difficultyColor = 'bg-yellow-100 text-yellow-800';
             } else if (task.difficulty_level === 'Hard') {
                 difficultyColor = 'bg-red-100 text-red-800';
+            }
+
+            // Get task status
+            let taskStatus = 'Not Started';
+            let buttonText = 'Start Task';
+            let buttonClass = 'primary-bg text-white px-4 py-2 rounded-lg font-semibold transition hover:bg-blue-700 flex-1';
+            
+            try {
+                const response = await fetch(`/api/get-task-status?task_name=Mathematical Comprehension Task ${task.task_name}`);
+                const data = await response.json();
+                if (data.success) {
+                    taskStatus = data.status;
+                    if (taskStatus === 'In Progress') {
+                        buttonText = 'Continue Task';
+                        buttonClass = 'bg-orange-600 text-white px-4 py-2 rounded-lg font-semibold transition hover:bg-orange-700 flex-1';
+                    } else if (taskStatus === 'Completed') {
+                        buttonText = 'Completed';
+                        buttonClass = 'bg-green-600 text-white px-4 py-2 rounded-lg font-semibold cursor-not-allowed opacity-60 flex-1';
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching task status:', error);
             }
 
             card.innerHTML = `
@@ -444,8 +466,8 @@
                     </div>
                     
                     <div class="flex gap-3">
-                        <button onclick="startTask(${task.id}, '${task.task_name}')" class="primary-bg text-white px-4 py-2 rounded-lg font-semibold transition hover:bg-blue-700 flex-1">
-                            Start Task
+                        <button onclick="startTask(${task.id}, '${task.task_name}')" class="${buttonClass}">
+                            ${buttonText}
                         </button>
 
                         <button onclick="previewTask(${task.id})" class="bg-gray-600 text-white px-4 py-2 rounded-lg font-semibold transition hover:bg-gray-700 flex-1">

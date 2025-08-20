@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, session, flash, redirect, url_for, re
 from flask_cors import CORS
 import mysql.connector
 from datetime import datetime
+from io import BytesIO, StringIO
 import json
 import bcrypt
 import os
@@ -1486,29 +1487,29 @@ def admin_category_tasks(category_slug: str):
                     )
                 else:
                     cursor.execute(
-                        """
-                        INSERT INTO aptitude_tasks (
-                            task_name, age_min, age_max, difficulty_level, instructions, estimated_time, example,
-                            logical_question1, logical_question1_options, logical_question2, logical_question2_options,
-                            numerical_question1, numerical_question1_options, numerical_question2, numerical_question2_options,
-                            verbal_question1, verbal_question1_options, verbal_question2, verbal_question2_options,
-                            spatial_question1, spatial_question1_options, spatial_question2, spatial_question2_options
-                        )
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                        """,
-                        (
-                            data.get('task_name'), data.get('age_min'), data.get('age_max'), data.get('difficulty_level'),
-                            data.get('instructions'), data.get('estimated_time'), data.get('example'),
-                            data.get('logical_question1'), _json.dumps(data.get('logical_question1_options') or []),
-                            data.get('logical_question2'), _json.dumps(data.get('logical_question2_options') or []),
-                            data.get('numerical_question1'), _json.dumps(data.get('numerical_question1_options') or []),
-                            data.get('numerical_question2'), _json.dumps(data.get('numerical_question2_options') or []),
-                            data.get('verbal_question1'), _json.dumps(data.get('verbal_question1_options') or []),
-                            data.get('verbal_question2'), _json.dumps(data.get('verbal_question2_options') or []),
-                            data.get('spatial_question1'), _json.dumps(data.get('spatial_question1_options') or []),
-                            data.get('spatial_question2'), _json.dumps(data.get('spatial_question2_options') or [])
-                        )
+                    """
+                    INSERT INTO aptitude_tasks (
+                        task_name, age_min, age_max, difficulty_level, instructions, estimated_time, example,
+                        logical_question1, logical_question1_options, logical_question2, logical_question2_options,
+                        numerical_question1, numerical_question1_options, numerical_question2, numerical_question2_options,
+                        verbal_question1, verbal_question1_options, verbal_question2, verbal_question2_options,
+                        spatial_question1, spatial_question1_options, spatial_question2, spatial_question2_options
                     )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        data.get('task_name'), data.get('age_min'), data.get('age_max'), data.get('difficulty_level'),
+                        data.get('instructions'), data.get('estimated_time'), data.get('example'),
+                        data.get('logical_question1'), _json.dumps(data.get('logical_question1_options') or []),
+                        data.get('logical_question2'), _json.dumps(data.get('logical_question2_options') or []),
+                        data.get('numerical_question1'), _json.dumps(data.get('numerical_question1_options') or []),
+                        data.get('numerical_question2'), _json.dumps(data.get('numerical_question2_options') or []),
+                        data.get('verbal_question1'), _json.dumps(data.get('verbal_question1_options') or []),
+                        data.get('verbal_question2'), _json.dumps(data.get('verbal_question2_options') or []),
+                        data.get('spatial_question1'), _json.dumps(data.get('spatial_question1_options') or []),
+                        data.get('spatial_question2'), _json.dumps(data.get('spatial_question2_options') or [])
+                    )
+                )
             conn.commit()
             return jsonify({'success': True})
     except Exception as e:
@@ -1688,29 +1689,29 @@ def admin_category_task_detail(category_slug: str, task_id: int):
                     )
                 else:
                     cursor.execute(
-                        """
-                        UPDATE aptitude_tasks SET 
-                            task_name=%s, age_min=%s, age_max=%s, difficulty_level=%s, instructions=%s, estimated_time=%s, example=%s,
-                            logical_question1=%s, logical_question1_options=%s, logical_question2=%s, logical_question2_options=%s,
-                            numerical_question1=%s, numerical_question1_options=%s, numerical_question2=%s, numerical_question2_options=%s,
-                            verbal_question1=%s, verbal_question1_options=%s, verbal_question2=%s, verbal_question2_options=%s,
-                            spatial_question1=%s, spatial_question1_options=%s, spatial_question2=%s, spatial_question2_options=%s
-                        WHERE id=%s
-                        """,
-                        (
-                            existing.get('task_name'), existing.get('age_min'), existing.get('age_max'), existing.get('difficulty_level'),
-                            data.get('instructions', existing.get('instructions')), data.get('estimated_time', existing.get('estimated_time')), 
-                            data.get('example', existing.get('example')),
-                            data.get('logical_question1', existing.get('logical_question1')), _json.dumps(data.get('logical_question1_options', existing.get('logical_question1_options') or [])),
-                            data.get('logical_question2', existing.get('logical_question2')), _json.dumps(data.get('logical_question2_options', existing.get('logical_question2_options') or [])),
-                            data.get('numerical_question1', existing.get('numerical_question1')), _json.dumps(data.get('numerical_question1_options', existing.get('numerical_question1_options') or [])),
-                            data.get('numerical_question2', existing.get('numerical_question2')), _json.dumps(data.get('numerical_question2_options', existing.get('numerical_question2_options') or [])),
-                            data.get('verbal_question1', existing.get('verbal_question1')), _json.dumps(data.get('verbal_question1_options', existing.get('verbal_question1_options') or [])),
-                            data.get('verbal_question2', existing.get('verbal_question2')), _json.dumps(data.get('verbal_question2_options', existing.get('verbal_question2_options') or [])),
-                            data.get('spatial_question1', existing.get('spatial_question1')), _json.dumps(data.get('spatial_question1_options', existing.get('spatial_question1_options') or [])),
-                            data.get('spatial_question2', existing.get('spatial_question2')), _json.dumps(data.get('spatial_question2_options', existing.get('spatial_question2_options') or [])),
-                            task_id
-                        )
+                    """
+                    UPDATE aptitude_tasks SET 
+                        task_name=%s, age_min=%s, age_max=%s, difficulty_level=%s, instructions=%s, estimated_time=%s, example=%s,
+                        logical_question1=%s, logical_question1_options=%s, logical_question2=%s, logical_question2_options=%s,
+                        numerical_question1=%s, numerical_question1_options=%s, numerical_question2=%s, numerical_question2_options=%s,
+                        verbal_question1=%s, verbal_question1_options=%s, verbal_question2=%s, verbal_question2_options=%s,
+                        spatial_question1=%s, spatial_question1_options=%s, spatial_question2=%s, spatial_question2_options=%s
+                    WHERE id=%s
+                    """,
+                    (
+                        existing.get('task_name'), existing.get('age_min'), existing.get('age_max'), existing.get('difficulty_level'),
+                        data.get('instructions', existing.get('instructions')), data.get('estimated_time', existing.get('estimated_time')), 
+                        data.get('example', existing.get('example')),
+                        data.get('logical_question1', existing.get('logical_question1')), _json.dumps(data.get('logical_question1_options', existing.get('logical_question1_options') or [])),
+                        data.get('logical_question2', existing.get('logical_question2')), _json.dumps(data.get('logical_question2_options', existing.get('logical_question2_options') or [])),
+                        data.get('numerical_question1', existing.get('numerical_question1')), _json.dumps(data.get('numerical_question1_options', existing.get('numerical_question1_options') or [])),
+                        data.get('numerical_question2', existing.get('numerical_question2')), _json.dumps(data.get('numerical_question2_options', existing.get('numerical_question2_options') or [])),
+                        data.get('verbal_question1', existing.get('verbal_question1')), _json.dumps(data.get('verbal_question1_options', existing.get('verbal_question1_options') or [])),
+                        data.get('verbal_question2', existing.get('verbal_question2')), _json.dumps(data.get('verbal_question2_options', existing.get('verbal_question2_options') or [])),
+                        data.get('spatial_question1', existing.get('spatial_question1')), _json.dumps(data.get('spatial_question1_options', existing.get('spatial_question1_options') or [])),
+                        data.get('spatial_question2', existing.get('spatial_question2')), _json.dumps(data.get('spatial_question2_options', existing.get('spatial_question2_options') or [])),
+                        task_id
+                    )
                     )
             conn.commit()
             return jsonify({'success': True})
@@ -3035,6 +3036,53 @@ def start_reading_task():
         return jsonify({'success': False, 'message': 'Failed to start task'}), 500
 
 
+@app.route('/api/get-task-status', methods=['GET'])
+def get_task_status():
+    """Get the current status of a specific task for the logged-in user"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    
+    task_name = request.args.get('task_name')
+    if not task_name:
+        return jsonify({'success': False, 'message': 'Task name required'}), 400
+    
+    try:
+        conn = connect_db()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get the task status for the current user
+        cursor.execute('''
+            SELECT status FROM user_tasks 
+            WHERE user_id = %s AND task_name = %s
+        ''', (session['user_id'], task_name))
+        
+        result = cursor.fetchone()
+        status = result['status'] if result else None
+
+        # Backward-compatibility fallback for older records
+        # Some older endpoints saved mathematical comprehension as a generic name
+        # without the specific task suffix. If no exact match is found, check
+        # the generic record to preserve users' in-progress state.
+        if status is None and task_name.startswith('Mathematical Comprehension Task '):
+            cursor.execute('''
+                SELECT status FROM user_tasks 
+                WHERE user_id = %s AND task_name = %s
+            ''', (session['user_id'], 'Mathematical Comprehension'))
+            fallback = cursor.fetchone()
+            status = fallback['status'] if fallback else 'Not Started'
+        elif status is None:
+            status = 'Not Started'
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({'success': True, 'status': status})
+        
+    except Exception as e:
+        print(f"Get task status error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to get task status'}), 500
+
+
 @app.route('/api/mathematical-comprehension-tasks/<int:user_id>', methods=['GET'])
 def get_mathematical_comprehension_tasks(user_id):
     """Get age-appropriate mathematical comprehension tasks for a user"""
@@ -3208,7 +3256,7 @@ def start_mathematical_comprehension_task():
             INSERT INTO user_tasks (user_id, task_name, status)
             VALUES (%s, %s, %s)
             ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
-        ''', (session['user_id'], f'Mathematical Comprehension', 'In Progress'))
+        ''', (session['user_id'], f'Mathematical Comprehension Task {task_name}', 'In Progress'))
         
         conn.commit()
         cursor.close()
@@ -4009,6 +4057,140 @@ def admin_dashboard_stats():
         cursor.close()
         conn.close()
 
+@app.route('/api/admin/recent-activity', methods=['GET'])
+def admin_recent_activity():
+    if not session.get('is_admin'):
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+    try:
+        conn = connect_db()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+        cur = conn.cursor(dictionary=True)
+
+        activities = []
+
+        # New registrations (users)
+        try:
+            cur.execute("""
+                SELECT id, name, created_at
+                FROM users
+                ORDER BY created_at DESC
+                LIMIT 20
+            """)
+            for row in cur.fetchall():
+                activities.append({
+                    'type': 'registration',
+                    'description': f"New user registered: {row.get('name') or 'User'} (ID {row['id']})",
+                    'timestamp': str(row['created_at'])
+                })
+        except Exception:
+            pass
+
+        # Task updates
+        try:
+            cur.execute("""
+                SELECT user_id, task_name, status, updated_at
+                FROM user_tasks
+                ORDER BY updated_at DESC
+                LIMIT 50
+            """)
+            for row in cur.fetchall():
+                typ = 'completion' if row['status'] == 'Completed' else 'progress'
+                activities.append({
+                    'type': typ,
+                    'description': f"Task {row['task_name']} → {row['status']} (User {row['user_id']})",
+                    'timestamp': str(row['updated_at'])
+                })
+        except Exception:
+            pass
+
+        # Audio uploads
+        try:
+            cur.execute("""
+                SELECT user_id, filename, uploaded_at
+                FROM audio_recordings
+                ORDER BY uploaded_at DESC
+                LIMIT 50
+            """)
+            for row in cur.fetchall():
+                activities.append({
+                    'type': 'audio',
+                    'description': f"Audio uploaded by User {row['user_id']}: {row['filename']}",
+                    'timestamp': str(row['uploaded_at'])
+                })
+        except Exception:
+            pass
+
+        # Writing uploads
+        try:
+            cur.execute("""
+                SELECT user_id, filename, uploaded_at
+                FROM writing_samples
+                ORDER BY uploaded_at DESC
+                LIMIT 50
+            """)
+            for row in cur.fetchall():
+                activities.append({
+                    'type': 'writing',
+                    'description': f"Writing sample uploaded by User {row['user_id']}: {row['filename']}",
+                    'timestamp': str(row['uploaded_at'])
+                })
+        except Exception:
+            pass
+
+        # Sort and limit
+        activities.sort(key=lambda a: a['timestamp'], reverse=True)
+        activities = activities[:50]
+
+        cur.close()
+        conn.close()
+        return jsonify({'success': True, 'activities': activities})
+    except Exception as e:
+        print(f"Recent activity error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to load recent activity'}), 500
+
+@app.route('/api/admin/task-stats', methods=['GET'])
+def admin_task_stats():
+    if not session.get('is_admin'):
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+    try:
+        conn = connect_db()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+        cur = conn.cursor(dictionary=True)
+
+        # Get all tasks
+        cur.execute("SELECT task_name FROM tasks ORDER BY id")
+        task_names = [r['task_name'] for r in cur.fetchall()]
+        if not task_names:
+            return jsonify({'success': True, 'labels': [], 'data': []})
+
+        # Number of participants (children)
+        cur.execute("SELECT COUNT(*) AS c FROM users WHERE user_type='child'")
+        total_participants = cur.fetchone()['c'] or 0
+
+        labels = []
+        data = []
+        for t in task_names:
+            labels.append(t)
+            if total_participants == 0:
+                data.append(0)
+                continue
+            cur.execute("""
+                SELECT COUNT(*) AS c FROM user_tasks
+                WHERE task_name=%s AND status='Completed'
+            """, (t,))
+            completed = cur.fetchone()['c'] or 0
+            pct = int(round((completed / total_participants) * 100))
+            data.append(pct)
+
+        cur.close()
+        conn.close()
+        return jsonify({'success': True, 'labels': labels, 'data': data})
+    except Exception as e:
+        print(f"Task stats error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to load task stats'}), 500
+
 @app.route('/api/admin/get-child-tasks', methods=['GET'])
 def admin_get_child_tasks():
     """Get all tasks for a specific child user"""
@@ -4076,6 +4258,238 @@ def get_writing_progress():
         return jsonify({'success': False, 'message': 'Failed to get writing progress'}), 500
 
 
+@app.route('/api/admin/export-dataset', methods=['POST'])
+def admin_export_dataset():
+    if not session.get('is_admin'):
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+
+    payload = request.get_json() or {}
+    export_format = (payload.get('format') or 'json').lower()
+    anonymization = (payload.get('anonymization') or 'full').lower()
+    start_date_str = payload.get('startDate')
+    end_date_str = payload.get('endDate')
+    include = payload.get('includeData') or {}
+
+    def parse_date(d):
+        try:
+            if not d:
+                return None
+            return datetime.strptime(d, '%Y-%m-%d')
+        except Exception:
+            return None
+
+    from datetime import timedelta
+    start_dt = parse_date(start_date_str)
+    end_dt = parse_date(end_date_str)
+    if end_dt:
+        end_dt = end_dt + timedelta(days=1)
+
+    def mask_name(name: str) -> str:
+        if not name:
+            return name
+        parts = name.split()
+        masked = []
+        for p in parts:
+            if len(p) <= 2:
+                masked.append('*' * len(p))
+            else:
+                masked.append(p[0] + ('*' * (len(p) - 2)) + p[-1])
+        return ' '.join(masked)
+
+    def mask_email(email: str) -> str:
+        if not email or '@' not in email:
+            return email
+        user, domain = email.split('@', 1)
+        if len(user) <= 2:
+            user_masked = '*' * len(user)
+        else:
+            user_masked = user[0] + ('*' * (len(user) - 2)) + user[-1]
+        return f"{user_masked}@{domain}"
+
+    def anonymize_row(row: dict) -> dict:
+        if anonymization == 'none':
+            return row
+        r = dict(row)
+        if anonymization == 'partial':
+            if 'name' in r:
+                r['name'] = mask_name(r['name'])
+            if 'email' in r:
+                r['email'] = mask_email(r['email'])
+        else:
+            for key in ['name', 'email', 'ip_address', 'user_agent', 'address', 'phone']:
+                if key in r:
+                    r[key] = None
+        return r
+
+    try:
+        conn = connect_db()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+        cur = conn.cursor(dictionary=True)
+
+        data = {}
+
+        # Demographics
+        if include.get('demographics', False):
+            where = []
+            params = []
+            if start_dt:
+                where.append('d.created_at >= %s')
+                params.append(start_dt)
+            if end_dt:
+                where.append('d.created_at < %s')
+                params.append(end_dt)
+            where_sql = (' WHERE ' + ' AND '.join(where)) if where else ''
+            cur.execute(f'''
+                SELECT u.id AS user_id, u.name, u.email, u.user_type, d.age, d.gender, d.native_language, d.education_level, d.dyslexia_status, d.created_at
+                FROM users u
+                LEFT JOIN demographics d ON u.id=d.user_id
+                {where_sql}
+            ''', tuple(params))
+            rows = [anonymize_row(r) for r in cur.fetchall()]
+            data['demographics'] = rows
+
+        # Audio
+        if include.get('audio', False):
+            where = []
+            params = []
+            if start_dt:
+                where.append('uploaded_at >= %s')
+                params.append(start_dt)
+            if end_dt:
+                where.append('uploaded_at < %s')
+                params.append(end_dt)
+            where_sql = (' WHERE ' + ' AND '.join(where)) if where else ''
+            cur.execute(f'''SELECT user_id, filename, task_name, uploaded_at FROM audio_recordings {where_sql} ORDER BY uploaded_at DESC''', tuple(params))
+            rows = cur.fetchall()
+            data['audio'] = rows
+
+        # Typing
+        if include.get('typing', False):
+            where = []
+            params = []
+            if start_dt:
+                where.append('updated_at >= %s')
+                params.append(start_dt)
+            if end_dt:
+                where.append('updated_at < %s')
+                params.append(end_dt)
+            where_sql = (' WHERE ' + ' AND '.join(where)) if where else ''
+            cur.execute(f'''SELECT user_id, text, keystrokes, timer, updated_at FROM typing_progress {where_sql}''', tuple(params))
+            rows = cur.fetchall()
+            data['typing'] = rows
+
+        # Comprehension
+        if include.get('comprehension', False):
+            where = []
+            params = []
+            if start_dt:
+                where.append('updated_at >= %s')
+                params.append(start_dt)
+            if end_dt:
+                where.append('updated_at < %s')
+                params.append(end_dt)
+            where_sql = (' WHERE ' + ' AND '.join(where)) if where else ''
+            cur.execute(f'''SELECT user_id, q1, q2, q3, status, updated_at FROM comprehension_progress {where_sql}''', tuple(params))
+            rows = cur.fetchall()
+            data['comprehension'] = rows
+
+        # Progress
+        if include.get('progress', False):
+            where = []
+            params = []
+            if start_dt:
+                where.append('updated_at >= %s')
+                params.append(start_dt)
+            if end_dt:
+                where.append('updated_at < %s')
+                params.append(end_dt)
+            where_sql = (' WHERE ' + ' AND '.join(where)) if where else ''
+            cur.execute(f'''SELECT user_id, task_name, status, updated_at FROM user_tasks {where_sql}''', tuple(params))
+            rows = cur.fetchall()
+            data['progress'] = rows
+
+        cur.close()
+        conn.close()
+
+        if export_format == 'json':
+            from flask import send_file
+            out = BytesIO(json.dumps(data, ensure_ascii=False, indent=2, default=str).encode('utf-8'))
+            out.seek(0)
+            return send_file(out, mimetype='application/json', as_attachment=True, download_name=f"dyslexia_study_data_{datetime.utcnow().date().isoformat()}.json")
+
+        if export_format == 'csv':
+            import csv
+            text_buf = StringIO()
+            writer = csv.writer(text_buf)
+            for section_name, rows in data.items():
+                writer.writerow([f'== {section_name.upper()} =='])
+                if rows:
+                    header = list(rows[0].keys())
+                    writer.writerow(header)
+                    for r in rows:
+                        writer.writerow([str(r.get(k, '')) for k in header])
+                else:
+                    writer.writerow(['(no rows)'])
+                writer.writerow([])
+            out = BytesIO(text_buf.getvalue().encode('utf-8'))
+            from flask import send_file
+            return send_file(out, mimetype='text/csv', as_attachment=True, download_name=f"dyslexia_study_data_{datetime.utcnow().date().isoformat()}.csv")
+
+        if export_format in ('excel', 'xlsx'):
+            try:
+                from openpyxl import Workbook
+            except Exception:
+                # fallback to csv
+                import csv
+                text_buf = StringIO()
+                writer = csv.writer(text_buf)
+                for section_name, rows in data.items():
+                    writer.writerow([f'== {section_name.upper()} =='])
+                    if rows:
+                        header = list(rows[0].keys())
+                        writer.writerow(header)
+                        for r in rows:
+                            writer.writerow([str(r.get(k, '')) for k in header])
+                    else:
+                        writer.writerow(['(no rows)'])
+                    writer.writerow([])
+                out = BytesIO(text_buf.getvalue().encode('utf-8'))
+                from flask import send_file
+                return send_file(out, mimetype='text/csv', as_attachment=True, download_name=f"dyslexia_study_data_{datetime.utcnow().date().isoformat()}.csv")
+
+            from openpyxl import Workbook
+            wb = Workbook()
+            ws = wb.active
+            ws.title = 'Summary'
+            row_idx = 1
+            ws.cell(row=row_idx, column=1, value='Datasets included:')
+            row_idx += 2
+            for section_name in data.keys():
+                ws.cell(row=row_idx, column=1, value=section_name)
+                row_idx += 1
+            for section_name, rows in data.items():
+                sheet = wb.create_sheet(title=section_name[:31])
+                if rows:
+                    header = list(rows[0].keys())
+                    for ci, col_name in enumerate(header, start=1):
+                        sheet.cell(row=1, column=ci, value=col_name)
+                    for ri, r in enumerate(rows, start=2):
+                        for ci, col_name in enumerate(header, start=1):
+                            sheet.cell(row=ri, column=ci, value=r.get(col_name))
+                else:
+                    sheet.cell(row=1, column=1, value='(no rows)')
+            out = BytesIO()
+            wb.save(out)
+            out.seek(0)
+            from flask import send_file
+            return send_file(out, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', as_attachment=True, download_name=f"dyslexia_study_data_{datetime.utcnow().date().isoformat()}.xlsx")
+
+        return jsonify({'success': False, 'message': f'Unsupported export format: {export_format}'}), 400
+
+    except Exception as e:
+        print(f'Admin export error: {e}')
+        return jsonify({'success': False, 'message': 'Failed to export dataset'}), 500
 @app.route('/api/admin/set-user-task-status', methods=['POST'])
 def admin_set_user_task_status():
     if not session.get('is_admin'):

@@ -423,13 +423,15 @@
                     </div>
                     
                     <div class="flex space-x-3">
-                        <button onclick="previewTask(${task.id})" class="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition">
-                            Preview
-                        </button>
                         <button onclick="startComprehensionTask(${task.id}, '${task.task_name}')" class="flex-1 primary-bg text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">
                             Start Task
                         </button>
+                        <button onclick="previewTask(${task.id})" class="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition">
+                            Preview
+                        </button>
                     </div>
+
+                    
                 </div>
             `;
             
