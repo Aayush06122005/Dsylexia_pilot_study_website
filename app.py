@@ -3858,6 +3858,79 @@ def admin_user_detail(user_id):
         cursor.close()
         conn.close()
 
+@app.route('/api/admin/users-grouped', methods=['GET'])
+def admin_users_grouped():
+    if not session.get('is_admin'):
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+    conn = connect_db()
+    if not conn:
+        return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+    cursor = conn.cursor(dictionary=True)
+    try:
+        # Parents
+        cursor.execute('''
+            SELECT u.id, u.name, u.email, u.created_at
+            FROM users u
+            LEFT JOIN demographics d ON u.id = d.user_id
+            WHERE u.user_type = 'parent'
+        ''')
+        parents = cursor.fetchall()
+
+        # Children
+        cursor.execute('''
+            SELECT u.id, u.name, u.email, d.age, d.gender, d.dyslexia_status, d.education_level, d.native_language, u.created_at
+            FROM users u
+            LEFT JOIN demographics d ON u.id = d.user_id
+            WHERE u.user_type = 'child'
+        ''')
+        children = cursor.fetchall()
+
+        # Schools
+        cursor.execute('''
+            SELECT s.id, s.name, s.email, s.address, s.phone, s.created_at
+            FROM schools s
+            ORDER BY s.created_at DESC
+        ''')
+        schools = cursor.fetchall()
+
+        # Compute progress for parents and children
+        all_tasks = ['Reading Aloud Task 1', 'Typing Task', 'Reading Comprehension', 'Aptitude Test']
+        total_tasks = len(all_tasks)
+        def attach_progress(users):
+            for u in users:
+                cursor.execute("""
+                    SELECT task_name FROM user_tasks WHERE user_id = %s AND status = 'Completed'
+                """, (u['id'],))
+                completed = [row['task_name'] for row in cursor.fetchall() if row['task_name'] in all_tasks]
+                u['progress'] = int((len(completed) / total_tasks) * 100) if total_tasks else 0
+                u['dyslexia_status'] = u.get('dyslexia_status', 'N/A')
+        attach_progress(parents)
+        attach_progress(children)
+
+        # Attach counts to schools
+        for s in schools:
+            # number of parents in this school
+            cursor.execute("SELECT COUNT(*) AS c FROM users WHERE user_type = 'parent' AND school_id = %s", (s['id'],))
+            s['num_parents'] = cursor.fetchone()['c']
+            # number of children linked to those parents
+            cursor.execute('''
+                SELECT COUNT(DISTINCT pc.child_id) AS c
+                FROM parent_children pc
+                JOIN users p ON p.id = pc.parent_id
+                WHERE p.school_id = %s
+            ''', (s['id'],))
+            s['num_children'] = cursor.fetchone()['c']
+
+        return jsonify({'success': True, 'parents': parents, 'children': children, 'schools': schools})
+        combined_users=(parents or []) + (children or [])
+        return jsonify({'success':True, 'parents':parents, 'children': children, 'schools': schools, 'users': combined_users})
+    except Exception as e:
+        print(f"Error fetching grouped users: {e}")
+        return jsonify({'success': False, 'message': 'Error fetching grouped users'}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
 @app.route('/api/admin/users/<int:user_id>/export', methods=['GET'])
 def admin_user_export(user_id):
     if not session.get('is_admin'):
@@ -3900,10 +3973,13 @@ def admin_dashboard_stats():
     if not conn:
         return jsonify({'success': False, 'message': 'Database connection failed'}), 500
     cursor = conn.cursor(dictionary=True)
+    stats = {}  # <-- Initialize stats dictionary
     try:
         # Total participants
         cursor.execute("SELECT COUNT(*) as total FROM users WHERE user_type = 'child'")
         total_participants = cursor.fetchone()['total']
+        stats['totalParticipants'] = total_participants
+
         # Average completion rate (average progress across all users)
         cursor.execute('SELECT id FROM users')
         user_ids = [row['id'] for row in cursor.fetchall()]
@@ -3916,19 +3992,62 @@ def admin_dashboard_stats():
             progress = int((completed_tasks / total_tasks) * 100) if total_tasks else 0
             total_progress += progress
         avg_completion = int(total_progress / len(user_ids)) if user_ids else 0
+        stats['completionRate'] = avg_completion
+
+        # Active studies (number of tasks)
+        cursor.execute('SELECT COUNT(*) AS numTasks FROM tasks')
+        stats['activeStudies'] = cursor.fetchone()['numTasks']
+
         # Data quality placeholder (set to 85 for now)
-        data_quality = 85
-        return jsonify({'success': True, 'stats': {
-            'totalParticipants': total_participants,
-            'completionRate': avg_completion,
-            'dataQuality': data_quality
-        }})
+        stats['dataQuality'] = 85
+
+        return jsonify({'success': True, 'stats': stats})
     except Exception as e:
         print(f"Error fetching dashboard stats: {e}")
         return jsonify({'success': False, 'message': 'Error fetching dashboard stats'}), 500
     finally:
         cursor.close()
         conn.close()
+        
+@app.route('/api/admin/get-child-tasks', methods=['GET'])
+def admin_get_child_tasks():
+    """Get all tasks for a specific child user"""
+    if not session.get('is_admin'):
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+    
+    user_id = request.args.get('user_id')
+    if not user_id:
+        return jsonify({'success': False, 'message': 'User ID required'}), 400
+    
+    try:
+        conn = connect_db()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get all available tasks
+        cursor.execute("SELECT task_name FROM tasks ORDER BY id")
+        all_tasks = [row['task_name'] for row in cursor.fetchall()]
+        
+        # Get current task statuses for this user
+        cursor.execute("SELECT task_name, status FROM user_tasks WHERE user_id = %s", (user_id,))
+        user_tasks = {row['task_name']: row['status'] for row in cursor.fetchall()}
+        
+        # Create task list with current status or 'Not Started' as default
+        tasks = []
+        for task_name in all_tasks:
+            status = user_tasks.get(task_name, 'Not Started')
+            tasks.append({'task_name': task_name, 'status': status})
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({'success': True, 'tasks': tasks})
+        
+    except Exception as e:
+        print(f"Error getting child tasks: {e}")
+        return jsonify({'success': False, 'message': f'Failed to get tasks: {str(e)}'}), 500
+
+
+
 
 @app.route('/api/get-writing-progress', methods=['GET'])
 def get_writing_progress():
