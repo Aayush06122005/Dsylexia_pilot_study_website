@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, session, flash, redirect, url_for, re
 from flask_cors import CORS
 import mysql.connector
 from datetime import datetime
+from io import BytesIO, StringIO
 import json
 import bcrypt
 import os
@@ -4076,6 +4077,238 @@ def get_writing_progress():
         return jsonify({'success': False, 'message': 'Failed to get writing progress'}), 500
 
 
+@app.route('/api/admin/export-dataset', methods=['POST'])
+def admin_export_dataset():
+    if not session.get('is_admin'):
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+
+    payload = request.get_json() or {}
+    export_format = (payload.get('format') or 'json').lower()
+    anonymization = (payload.get('anonymization') or 'full').lower()
+    start_date_str = payload.get('startDate')
+    end_date_str = payload.get('endDate')
+    include = payload.get('includeData') or {}
+
+    def parse_date(d):
+        try:
+            if not d:
+                return None
+            return datetime.strptime(d, '%Y-%m-%d')
+        except Exception:
+            return None
+
+    from datetime import timedelta
+    start_dt = parse_date(start_date_str)
+    end_dt = parse_date(end_date_str)
+    if end_dt:
+        end_dt = end_dt + timedelta(days=1)
+
+    def mask_name(name: str) -> str:
+        if not name:
+            return name
+        parts = name.split()
+        masked = []
+        for p in parts:
+            if len(p) <= 2:
+                masked.append('*' * len(p))
+            else:
+                masked.append(p[0] + ('*' * (len(p) - 2)) + p[-1])
+        return ' '.join(masked)
+
+    def mask_email(email: str) -> str:
+        if not email or '@' not in email:
+            return email
+        user, domain = email.split('@', 1)
+        if len(user) <= 2:
+            user_masked = '*' * len(user)
+        else:
+            user_masked = user[0] + ('*' * (len(user) - 2)) + user[-1]
+        return f"{user_masked}@{domain}"
+
+    def anonymize_row(row: dict) -> dict:
+        if anonymization == 'none':
+            return row
+        r = dict(row)
+        if anonymization == 'partial':
+            if 'name' in r:
+                r['name'] = mask_name(r['name'])
+            if 'email' in r:
+                r['email'] = mask_email(r['email'])
+        else:
+            for key in ['name', 'email', 'ip_address', 'user_agent', 'address', 'phone']:
+                if key in r:
+                    r[key] = None
+        return r
+
+    try:
+        conn = connect_db()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+        cur = conn.cursor(dictionary=True)
+
+        data = {}
+
+        # Demographics
+        if include.get('demographics', False):
+            where = []
+            params = []
+            if start_dt:
+                where.append('d.created_at >= %s')
+                params.append(start_dt)
+            if end_dt:
+                where.append('d.created_at < %s')
+                params.append(end_dt)
+            where_sql = (' WHERE ' + ' AND '.join(where)) if where else ''
+            cur.execute(f'''
+                SELECT u.id AS user_id, u.name, u.email, u.user_type, d.age, d.gender, d.native_language, d.education_level, d.dyslexia_status, d.created_at
+                FROM users u
+                LEFT JOIN demographics d ON u.id=d.user_id
+                {where_sql}
+            ''', tuple(params))
+            rows = [anonymize_row(r) for r in cur.fetchall()]
+            data['demographics'] = rows
+
+        # Audio
+        if include.get('audio', False):
+            where = []
+            params = []
+            if start_dt:
+                where.append('uploaded_at >= %s')
+                params.append(start_dt)
+            if end_dt:
+                where.append('uploaded_at < %s')
+                params.append(end_dt)
+            where_sql = (' WHERE ' + ' AND '.join(where)) if where else ''
+            cur.execute(f'''SELECT user_id, filename, task_name, uploaded_at FROM audio_recordings {where_sql} ORDER BY uploaded_at DESC''', tuple(params))
+            rows = cur.fetchall()
+            data['audio'] = rows
+
+        # Typing
+        if include.get('typing', False):
+            where = []
+            params = []
+            if start_dt:
+                where.append('updated_at >= %s')
+                params.append(start_dt)
+            if end_dt:
+                where.append('updated_at < %s')
+                params.append(end_dt)
+            where_sql = (' WHERE ' + ' AND '.join(where)) if where else ''
+            cur.execute(f'''SELECT user_id, text, keystrokes, timer, updated_at FROM typing_progress {where_sql}''', tuple(params))
+            rows = cur.fetchall()
+            data['typing'] = rows
+
+        # Comprehension
+        if include.get('comprehension', False):
+            where = []
+            params = []
+            if start_dt:
+                where.append('updated_at >= %s')
+                params.append(start_dt)
+            if end_dt:
+                where.append('updated_at < %s')
+                params.append(end_dt)
+            where_sql = (' WHERE ' + ' AND '.join(where)) if where else ''
+            cur.execute(f'''SELECT user_id, q1, q2, q3, status, updated_at FROM comprehension_progress {where_sql}''', tuple(params))
+            rows = cur.fetchall()
+            data['comprehension'] = rows
+
+        # Progress
+        if include.get('progress', False):
+            where = []
+            params = []
+            if start_dt:
+                where.append('updated_at >= %s')
+                params.append(start_dt)
+            if end_dt:
+                where.append('updated_at < %s')
+                params.append(end_dt)
+            where_sql = (' WHERE ' + ' AND '.join(where)) if where else ''
+            cur.execute(f'''SELECT user_id, task_name, status, updated_at FROM user_tasks {where_sql}''', tuple(params))
+            rows = cur.fetchall()
+            data['progress'] = rows
+
+        cur.close()
+        conn.close()
+
+        if export_format == 'json':
+            from flask import send_file
+            out = BytesIO(json.dumps(data, ensure_ascii=False, indent=2, default=str).encode('utf-8'))
+            out.seek(0)
+            return send_file(out, mimetype='application/json', as_attachment=True, download_name=f"dyslexia_study_data_{datetime.utcnow().date().isoformat()}.json")
+
+        if export_format == 'csv':
+            import csv
+            text_buf = StringIO()
+            writer = csv.writer(text_buf)
+            for section_name, rows in data.items():
+                writer.writerow([f'== {section_name.upper()} =='])
+                if rows:
+                    header = list(rows[0].keys())
+                    writer.writerow(header)
+                    for r in rows:
+                        writer.writerow([str(r.get(k, '')) for k in header])
+                else:
+                    writer.writerow(['(no rows)'])
+                writer.writerow([])
+            out = BytesIO(text_buf.getvalue().encode('utf-8'))
+            from flask import send_file
+            return send_file(out, mimetype='text/csv', as_attachment=True, download_name=f"dyslexia_study_data_{datetime.utcnow().date().isoformat()}.csv")
+
+        if export_format in ('excel', 'xlsx'):
+            try:
+                from openpyxl import Workbook
+            except Exception:
+                # fallback to csv
+                import csv
+                text_buf = StringIO()
+                writer = csv.writer(text_buf)
+                for section_name, rows in data.items():
+                    writer.writerow([f'== {section_name.upper()} =='])
+                    if rows:
+                        header = list(rows[0].keys())
+                        writer.writerow(header)
+                        for r in rows:
+                            writer.writerow([str(r.get(k, '')) for k in header])
+                    else:
+                        writer.writerow(['(no rows)'])
+                    writer.writerow([])
+                out = BytesIO(text_buf.getvalue().encode('utf-8'))
+                from flask import send_file
+                return send_file(out, mimetype='text/csv', as_attachment=True, download_name=f"dyslexia_study_data_{datetime.utcnow().date().isoformat()}.csv")
+
+            from openpyxl import Workbook
+            wb = Workbook()
+            ws = wb.active
+            ws.title = 'Summary'
+            row_idx = 1
+            ws.cell(row=row_idx, column=1, value='Datasets included:')
+            row_idx += 2
+            for section_name in data.keys():
+                ws.cell(row=row_idx, column=1, value=section_name)
+                row_idx += 1
+            for section_name, rows in data.items():
+                sheet = wb.create_sheet(title=section_name[:31])
+                if rows:
+                    header = list(rows[0].keys())
+                    for ci, col_name in enumerate(header, start=1):
+                        sheet.cell(row=1, column=ci, value=col_name)
+                    for ri, r in enumerate(rows, start=2):
+                        for ci, col_name in enumerate(header, start=1):
+                            sheet.cell(row=ri, column=ci, value=r.get(col_name))
+                else:
+                    sheet.cell(row=1, column=1, value='(no rows)')
+            out = BytesIO()
+            wb.save(out)
+            out.seek(0)
+            from flask import send_file
+            return send_file(out, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', as_attachment=True, download_name=f"dyslexia_study_data_{datetime.utcnow().date().isoformat()}.xlsx")
+
+        return jsonify({'success': False, 'message': f'Unsupported export format: {export_format}'}), 400
+
+    except Exception as e:
+        print(f'Admin export error: {e}')
+        return jsonify({'success': False, 'message': 'Failed to export dataset'}), 500
 @app.route('/api/admin/set-user-task-status', methods=['POST'])
 def admin_set_user_task_status():
     if not session.get('is_admin'):

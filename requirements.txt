@@ -7,3 +7,4 @@ authlib
 requests
 gunicorn
 dotenv
+openpyxl==3.1.5
