@@ -35,7 +35,7 @@
             </div>
             <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-green-500">
                 <h3 class="text-lg font-semibold text-gray-700">Active Studies</h3>
-                <p class="text-3xl font-bold text-green-600" id="activeStudies">0</p>
+                <p class="text-3xl font-bold text-green-600" id="activeStudies">3</p>
             </div>
             <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-yellow-500">
                 <h3 class="text-lg font-semibold text-gray-700">Data Quality Score</h3>
@@ -95,9 +95,6 @@
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                        <!-- <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Age</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dyslexia Status</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th> -->
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                     </tr>
                                 </thead>
@@ -121,7 +118,6 @@
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Age</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dyslexia Status</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
-
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task Status</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                     </tr>
@@ -294,33 +290,59 @@
                 <!-- Task Management Tab -->
                 <div id="tasks-tab" class="tab-content hidden">
                     <h2 class="text-2xl font-bold text-gray-800 mb-6">Task Management</h2>
+                    
+                    <!-- Current Tasks -->
+                    <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold text-gray-700">Current Tasks</h3>
+                            <div class="flex space-x-2">
+                                <button onclick="loadTaskData()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                                    Refresh Tasks
+                                </button>
+                                <button onclick="addNewTask()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                                    Add New Task
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full border border-gray-200 rounded-lg">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Task Name</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estimated Time</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tasksTableBody" class="divide-y divide-gray-200">
+                                    <tr>
+                                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                                            Loading tasks... Click "Refresh Tasks" to load data.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="taskError" class="hidden mt-4 p-4 bg-red-100 border border-red-300 rounded-lg">
+                            <p class="text-red-700" id="taskErrorMessage"></p>
+                        </div>
+                    </div>
 
-                    <!-- Categories Grid -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <a href="{{ url_for('admin_tasks_by_category', category_slug='reading-aloud') }}" class="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg border border-gray-200">
-                            <h3 class="text-lg font-semibold text-gray-800">Reading Aloud</h3>
-                            <p class="text-sm text-gray-600 mt-1">View tasks grouped by age bands</p>
-                        </a>
-                        <a href="{{ url_for('admin_tasks_by_category', category_slug='typing') }}" class="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg border border-gray-200">
-                            <h3 class="text-lg font-semibold text-gray-800">Typing Task</h3>
-                            <p class="text-sm text-gray-600 mt-1">View tasks grouped by age bands</p>
-                        </a>
-                        <a href="{{ url_for('admin_tasks_by_category', category_slug='writing') }}" class="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg border border-gray-200">
-                            <h3 class="text-lg font-semibold text-gray-800">Writing Task</h3>
-                            <p class="text-sm text-gray-600 mt-1">View tasks grouped by age bands</p>
-                        </a>
-                        <a href="{{ url_for('admin_tasks_by_category', category_slug='reading-comprehension') }}" class="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg border border-gray-200">
-                            <h3 class="text-lg font-semibold text-gray-800">Reading Comprehension</h3>
-                            <p class="text-sm text-gray-600 mt-1">View tasks grouped by age bands</p>
-                        </a>
-                        <a href="{{ url_for('admin_tasks_by_category', category_slug='mathematical-comprehension') }}" class="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg border border-gray-200">
-                            <h3 class="text-lg font-semibold text-gray-800">Mathematical Comprehension</h3>
-                            <p class="text-sm text-gray-600 mt-1">View tasks grouped by age bands</p>
-                        </a>
-                        <a href="{{ url_for('admin_tasks_by_category', category_slug='aptitude') }}" class="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg border border-gray-200">
-                            <h3 class="text-lg font-semibold text-gray-800">Aptitude Test</h3>
-                            <p class="text-sm text-gray-600 mt-1">View and edit aptitude task</p>
-                        </a>
+                    <!-- Task Parameters -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-700 mb-4">Task Parameters</h3>
+                            <div id="taskParameters" class="space-y-4">
+                                <!-- Task parameters will be populated here -->
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-700 mb-4">Task Analytics</h3>
+                            <canvas id="taskAnalyticsChart" width="400" height="200"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -408,8 +430,7 @@
         </div>
     </div>
 </div>
-
-<!-- Task Management Modal for Children -->
+    <!-- Task Management Modal for Children -->
     <div id="taskManagementModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
         <div class="flex items-center justify-center min-h-screen p-4">
             <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-screen overflow-y-auto">
@@ -475,7 +496,6 @@
                 
                 if (data.success) {
                     document.getElementById('totalParticipants').textContent = data.stats.totalParticipants;
-                    document.getElementById('activeStudies').textContent = data.stats.activeStudies; 
                     document.getElementById('completionRate').textContent = data.stats.completionRate + '%';
                     document.getElementById('dataQuality').textContent = data.stats.dataQuality + '%';
                 }
@@ -497,7 +517,7 @@
                     // Export tab doesn't need initial data loading
                     break;
                 case 'tasks':
-                    // Categories view does not need async data load
+                    await loadTaskData();
                     break;
             }
         }
@@ -536,7 +556,6 @@
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.id}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.name}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.email}</td>
-                
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <button onclick="viewUserDetails(${user.id})" class="text-blue-600 hover:text-blue-900 mr-3">View Details</button>
                     <button onclick="exportUserData(${user.id})" class="text-green-600 hover:text-green-900">Export</button>
@@ -555,7 +574,6 @@
                 </td>
             `;
         }
-
 
         function renderChildRow(user) {
             return `
@@ -648,7 +666,21 @@
                                 <p><strong>Registration Date:</strong> ${user.created_at}</p>
                             </div>
                         </div>
-                        
+                        <div class="mt-6">
+                            <h4 class="font-semibold text-gray-700 mb-3">Task Progress</h4>
+                            <div class="space-y-2">
+                                ${user.tasks ? user.tasks.map(task => `
+                                    <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                        <span>${task.task_name}</span>
+                                        <select onchange="setUserTaskStatus(${user.id}, '${task.task_name}', this.value)" class="border rounded px-2 py-1 ml-2">
+                                            <option value="Not Started" ${task.status === 'Not Started' ? 'selected' : ''}>Not Started</option>
+                                            <option value="In Progress" ${task.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
+                                            <option value="Completed" ${task.status === 'Completed' ? 'selected' : ''}>Completed</option>
+                                        </select>
+                                    </div>
+                                `).join('') : 'No task data available'}
+                            </div>
+                        </div>
                     `;
                     document.getElementById('userModal').classList.remove('hidden');
                 }
@@ -1109,7 +1141,7 @@ Example: ${task.example || 'N/A'}
                                 <div class="flex items-center space-x-3">
                                     <label class="text-sm text-gray-600">Status:</label>
                                     <select 
-                                        onchange="updateTaskStatus(${childId}, '${task.task_name}', this.value,this)"
+                                        onchange="updateTaskStatus(${childId}, '${task.task_name}', this.value)"
                                         class="border border-gray-300 rounded px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500"
                                     >
                                         <option value="Not Started" ${task.status === 'Not Started' ? 'selected' : ''}>Not Started</option>
@@ -1129,7 +1161,7 @@ Example: ${task.example || 'N/A'}
             `;
         }
 
-        async function updateTaskStatus(childId, taskName, newStatus,statusElement) {
+        async function updateTaskStatus(childId, taskName, newStatus) {
             try {
                 const response = await fetch('/api/admin/set-user-task-status', {
                     method: 'POST',
@@ -1162,7 +1194,7 @@ Example: ${task.example || 'N/A'}
                     }
                     
                     // Show success message
-                    //const statusElement = event.target;
+                    const statusElement = event.target;
                     const originalColor = statusElement.style.backgroundColor;
                     statusElement.style.backgroundColor = '#10B981';
                     statusElement.style.color = 'white';
@@ -1218,5 +1250,3 @@ Example: ${task.example || 'N/A'}
     </script>
 </body>
 </html> 
-
-                       

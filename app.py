@@ -3832,10 +3832,13 @@ def admin_dashboard_stats():
     if not conn:
         return jsonify({'success': False, 'message': 'Database connection failed'}), 500
     cursor = conn.cursor(dictionary=True)
+    stats = {}  # <-- Initialize stats dictionary
     try:
         # Total participants
         cursor.execute("SELECT COUNT(*) as total FROM users WHERE user_type = 'child'")
         total_participants = cursor.fetchone()['total']
+        stats['totalParticipants'] = total_participants
+
         # Average completion rate (average progress across all users)
         cursor.execute('SELECT id FROM users')
         user_ids = [row['id'] for row in cursor.fetchall()]
@@ -3848,19 +3851,62 @@ def admin_dashboard_stats():
             progress = int((completed_tasks / total_tasks) * 100) if total_tasks else 0
             total_progress += progress
         avg_completion = int(total_progress / len(user_ids)) if user_ids else 0
+        stats['completionRate'] = avg_completion
+
+        # Active studies (number of tasks)
+        cursor.execute('SELECT COUNT(*) AS numTasks FROM tasks')
+        stats['activeStudies'] = cursor.fetchone()['numTasks']
+
         # Data quality placeholder (set to 85 for now)
-        data_quality = 85
-        return jsonify({'success': True, 'stats': {
-            'totalParticipants': total_participants,
-            'completionRate': avg_completion,
-            'dataQuality': data_quality
-        }})
+        stats['dataQuality'] = 85
+
+        return jsonify({'success': True, 'stats': stats})
     except Exception as e:
         print(f"Error fetching dashboard stats: {e}")
         return jsonify({'success': False, 'message': 'Error fetching dashboard stats'}), 500
     finally:
         cursor.close()
         conn.close()
+        
+@app.route('/api/admin/get-child-tasks', methods=['GET'])
+def admin_get_child_tasks():
+    """Get all tasks for a specific child user"""
+    if not session.get('is_admin'):
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+    
+    user_id = request.args.get('user_id')
+    if not user_id:
+        return jsonify({'success': False, 'message': 'User ID required'}), 400
+    
+    try:
+        conn = connect_db()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get all available tasks
+        cursor.execute("SELECT task_name FROM tasks ORDER BY id")
+        all_tasks = [row['task_name'] for row in cursor.fetchall()]
+        
+        # Get current task statuses for this user
+        cursor.execute("SELECT task_name, status FROM user_tasks WHERE user_id = %s", (user_id,))
+        user_tasks = {row['task_name']: row['status'] for row in cursor.fetchall()}
+        
+        # Create task list with current status or 'Not Started' as default
+        tasks = []
+        for task_name in all_tasks:
+            status = user_tasks.get(task_name, 'Not Started')
+            tasks.append({'task_name': task_name, 'status': status})
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({'success': True, 'tasks': tasks})
+        
+    except Exception as e:
+        print(f"Error getting child tasks: {e}")
+        return jsonify({'success': False, 'message': f'Failed to get tasks: {str(e)}'}), 500
+
+
+
 
 @app.route('/api/get-writing-progress', methods=['GET'])
 def get_writing_progress():
