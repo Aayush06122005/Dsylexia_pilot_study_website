@@ -4103,6 +4103,36 @@ def admin_set_user_task_status():
         cursor.close()
         conn.close()
 
+# app.py
+from flask import request, jsonify
+import smtplib
+from email.message import EmailMessage
+
+@app.route('/api/contact', methods=['POST'])
+def contact():
+    data = request.json
+    name = data.get('name')
+    email = data.get('email')
+    subject = data.get('subject')
+    message = data.get('message')
+
+    # Compose email
+    msg = EmailMessage()
+    msg['Subject'] = f"Contact Form: {subject}"
+    msg['From'] = email
+    msg['To'] = 'yourteam@email.com'
+    msg.set_content(f"Name: {name}\nEmail: {email}\n\nMessage:\n{message}")
+
+    # Send email (configure SMTP for your provider)
+    try:
+        with smtplib.SMTP('smtp.yourprovider.com', 587) as server:
+            server.starttls()
+            server.login('yourteam@email.com', 'yourpassword')
+            server.send_message(msg)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 @app.route('/stats')
 def stats():
     return render_template('stats.html')

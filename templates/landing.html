@@ -508,6 +508,28 @@ document.getElementById('signinBtn').addEventListener('click', function(e) {
     }
     // else do nothing if cancelled or invalid input
 });
+
+document.getElementById('contactForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            name: document.getElementById('name').value,
+            email: document.getElementById('email').value,
+            subject: document.getElementById('subject').value,
+            message: document.getElementById('message').value
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert('Message sent successfully!');
+        } else {
+            alert('Failed to send message: ' + (data.error || 'Unknown error'));
+        }
+    });
+});
 </script>
 </body>
 </html>
