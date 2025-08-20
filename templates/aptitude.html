@@ -6,6 +6,28 @@
     <title>Aptitude Test - Dyslexia Research Study</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='landing_style.css') }}">
+    <style>
+        .question-container {
+            display: none;
+        }
+        .question-container.active {
+            display: block;
+        }
+        .option-btn {
+            transition: all 0.3s ease;
+        }
+        .option-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .option-btn.selected {
+            background-color: #1A237E;
+            color: white;
+        }
+        .progress-bar {
+            transition: width 0.5s ease;
+        }
+    </style>
 </head>
 <body>
     <!-- Header -->

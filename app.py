@@ -3237,6 +3237,79 @@ def admin_user_detail(user_id):
         cursor.close()
         conn.close()
 
+@app.route('/api/admin/users-grouped', methods=['GET'])
+def admin_users_grouped():
+    if not session.get('is_admin'):
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+    conn = connect_db()
+    if not conn:
+        return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+    cursor = conn.cursor(dictionary=True)
+    try:
+        # Parents
+        cursor.execute('''
+            SELECT u.id, u.name, u.email, u.created_at
+            FROM users u
+            LEFT JOIN demographics d ON u.id = d.user_id
+            WHERE u.user_type = 'parent'
+        ''')
+        parents = cursor.fetchall()
+
+        # Children
+        cursor.execute('''
+            SELECT u.id, u.name, u.email, d.age, d.gender, d.dyslexia_status, d.education_level, d.native_language, u.created_at
+            FROM users u
+            LEFT JOIN demographics d ON u.id = d.user_id
+            WHERE u.user_type = 'child'
+        ''')
+        children = cursor.fetchall()
+
+        # Schools
+        cursor.execute('''
+            SELECT s.id, s.name, s.email, s.address, s.phone, s.created_at
+            FROM schools s
+            ORDER BY s.created_at DESC
+        ''')
+        schools = cursor.fetchall()
+
+        # Compute progress for parents and children
+        all_tasks = ['Reading Aloud Task 1', 'Typing Task', 'Reading Comprehension', 'Aptitude Test']
+        total_tasks = len(all_tasks)
+        def attach_progress(users):
+            for u in users:
+                cursor.execute("""
+                    SELECT task_name FROM user_tasks WHERE user_id = %s AND status = 'Completed'
+                """, (u['id'],))
+                completed = [row['task_name'] for row in cursor.fetchall() if row['task_name'] in all_tasks]
+                u['progress'] = int((len(completed) / total_tasks) * 100) if total_tasks else 0
+                u['dyslexia_status'] = u.get('dyslexia_status', 'N/A')
+        attach_progress(parents)
+        attach_progress(children)
+
+        # Attach counts to schools
+        for s in schools:
+            # number of parents in this school
+            cursor.execute("SELECT COUNT(*) AS c FROM users WHERE user_type = 'parent' AND school_id = %s", (s['id'],))
+            s['num_parents'] = cursor.fetchone()['c']
+            # number of children linked to those parents
+            cursor.execute('''
+                SELECT COUNT(DISTINCT pc.child_id) AS c
+                FROM parent_children pc
+                JOIN users p ON p.id = pc.parent_id
+                WHERE p.school_id = %s
+            ''', (s['id'],))
+            s['num_children'] = cursor.fetchone()['c']
+
+        return jsonify({'success': True, 'parents': parents, 'children': children, 'schools': schools})
+        combined_users=(parents or []) + (children or [])
+        return jsonify({'success':True, 'parents':parents, 'children': children, 'schools': schools, 'users': combined_users})
+    except Exception as e:
+        print(f"Error fetching grouped users: {e}")
+        return jsonify({'success': False, 'message': 'Error fetching grouped users'}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
 @app.route('/api/admin/users/<int:user_id>/export', methods=['GET'])
 def admin_user_export(user_id):
     if not session.get('is_admin'):

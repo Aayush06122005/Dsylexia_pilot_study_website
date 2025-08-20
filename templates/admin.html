@@ -71,7 +71,8 @@
                 <!-- User Management Tab -->
                 <div id="users-tab" class="tab-content active">
                     <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-2xl font-bold text-gray-800">Participant Management</h2>
+                        
+                        <h2 class="text-2xl font-bold text-gray-800">User Management</h2>
                         <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700" onclick="refreshUserData()">
                             Refresh Data
                         </button>
@@ -79,29 +80,78 @@
                     
                     <!-- Search and Filter -->
                     <div class="mb-6 flex flex-wrap gap-4">
-                        <input type="text" id="userSearch" placeholder="Search participants..." class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <input type="text" id="userSearch" placeholder="Search users..." class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         <button id="searchBtn" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">Search</button>
                     </div>
 
-                    <!-- Users Table -->
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full bg-white border border-gray-200 rounded-lg">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Age</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dyslexia Status</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                </tr>
-                                
-                            </thead>
-                            <tbody id="usersTableBody" class="bg-white divide-y divide-gray-200">
-                                <!-- User data will be populated here -->
-                            </tbody>
-                        </table>
+                    
+                <!-- Parents -->
+                    <div class="mb-10">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-3">Parents</h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                        <!-- <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Age</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dyslexia Status</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th> -->
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="parentsTableBody" class="bg-white divide-y divide-gray-200">
+                                    <!-- Parents data here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Children -->
+                    <div class="mb-10">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-3">Children</h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Age</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dyslexia Status</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="childrenTableBody" class="bg-white divide-y divide-gray-200">
+                                    <!-- Children data here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Schools -->
+                    <div class="mb-2">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-3">Schools</h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Parents</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Children</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="schoolsTableBody" class="bg-white divide-y divide-gray-200">
+                                    <!-- Schools data here -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
@@ -454,14 +504,18 @@
             }
         }
 
+        let groupedUsers = { parents: [], children: [], schools: [] };
         let allUsers = [];
 
         async function loadUserData() {
             try {
-                const response = await fetch('/api/admin/users');
+                const response = await fetch('/api/admin/users-grouped');
                 const data = await response.json();
                 if (data.success) {
                     allUsers = data.users;
+                    groupedUsers.parents = data.parents || [];
+                    groupedUsers.children = data.children || [];
+                    groupedUsers.schools = data.schools || [];
                     filterAndDisplayUsers();
                 }
             } catch (error) {
@@ -470,36 +524,84 @@
         }
 
         function filterAndDisplayUsers() {
-            const searchValue = document.getElementById('userSearch').value.toLowerCase();
-            let filtered = allUsers.filter(user => {
-                return user.name.toLowerCase().includes(searchValue) || user.email.toLowerCase().includes(searchValue);
-            });
-            displayUsers(filtered);
+            const q = document.getElementById('userSearch').value.toLowerCase();
+            const parents = groupedUsers.parents.filter(u => (u.name||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q));
+            const children = groupedUsers.children.filter(u => (u.name||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q));
+            const schools = groupedUsers.schools.filter(s => (s.name||'').toLowerCase().includes(q) || (s.email||'').toLowerCase().includes(q));
+            displayParents(parents);
+            displayChildren(children);
+            displaySchools(schools);
         }
 
-        function displayUsers(users) {
-            const tbody = document.getElementById('usersTableBody');
+         function renderUserRow(user) {
+            return `
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.id}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.name}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.email}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.age || 'N/A'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.dyslexia_status || 'N/A'}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                        <div class="flex-1 bg-gray-200 rounded-full h-2 mr-2">
+                            <div class="bg-blue-500 h-2 rounded-full" style="width: ${user.progress || 0}%"></div>
+                        </div>
+                        <span class="text-sm text-gray-600">${user.progress || 0}%</span>
+                    </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button onclick="viewUserDetails(${user.id})" class="text-blue-600 hover:text-blue-900 mr-3">View Details</button>
+                    <button onclick="exportUserData(${user.id})" class="text-green-600 hover:text-green-900">Export</button>
+                </td>
+            `;
+        }
+
+        function renderParentRow(user) {
+            return `
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.id}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.name}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.email}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button onclick="viewUserDetails(${user.id})" class="text-blue-600 hover:text-blue-900 mr-3">View Details</button>
+                    <button onclick="exportUserData(${user.id})" class="text-green-600 hover:text-green-900">Export</button>
+                </td>
+            `;
+        }
+
+
+        function displayParents(parents) {
+            const tbody = document.getElementById('parentsTableBody');
             tbody.innerHTML = '';
-            
-            users.forEach(user => {
+            parents.forEach(user => {
+                const row = document.createElement('tr');
+                row.innerHTML = renderParentRow(user);
+                tbody.appendChild(row);
+            });
+        }
+
+        function displayChildren(children) {
+            const tbody = document.getElementById('childrenTableBody');
+            tbody.innerHTML = '';
+            children.forEach(user => {
+                const row = document.createElement('tr');
+                row.innerHTML = renderUserRow(user);
+                tbody.appendChild(row);
+            });
+        }
+
+        function displaySchools(schools) {
+            const tbody = document.getElementById('schoolsTableBody');
+            tbody.innerHTML = '';
+            schools.forEach(s => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.id}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.name}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.email}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.age || 'N/A'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.dyslexia_status || 'N/A'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="flex items-center">
-                            <div class="flex-1 bg-gray-200 rounded-full h-2 mr-2">
-                                <div class="bg-blue-500 h-2 rounded-full" style="width: ${user.progress}%"></div>
-                            </div>
-                            <span class="text-sm text-gray-600">${user.progress}%</span>
-                        </div>
-                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${s.id}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${s.name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${s.email}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${s.num_parents || 0}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${s.num_children || 0}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${s.phone || 'N/A'}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button onclick="viewUserDetails(${user.id})" class="text-blue-600 hover:text-blue-900 mr-3">View Details</button>
-                        <button onclick="exportUserData(${user.id})" class="text-green-600 hover:text-green-900">Export</button>
+                        <button onclick="exportSchool(${s.id})" class="text-green-600 hover:text-green-900">Export</button>
                     </td>
                 `;
                 tbody.appendChild(row);
@@ -963,6 +1065,10 @@ Example: ${task.example || 'N/A'}
             } catch (error) {
                 console.error('Error exporting user data:', error);
             }
+        }
+
+        function exportSchool(schoolId) {
+            alert('School export is not implemented yet.');
         }
 
         function setUserTaskStatus(userId, taskName, status) {
