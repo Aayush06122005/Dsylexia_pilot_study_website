@@ -3668,7 +3668,7 @@ def admin_users_list():
         ''')
         users = cursor.fetchall()
         # Define the set of all tasks
-        all_tasks = ['Reading Aloud Task 1', 'Typing Task', 'Reading Comprehension', 'Aptitude Test']
+        all_tasks = ['Reading Aloud Task 1', 'Typing Task', 'Reading Comprehension', 'Mathematical Comprehension','Writing Task','Aptitude Test']
         total_tasks = len(all_tasks)
         for user in users:
             # Get completed tasks for this user (only those in all_tasks)
@@ -3753,7 +3753,7 @@ def admin_users_grouped():
         schools = cursor.fetchall()
 
         # Compute progress for parents and children
-        all_tasks = ['Reading Aloud Task 1', 'Typing Task', 'Reading Comprehension', 'Aptitude Test']
+        all_tasks = ['Reading Aloud Task 1', 'Typing Task', 'Reading Comprehension', 'Mathematical Comprehension','Writing Task','Aptitude Test']
         total_tasks = len(all_tasks)
         def attach_progress(users):
             for u in users:
@@ -3780,7 +3780,7 @@ def admin_users_grouped():
             ''', (s['id'],))
             s['num_children'] = cursor.fetchone()['c']
 
-        return jsonify({'success': True, 'parents': parents, 'children': children, 'schools': schools})
+        # return jsonify({'success': True, 'parents': parents, 'children': children, 'schools': schools})
         combined_users=(parents or []) + (children or [])
         return jsonify({'success':True, 'parents':parents, 'children': children, 'schools': schools, 'users': combined_users})
     except Exception as e:
@@ -3867,7 +3867,7 @@ def admin_dashboard_stats():
     finally:
         cursor.close()
         conn.close()
-        
+
 @app.route('/api/admin/get-child-tasks', methods=['GET'])
 def admin_get_child_tasks():
     """Get all tasks for a specific child user"""
