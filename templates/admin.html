@@ -681,26 +681,38 @@
             await loadRecentActivity();
         }
 
-        function initializeTaskCompletionChart() {
+        async function initializeTaskCompletionChart() {
             const ctx = document.getElementById('taskCompletionChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Reading Aloud', 'Typing Task', 'Comprehension'],
-                    datasets: [{
-                        data: [75, 68, 82],
-                        backgroundColor: ['#3B82F6', '#10B981', '#F59E0B']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
+            try {
+                const resp = await fetch('/api/admin/task-stats');
+                const data = await resp.json();
+                const labels = (data.success && data.labels) ? data.labels : ['Reading Aloud', 'Typing Task', 'Comprehension'];
+                const values = (data.success && data.data) ? data.data : [75, 68, 82];
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels,
+                        datasets: [{
+                            data: values,
+                            backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444', '#14B8A6', '#F97316']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'bottom' }
                         }
                     }
-                }
-            });
+                });
+            } catch (e) {
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Reading Aloud', 'Typing Task', 'Comprehension'],
+                        datasets: [{ data: [75, 68, 82], backgroundColor: ['#3B82F6', '#10B981', '#F59E0B'] }]
+                    }
+                });
+            }
         }
 
         function initializeDataQualityChart() {
@@ -756,7 +768,6 @@
             try {
                 const response = await fetch('/api/admin/recent-activity');
                 const data = await response.json();
-                
                 if (data.success) {
                     const container = document.getElementById('recentActivity');
                     container.innerHTML = data.activities.map(activity => `
