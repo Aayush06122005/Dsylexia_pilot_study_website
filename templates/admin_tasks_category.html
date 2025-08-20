@@ -128,8 +128,6 @@
                                                      <div class="text-sm text-gray-700 mb-2">{{ task.instructions }}</div>
                                                      <div class="text-xs text-gray-500 mb-1">Estimated Time:</div>
                                                      <div class="text-sm text-gray-700 mb-2">{{ task.estimated_time }}</div>
-                                                     <div class="text-xs text-gray-500 mb-1">Example:</div>
-                                                     <div class="text-sm text-gray-700 mb-2">{{ task.example }}</div>
                                                      
                                                      <div class="text-xs text-gray-500 mb-1">Logical Reasoning:</div>
                                                      <ol class="list-decimal list-inside text-sm text-gray-700 space-y-1 mb-2">
@@ -338,7 +336,6 @@
                          } else if (category === 'aptitude') {
                  base.instructions = prompt('Instructions:', current.instructions || '') ?? current.instructions;
                  base.estimated_time = prompt('Estimated time:', current.estimated_time || '') ?? current.estimated_time;
-                 base.example = prompt('Example:', current.example || '') ?? current.example;
                  
                  // Logical Reasoning Section
                  base.logical_question1 = prompt('Logical Q1:', current.logical_question1 || '') ?? current.logical_question1;
@@ -471,7 +468,6 @@
                  payload.difficulty_level = prompt('Difficulty (Easy/Medium/Hard):');
                  payload.instructions = prompt('Instructions:');
                  payload.estimated_time = prompt('Estimated time:');
-                 payload.example = prompt('Example:');
                  
                  // Logical Reasoning Section
                  payload.logical_question1 = prompt('Logical Q1:');

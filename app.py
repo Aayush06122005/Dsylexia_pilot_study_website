@@ -1293,32 +1293,58 @@ def admin_tasks_by_category(category_slug: str):
                 task_common['answer3_type'] = row.get('answer3_type')
                 task_common['instructions'] = row.get('instructions')
             elif category_slug == 'aptitude':
-                task_common['content'] = row.get('example')  # Use example as content for display
+                import json as _json
                 task_common['instructions'] = row.get('instructions')
                 task_common['estimated_time'] = row.get('estimated_time')
-                task_common['example'] = row.get('example')
-                # Add all the questions and options
-                task_common['logical_question1'] = row.get('logical_question1')
-                task_common['logical_question2'] = row.get('logical_question2')
-                task_common['numerical_question1'] = row.get('numerical_question1')
-                task_common['numerical_question2'] = row.get('numerical_question2')
-                task_common['verbal_question1'] = row.get('verbal_question1')
-                task_common['verbal_question2'] = row.get('verbal_question2')
-                task_common['spatial_question1'] = row.get('spatial_question1')
-                task_common['spatial_question2'] = row.get('spatial_question2')
-                # Parse JSON options
-                import json as _json
-                for field in ['logical_question1_options', 'logical_question2_options', 
-                             'numerical_question1_options', 'numerical_question2_options',
-                             'verbal_question1_options', 'verbal_question2_options',
-                             'spatial_question1_options', 'spatial_question2_options']:
-                    options = row.get(field)
-                    try:
-                        if isinstance(options, str):
-                            options = _json.loads(options)
-                    except Exception:
-                        options = []
-                    task_common[field] = options
+                # Do not expose example in admin list view
+                # Two possible schemas: per-question columns OR JSON arrays per section
+                if 'logical_question1' in row:
+                    # No example/content exposure for aptitude
+                    task_common['logical_question1'] = row.get('logical_question1')
+                    task_common['logical_question2'] = row.get('logical_question2')
+                    task_common['numerical_question1'] = row.get('numerical_question1')
+                    task_common['numerical_question2'] = row.get('numerical_question2')
+                    task_common['verbal_question1'] = row.get('verbal_question1')
+                    task_common['verbal_question2'] = row.get('verbal_question2')
+                    task_common['spatial_question1'] = row.get('spatial_question1')
+                    task_common['spatial_question2'] = row.get('spatial_question2')
+                    for field in [
+                        'logical_question1_options','logical_question2_options',
+                        'numerical_question1_options','numerical_question2_options',
+                        'verbal_question1_options','verbal_question2_options',
+                        'spatial_question1_options','spatial_question2_options'
+                    ]:
+                        options = row.get(field)
+                        try:
+                            if isinstance(options, str):
+                                options = _json.loads(options)
+                        except Exception:
+                            options = []
+                        task_common[field] = options
+                else:
+                    # JSON-based schema
+                    def parse_section(json_text):
+                        try:
+                            if isinstance(json_text, str):
+                                return _json.loads(json_text) or []
+                            return json_text or []
+                        except Exception:
+                            return []
+                    lr = parse_section(row.get('logical_reasoning_questions'))
+                    na = parse_section(row.get('numerical_ability_questions'))
+                    va = parse_section(row.get('verbal_ability_questions'))
+                    sr = parse_section(row.get('spatial_reasoning_questions'))
+                    def set_pair(prefix, arr):
+                        q1 = arr[0] if len(arr) > 0 else {}
+                        q2 = arr[1] if len(arr) > 1 else {}
+                        task_common[f'{prefix}_question1'] = q1.get('question')
+                        task_common[f'{prefix}_question2'] = q2.get('question')
+                        task_common[f'{prefix}_question1_options'] = q1.get('options') or []
+                        task_common[f'{prefix}_question2_options'] = q2.get('options') or []
+                    set_pair('logical', lr)
+                    set_pair('numerical', na)
+                    set_pair('verbal', va)
+                    set_pair('spatial', sr)
             groups[key]['tasks'].append(task_common)
 
         # Sort groups by age_min
@@ -1427,30 +1453,62 @@ def admin_category_tasks(category_slug: str):
                 )
             elif category_slug == 'aptitude':
                 import json as _json
-                cursor.execute(
-                    """
-                    INSERT INTO aptitude_tasks (
-                        task_name, age_min, age_max, difficulty_level, instructions, estimated_time, example,
-                        logical_question1, logical_question1_options, logical_question2, logical_question2_options,
-                        numerical_question1, numerical_question1_options, numerical_question2, numerical_question2_options,
-                        verbal_question1, verbal_question1_options, verbal_question2, verbal_question2_options,
-                        spatial_question1, spatial_question1_options, spatial_question2, spatial_question2_options
+                # Detect schema and insert accordingly
+                cursor2 = conn.cursor(dictionary=True)
+                cursor2.execute("SHOW COLUMNS FROM aptitude_tasks")
+                existing_columns = {row['Field'] for row in cursor2.fetchall()}
+                cursor2.close()
+                if 'logical_reasoning_questions' in existing_columns:
+                    def section_from(prefix):
+                        q1 = data.get(f'{prefix}_question1')
+                        q2 = data.get(f'{prefix}_question2')
+                        o1 = data.get(f'{prefix}_question1_options') or []
+                        o2 = data.get(f'{prefix}_question2_options') or []
+                        sec = []
+                        if q1:
+                            sec.append({'question': q1, 'options': o1})
+                        if q2:
+                            sec.append({'question': q2, 'options': o2})
+                        return _json.dumps(sec)
+                    cursor.execute(
+                        """
+                        INSERT INTO aptitude_tasks (
+                            task_name, age_min, age_max, difficulty_level,
+                            logical_reasoning_questions, numerical_ability_questions, verbal_ability_questions, spatial_reasoning_questions,
+                            instructions, estimated_time
+                        ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                        """,
+                        (
+                            data.get('task_name'), data.get('age_min'), data.get('age_max'), data.get('difficulty_level'),
+                            section_from('logical'), section_from('numerical'), section_from('verbal'), section_from('spatial'),
+                            data.get('instructions'), data.get('estimated_time')
+                        )
                     )
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    """,
-                    (
-                        data.get('task_name'), data.get('age_min'), data.get('age_max'), data.get('difficulty_level'),
-                        data.get('instructions'), data.get('estimated_time'), data.get('example'),
-                        data.get('logical_question1'), _json.dumps(data.get('logical_question1_options') or []),
-                        data.get('logical_question2'), _json.dumps(data.get('logical_question2_options') or []),
-                        data.get('numerical_question1'), _json.dumps(data.get('numerical_question1_options') or []),
-                        data.get('numerical_question2'), _json.dumps(data.get('numerical_question2_options') or []),
-                        data.get('verbal_question1'), _json.dumps(data.get('verbal_question1_options') or []),
-                        data.get('verbal_question2'), _json.dumps(data.get('verbal_question2_options') or []),
-                        data.get('spatial_question1'), _json.dumps(data.get('spatial_question1_options') or []),
-                        data.get('spatial_question2'), _json.dumps(data.get('spatial_question2_options') or [])
+                else:
+                    cursor.execute(
+                        """
+                        INSERT INTO aptitude_tasks (
+                            task_name, age_min, age_max, difficulty_level, instructions, estimated_time, example,
+                            logical_question1, logical_question1_options, logical_question2, logical_question2_options,
+                            numerical_question1, numerical_question1_options, numerical_question2, numerical_question2_options,
+                            verbal_question1, verbal_question1_options, verbal_question2, verbal_question2_options,
+                            spatial_question1, spatial_question1_options, spatial_question2, spatial_question2_options
+                        )
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        """,
+                        (
+                            data.get('task_name'), data.get('age_min'), data.get('age_max'), data.get('difficulty_level'),
+                            data.get('instructions'), data.get('estimated_time'), data.get('example'),
+                            data.get('logical_question1'), _json.dumps(data.get('logical_question1_options') or []),
+                            data.get('logical_question2'), _json.dumps(data.get('logical_question2_options') or []),
+                            data.get('numerical_question1'), _json.dumps(data.get('numerical_question1_options') or []),
+                            data.get('numerical_question2'), _json.dumps(data.get('numerical_question2_options') or []),
+                            data.get('verbal_question1'), _json.dumps(data.get('verbal_question1_options') or []),
+                            data.get('verbal_question2'), _json.dumps(data.get('verbal_question2_options') or []),
+                            data.get('spatial_question1'), _json.dumps(data.get('spatial_question1_options') or []),
+                            data.get('spatial_question2'), _json.dumps(data.get('spatial_question2_options') or [])
+                        )
                     )
-                )
             conn.commit()
             return jsonify({'success': True})
     except Exception as e:
@@ -1465,7 +1523,7 @@ def admin_category_tasks(category_slug: str):
             conn.close()
 
 
-@app.route('/api/admin/categories/<string:category_slug>/tasks/<int:task_id>', methods=['PUT', 'DELETE'])
+@app.route('/api/admin/categories/<string:category_slug>/tasks/<int:task_id>', methods=['GET', 'PUT', 'DELETE'])
 def admin_category_task_detail(category_slug: str, task_id: int):
     if not session.get('is_admin'):
         return jsonify({'success': False, 'message': 'Unauthorized'}), 401
@@ -1480,14 +1538,47 @@ def admin_category_task_detail(category_slug: str, task_id: int):
             cursor.execute(f"DELETE FROM {table} WHERE id = %s", (task_id,))
             conn.commit()
             return jsonify({'success': True})
+        elif request.method == 'GET':
+            # Single task fetch, with schema normalization for aptitude
+            getc = conn.cursor(dictionary=True)
+            getc.execute(f"SELECT * FROM {table} WHERE id = %s", (task_id,))
+            row = getc.fetchone()
+            getc.close()
+            if not row:
+                return jsonify({'success': False, 'message': 'Task not found'}), 404
+            if category_slug == 'aptitude':
+                import json as _json
+                normalized = dict(row)
+                if 'logical_question1' not in row:
+                    # JSON-based schema; fan-out to the fields admin editor expects
+                    def parse_section(json_text):
+                        try:
+                            if isinstance(json_text, str):
+                                return _json.loads(json_text) or []
+                            return json_text or []
+                        except Exception:
+                            return []
+                    lr = parse_section(row.get('logical_reasoning_questions'))
+                    na = parse_section(row.get('numerical_ability_questions'))
+                    va = parse_section(row.get('verbal_ability_questions'))
+                    sr = parse_section(row.get('spatial_reasoning_questions'))
+                    def add_pair(prefix, arr):
+                        q1 = arr[0] if len(arr) > 0 else {}
+                        q2 = arr[1] if len(arr) > 1 else {}
+                        normalized[f'{prefix}_question1'] = q1.get('question')
+                        normalized[f'{prefix}_question2'] = q2.get('question')
+                        normalized[f'{prefix}_question1_options'] = q1.get('options') or []
+                        normalized[f'{prefix}_question2_options'] = q2.get('options') or []
+                    add_pair('logical', lr)
+                    add_pair('numerical', na)
+                    add_pair('verbal', va)
+                    add_pair('spatial', sr)
+                return jsonify({'success': True, 'task': normalized})
         else:
             # Partial update: fetch existing row first and merge
             data = request.get_json() or {}
             curd = conn.cursor(dictionary=True)
-            if category_slug == 'aptitude':
-                curd.execute("SELECT id, description, instructions, estimated_time, devices_required, example FROM tasks WHERE id=%s AND task_name='Aptitude Test'", (task_id,))
-            else:
-                curd.execute(f"SELECT * FROM {table} WHERE id = %s", (task_id,))
+            curd.execute(f"SELECT * FROM {table} WHERE id = %s", (task_id,))
             existing = curd.fetchone() or {}
             curd.close()
             if category_slug == 'reading-aloud':
@@ -1546,31 +1637,81 @@ def admin_category_task_detail(category_slug: str, task_id: int):
                 )
             elif category_slug == 'aptitude':
                 import json as _json
-                cursor.execute(
-                    """
-                    UPDATE aptitude_tasks SET 
-                        task_name=%s, age_min=%s, age_max=%s, difficulty_level=%s, instructions=%s, estimated_time=%s, example=%s,
-                        logical_question1=%s, logical_question1_options=%s, logical_question2=%s, logical_question2_options=%s,
-                        numerical_question1=%s, numerical_question1_options=%s, numerical_question2=%s, numerical_question2_options=%s,
-                        verbal_question1=%s, verbal_question1_options=%s, verbal_question2=%s, verbal_question2_options=%s,
-                        spatial_question1=%s, spatial_question1_options=%s, spatial_question2=%s, spatial_question2_options=%s
-                    WHERE id=%s
-                    """,
-                    (
-                        existing.get('task_name'), existing.get('age_min'), existing.get('age_max'), existing.get('difficulty_level'),
-                        data.get('instructions', existing.get('instructions')), data.get('estimated_time', existing.get('estimated_time')), 
-                        data.get('example', existing.get('example')),
-                        data.get('logical_question1', existing.get('logical_question1')), _json.dumps(data.get('logical_question1_options', existing.get('logical_question1_options') or [])),
-                        data.get('logical_question2', existing.get('logical_question2')), _json.dumps(data.get('logical_question2_options', existing.get('logical_question2_options') or [])),
-                        data.get('numerical_question1', existing.get('numerical_question1')), _json.dumps(data.get('numerical_question1_options', existing.get('numerical_question1_options') or [])),
-                        data.get('numerical_question2', existing.get('numerical_question2')), _json.dumps(data.get('numerical_question2_options', existing.get('numerical_question2_options') or [])),
-                        data.get('verbal_question1', existing.get('verbal_question1')), _json.dumps(data.get('verbal_question1_options', existing.get('verbal_question1_options') or [])),
-                        data.get('verbal_question2', existing.get('verbal_question2')), _json.dumps(data.get('verbal_question2_options', existing.get('verbal_question2_options') or [])),
-                        data.get('spatial_question1', existing.get('spatial_question1')), _json.dumps(data.get('spatial_question1_options', existing.get('spatial_question1_options') or [])),
-                        data.get('spatial_question2', existing.get('spatial_question2')), _json.dumps(data.get('spatial_question2_options', existing.get('spatial_question2_options') or [])),
-                        task_id
+                # Detect schema and update accordingly
+                chk = conn.cursor(dictionary=True)
+                chk.execute("SHOW COLUMNS FROM aptitude_tasks")
+                existing_columns = {row['Field'] for row in chk.fetchall()}
+                chk.close()
+                if 'logical_reasoning_questions' in existing_columns:
+                    # Build section arrays from incoming or existing values
+                    def section_from(prefix):
+                        # Prefer incoming discrete fields, else try to reconstruct from existing JSON
+                        q1 = data.get(f'{prefix}_question1')
+                        q2 = data.get(f'{prefix}_question2')
+                        o1 = data.get(f'{prefix}_question1_options')
+                        o2 = data.get(f'{prefix}_question2_options')
+                        if q1 is None and q2 is None and o1 is None and o2 is None:
+                            # Use existing JSON
+                            raw = existing.get({
+                                'logical': 'logical_reasoning_questions',
+                                'numerical': 'numerical_ability_questions',
+                                'verbal': 'verbal_ability_questions',
+                                'spatial': 'spatial_reasoning_questions'
+                            }[prefix])
+                            try:
+                                if isinstance(raw, str):
+                                    return raw  # already JSON string
+                                return _json.dumps(raw or [])
+                            except Exception:
+                                return _json.dumps([])
+                        # Build from incoming
+                        sec = []
+                        if q1:
+                            sec.append({'question': q1, 'options': o1 or []})
+                        if q2:
+                            sec.append({'question': q2, 'options': o2 or []})
+                        return _json.dumps(sec)
+                    cursor.execute(
+                        """
+                        UPDATE aptitude_tasks SET 
+                            task_name=%s, age_min=%s, age_max=%s, difficulty_level=%s,
+                            logical_reasoning_questions=%s, numerical_ability_questions=%s, verbal_ability_questions=%s, spatial_reasoning_questions=%s,
+                            instructions=%s, estimated_time=%s
+                        WHERE id=%s
+                        """,
+                        (
+                            existing.get('task_name'), existing.get('age_min'), existing.get('age_max'), existing.get('difficulty_level'),
+                            section_from('logical'), section_from('numerical'), section_from('verbal'), section_from('spatial'),
+                            data.get('instructions', existing.get('instructions')), data.get('estimated_time', existing.get('estimated_time')),
+                            task_id
+                        )
                     )
-                )
+                else:
+                    cursor.execute(
+                        """
+                        UPDATE aptitude_tasks SET 
+                            task_name=%s, age_min=%s, age_max=%s, difficulty_level=%s, instructions=%s, estimated_time=%s, example=%s,
+                            logical_question1=%s, logical_question1_options=%s, logical_question2=%s, logical_question2_options=%s,
+                            numerical_question1=%s, numerical_question1_options=%s, numerical_question2=%s, numerical_question2_options=%s,
+                            verbal_question1=%s, verbal_question1_options=%s, verbal_question2=%s, verbal_question2_options=%s,
+                            spatial_question1=%s, spatial_question1_options=%s, spatial_question2=%s, spatial_question2_options=%s
+                        WHERE id=%s
+                        """,
+                        (
+                            existing.get('task_name'), existing.get('age_min'), existing.get('age_max'), existing.get('difficulty_level'),
+                            data.get('instructions', existing.get('instructions')), data.get('estimated_time', existing.get('estimated_time')), 
+                            data.get('example', existing.get('example')),
+                            data.get('logical_question1', existing.get('logical_question1')), _json.dumps(data.get('logical_question1_options', existing.get('logical_question1_options') or [])),
+                            data.get('logical_question2', existing.get('logical_question2')), _json.dumps(data.get('logical_question2_options', existing.get('logical_question2_options') or [])),
+                            data.get('numerical_question1', existing.get('numerical_question1')), _json.dumps(data.get('numerical_question1_options', existing.get('numerical_question1_options') or [])),
+                            data.get('numerical_question2', existing.get('numerical_question2')), _json.dumps(data.get('numerical_question2_options', existing.get('numerical_question2_options') or [])),
+                            data.get('verbal_question1', existing.get('verbal_question1')), _json.dumps(data.get('verbal_question1_options', existing.get('verbal_question1_options') or [])),
+                            data.get('verbal_question2', existing.get('verbal_question2')), _json.dumps(data.get('verbal_question2_options', existing.get('verbal_question2_options') or [])),
+                            data.get('spatial_question1', existing.get('spatial_question1')), _json.dumps(data.get('spatial_question1_options', existing.get('spatial_question1_options') or [])),
+                            data.get('spatial_question2', existing.get('spatial_question2')), _json.dumps(data.get('spatial_question2_options', existing.get('spatial_question2_options') or [])),
+                            task_id
+                        )
+                    )
             conn.commit()
             return jsonify({'success': True})
     except Exception as e:
