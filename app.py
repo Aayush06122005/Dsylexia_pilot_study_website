@@ -3036,6 +3036,53 @@ def start_reading_task():
         return jsonify({'success': False, 'message': 'Failed to start task'}), 500
 
 
+@app.route('/api/get-task-status', methods=['GET'])
+def get_task_status():
+    """Get the current status of a specific task for the logged-in user"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    
+    task_name = request.args.get('task_name')
+    if not task_name:
+        return jsonify({'success': False, 'message': 'Task name required'}), 400
+    
+    try:
+        conn = connect_db()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get the task status for the current user
+        cursor.execute('''
+            SELECT status FROM user_tasks 
+            WHERE user_id = %s AND task_name = %s
+        ''', (session['user_id'], task_name))
+        
+        result = cursor.fetchone()
+        status = result['status'] if result else None
+
+        # Backward-compatibility fallback for older records
+        # Some older endpoints saved mathematical comprehension as a generic name
+        # without the specific task suffix. If no exact match is found, check
+        # the generic record to preserve users' in-progress state.
+        if status is None and task_name.startswith('Mathematical Comprehension Task '):
+            cursor.execute('''
+                SELECT status FROM user_tasks 
+                WHERE user_id = %s AND task_name = %s
+            ''', (session['user_id'], 'Mathematical Comprehension'))
+            fallback = cursor.fetchone()
+            status = fallback['status'] if fallback else 'Not Started'
+        elif status is None:
+            status = 'Not Started'
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({'success': True, 'status': status})
+        
+    except Exception as e:
+        print(f"Get task status error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to get task status'}), 500
+
+
 @app.route('/api/mathematical-comprehension-tasks/<int:user_id>', methods=['GET'])
 def get_mathematical_comprehension_tasks(user_id):
     """Get age-appropriate mathematical comprehension tasks for a user"""
@@ -3209,7 +3256,7 @@ def start_mathematical_comprehension_task():
             INSERT INTO user_tasks (user_id, task_name, status)
             VALUES (%s, %s, %s)
             ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
-        ''', (session['user_id'], f'Mathematical Comprehension', 'In Progress'))
+        ''', (session['user_id'], f'Mathematical Comprehension Task {task_name}', 'In Progress'))
         
         conn.commit()
         cursor.close()

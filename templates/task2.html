@@ -316,7 +316,7 @@
             loadTypingTasks();
         });
 
-        function loadTypingTasks() {
+        async function loadTypingTasks() {
             const userId = {{ user_id }};
             
             // Show loading state
@@ -324,28 +324,25 @@
             
             console.log('Loading typing tasks for user:', userId);
             
-            fetch(`/api/typing-tasks/${userId}`)
-                .then(response => {
-                    console.log('Response status:', response.status);
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('Response data:', data);
-                    if (data.success) {
-                        currentUserAge = data.user_age;
-                        currentTasks = data.tasks;
-                        displayTypingTasks(data.tasks, data.user_age);
-                    } else {
-                        showError(data.message || 'Unknown error occurred');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading typing tasks:', error);
-                    showError('Network error. Please check your connection and try again.');
-                });
+            try {
+                const response = await fetch(`/api/typing-tasks/${userId}`);
+                console.log('Response status:', response.status);
+                const data = await response.json();
+                console.log('Response data:', data);
+                if (data.success) {
+                    currentUserAge = data.user_age;
+                    currentTasks = data.tasks;
+                    await displayTypingTasks(data.tasks, data.user_age);
+                } else {
+                    showError(data.message || 'Unknown error occurred');
+                }
+            } catch (error) {
+                console.error('Error loading typing tasks:', error);
+                showError('Network error. Please check your connection and try again.');
+            }
         }
 
-        function displayTypingTasks(tasks, userAge) {
+        async function displayTypingTasks(tasks, userAge) {
             // Update user age info
             if (userAge === 'Not specified') {
                 document.getElementById('userAgeInfo').innerHTML = `
@@ -370,15 +367,15 @@
             const tasksGrid = document.getElementById('tasksGrid');
             tasksGrid.innerHTML = '';
 
-            tasks.forEach((task, index) => {
-                const taskCard = createTaskCard(task, index);
-                tasksGrid.appendChild(taskCard);
+            const taskCards = await Promise.all(tasks.map((task, index) => createTaskCard(task, index)));
+            taskCards.forEach(card => {
+                tasksGrid.appendChild(card);
             });
 
             showState('tasks');
         }
 
-        function createTaskCard(task, index) {
+        async function createTaskCard(task, index) {
             const card = document.createElement('div');
             card.className = 'bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow';
             
@@ -399,6 +396,30 @@
                     difficultyColor = 'bg-red-500';
                     difficultyText = 'text-red-500';
                     break;
+            }
+
+            // Determine button text/class based on current task status
+            let taskStatus = 'Not Started';
+            let buttonText = 'Start Typing';
+            let buttonClass = 'flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium';
+            let disabledAttr = '';
+
+            try {
+                const statusResponse = await fetch(`/api/get-task-status?task_name=Typing Task ${task.task_name}`);
+                const statusData = await statusResponse.json();
+                if (statusData && statusData.success) {
+                    taskStatus = statusData.status;
+                    if (taskStatus === 'In Progress') {
+                        buttonText = 'Continue Typing';
+                        buttonClass = 'flex-1 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition font-medium';
+                    } else if (taskStatus === 'Completed') {
+                        buttonText = 'Completed';
+                        buttonClass = 'flex-1 bg-green-600 text-white px-4 py-2 rounded-lg font-medium opacity-60 cursor-not-allowed';
+                        disabledAttr = 'disabled';
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to fetch typing task status', e);
             }
 
             card.innerHTML = `
@@ -429,9 +450,9 @@
                 </div>
                 
                 <div class="flex space-x-3">
-                    <button onclick="startTypingTask(${task.id}, '${task.task_name}')" 
-                            class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium">
-                        Start Typing
+                    <button ${disabledAttr} onclick="startTypingTask(${task.id}, '${task.task_name}')" 
+                            class="${buttonClass}">
+                        ${buttonText}
                     </button>
                     <button onclick="previewTask(${index})" 
                             class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
