@@ -63,6 +63,9 @@
                     <button class="tab-button py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium" data-tab="tasks">
                         Task Management
                     </button>
+                    <button class="tab-button py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium" data-tab="suggestions">
+                        School Suggestions
+                    </button>
                 </nav>
             </div>
 
@@ -322,6 +325,11 @@
                         </a>
                     </div>
                 </div>
+                <!-- School Suggestions Tab -->
+                <div id="suggestions-tab" class="tab-content hidden">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Suggested Tasks by Schools</h2>
+                    <div id="suggestionsList" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"></div>
+                </div>
             </div>
         </div>
     </main>
@@ -497,6 +505,9 @@
                     break;
                 case 'tasks':
                     // Categories view does not need async data load
+                    break;
+                case 'suggestions':
+                    await loadSuggestions();
                     break;
             }
         }
@@ -1090,6 +1101,60 @@ Example: ${task.example || 'N/A'}
 
         function exportSchool(schoolId) {
             alert('School export is not implemented yet.');
+        }
+
+        async function loadSuggestions() {
+            try {
+                const resp = await fetch('/api/admin/suggested-tasks', {credentials: 'same-origin'});
+                if (!resp.ok) {
+                    if (resp.status === 401) { window.location.href = '/admin/login'; return; }
+                    throw new Error('Failed');
+                }
+                const data = await resp.json();
+                const container = document.getElementById('suggestionsList');
+                container.innerHTML = '';
+                (data.suggestions || []).forEach(row => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-white shadow-md rounded-lg border border-gray-200 p-5 flex flex-col';
+                    card.innerHTML = `
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <div class="text-xs text-gray-500">When</div>
+                                <div class="text-sm text-gray-700">${new Date(row.created_at).toLocaleString()}</div>
+                                <div class="mt-2 text-xs text-gray-500">School</div>
+                                <div class="text-sm text-gray-700">${row.school_name} <span class="text-gray-400">(${row.school_email})</span></div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <div class="text-xs text-gray-500">Title</div>
+                            <h3 class="text-lg font-semibold text-gray-900">${row.task_name}</h3>
+                        </div>
+                        <div class="mt-3">
+                            <div class="text-xs text-gray-500">Category</div>
+                            <div class="mt-1 inline-block text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-700">${row.category}</div>
+                        </div>
+                        <div class="mt-3">
+                            <div class="text-xs text-gray-500">Description</div>
+                            <p class="text-sm text-gray-700">${row.description || ''}</p>
+                        </div>
+                        ${row.details ? `<div class=\"mt-3\"><div class=\"text-xs text-gray-500\">Details</div><div class=\"prose prose-sm max-w-none\">${row.details}</div></div>` : ''}
+                        <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                                <div class="text-xs text-gray-500">Estimated time</div>
+                                <div class="text-gray-800">${row.estimated_time ?? '—'} min</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-500">Devices</div>
+                                <div class="text-gray-800">${row.devices_required || '—'}</div>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (e) {
+                console.error('Error loading suggestions', e);
+                alert('Failed to load suggestions');
+            }
         }
 
         // Task management functions for children

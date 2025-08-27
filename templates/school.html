@@ -93,6 +93,52 @@
         </div>
     </div>
 
+    <!-- Suggest Task Modal -->
+    <div id="suggestTaskModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Suggest a Task</h3>
+                <form id="suggestTaskForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Task Name</label>
+                        <input type="text" id="s_task_name" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                        <select id="s_category" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Select</option>
+                            <option value="reading-aloud">Reading Aloud</option>
+                            <option value="typing">Typing</option>
+                            <option value="writing">Writing</option>
+                            <option value="reading-comprehension">Reading Comprehension</option>
+                            <option value="mathematical-comprehension">Mathematical Comprehension</option>
+                            <option value="aptitude">Aptitude</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Estimated Time (min)</label>
+                        <input type="number" id="s_estimated_time" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Devices Required</label>
+                        <input type="text" id="s_devices_required" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Short Description</label>
+                        <input type="text" id="s_description" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Details (HTML allowed)</label>
+                        <textarea id="s_details" rows="6" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"></textarea>
+                    </div>
+                    <div class="md:col-span-2 flex justify-end space-x-3 pt-2">
+                        <button type="button" id="cancelSuggestTask" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition">Cancel</button>
+                        <button type="submit" class="px-4 py-2 primary-bg text-white rounded-md hover:bg-blue-600 transition" style="background-color: #1A237E;">Submit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     <!-- School Dashboard -->
     <main class="content-wrapper py-8">
         <div class="max-w-6xl mx-auto">
@@ -120,6 +166,13 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                         </svg>
                         Refresh
+                    </button>
+                    <button id="suggestTaskBtn" 
+                            class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-6 rounded-lg transition flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Suggest a Task
                     </button>
                 </div>
             </div>
@@ -370,6 +423,10 @@
         const loadingState = document.getElementById('loadingState');
         const emptyState = document.getElementById('emptyState');
         const parentsList = document.getElementById('parentsList');
+        const suggestTaskBtn = document.getElementById('suggestTaskBtn');
+        const suggestTaskModal = document.getElementById('suggestTaskModal');
+        const suggestTaskForm = document.getElementById('suggestTaskForm');
+        const cancelSuggestTask = document.getElementById('cancelSuggestTask');
 
         // Load parents on page load
         document.addEventListener('DOMContentLoaded', function() {
@@ -379,6 +436,11 @@
         // Add Parent Button Click
         addParentBtn.addEventListener('click', function() {
             addParentModal.classList.remove('hidden');
+        });
+
+        // Suggest Task button
+        suggestTaskBtn.addEventListener('click', function() {
+            suggestTaskModal.classList.remove('hidden');
         });
 
         // Cancel Add Parent
@@ -392,6 +454,14 @@
             if (e.target === addParentModal) {
                 addParentModal.classList.add('hidden');
                 addParentForm.reset();
+            }
+        });
+
+        // Close suggest modal when clicking outside
+        suggestTaskModal.addEventListener('click', function(e) {
+            if (e.target === suggestTaskModal) {
+                suggestTaskModal.classList.add('hidden');
+                suggestTaskForm.reset();
             }
         });
 
@@ -578,8 +648,41 @@
             reader.readAsArrayBuffer(file);
         }
 
-        
-
+        // Submit Suggest Task
+        if (suggestTaskForm) {
+            suggestTaskForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const payload = {
+                    task_name: document.getElementById('s_task_name').value.trim(),
+                    category: document.getElementById('s_category').value,
+                    estimated_time: parseInt(document.getElementById('s_estimated_time').value || '0') || null,
+                    devices_required: document.getElementById('s_devices_required').value.trim(),
+                    description: document.getElementById('s_description').value.trim(),
+                    details: document.getElementById('s_details').value.trim()
+                };
+                if (!payload.task_name || !payload.category) {
+                    alert('Please provide task name and category.');
+                    return;
+                }
+                try {
+                    const res = await fetch('/api/school/suggest-task', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        alert('Suggestion submitted!');
+                        suggestTaskModal.classList.add('hidden');
+                        suggestTaskForm.reset();
+                    } else {
+                        alert(data.message || 'Failed to submit');
+                    }
+                } catch (err) {
+                    alert('Network error');
+                }
+            });
+        }
         
     </script>
 </body>
