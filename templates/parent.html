@@ -478,10 +478,10 @@
                                     class="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition">
                                 View Progress
                             </button>
-                            <button onclick="manageChild(${child.id})" 
+                            <!-- <button onclick="manageChild(${child.id})" 
                                     class="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600 transition">
                                 Manage
-                            </button>
+                            </button> -->
                         </div>
                     </div>
                 `;
@@ -494,7 +494,8 @@
 
         // View Child Progress (placeholder function)
         function viewChildProgress(childId) {
-            alert('View progress functionality will be implemented here for child ID: ' + childId);
+            // alert('View progress functionality will be implemented here for child ID: ' + childId);
+            window.location.href = `/stats?child_id=${childId}`;
         }
 
         // Manage Child (placeholder function)

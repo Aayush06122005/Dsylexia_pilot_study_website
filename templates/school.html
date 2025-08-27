@@ -490,10 +490,10 @@
                                     class="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition">
                                 View Details
                             </button>
-                            <button onclick="manageParent(${parent.id})" 
+                            <!-- <button onclick="manageParent(${parent.id})" 
                                     class="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600 transition">
                                 Manage
-                            </button>
+                            </button> -->
                         </div>
                     </div>
                 `;
@@ -537,46 +537,56 @@
         });
 
         function processExcelFile(file, msgDiv) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const rows = XLSX.utils.sheet_to_json(firstSheet);
-                let added = 0, failed = 0;
-                let promises = [];
-                
-                rows.forEach(row => {
-                    const name = row['Name'] || row['Parent Name'] || row['name'] || '';
-                    const email = row['Email'] || row['Parent Email'] || row['email'] || '';
-                    if (name && email) {
-                        // Generate a random password for bulk upload
-                        // const password = Math.random().toString(36).slice(-8);
-                        promises.push(
-                            fetch('/api/school/add-parent', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ name, email })
-                            })
-                            .then(res => res.json())
-                            .then(data => {
-                                if (data.success) added++;
-                                else failed++;
-                            })
-                            .catch(() => { failed++; })
-                        );
-                    } else {
-                        failed++;
-                    }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, {type: 'array'});
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(firstSheet);
+        let added = 0, failed = 0;
+        let processed = 0;
+        msgDiv.textContent = `Uploading ${rows.length} parents...`;
+
+        function uploadNext(index) {
+            if (index >= rows.length) {
+                msgDiv.textContent = `Upload complete: ${added} added, ${failed} failed.`;
+                loadParents();
+                return;
+            }
+            const row = rows[index];
+            const name = row['Name'] || row['Parent Name'] || row['name'] || '';
+            const email = row['Email'] || row['Parent Email'] || row['email'] || '';
+            if (name && email) {
+                fetch('/api/school/add-parent', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) added++;
+                    else failed++;
+                    processed++;
+                    msgDiv.textContent = `Processed ${processed}/${rows.length}... (${added} added, ${failed} failed)`;
+                    uploadNext(index + 1);
+                })
+                .catch(() => {
+                    failed++;
+                    processed++;
+                    msgDiv.textContent = `Processed ${processed}/${rows.length}... (${added} added, ${failed} failed)`;
+                    uploadNext(index + 1);
                 });
-                
-                Promise.all(promises).then(() => {
-                    msgDiv.textContent = `Upload complete: ${added} added, ${failed} failed.`;
-                    loadParents();
-                });
-            };
-            reader.readAsArrayBuffer(file);
+            } else {
+                failed++;
+                processed++;
+                msgDiv.textContent = `Processed ${processed}/${rows.length}... (${added} added, ${failed} failed)`;
+                uploadNext(index + 1);
+            }
         }
+        uploadNext(0);
+    };
+    reader.readAsArrayBuffer(file);
+}
 
         
 
