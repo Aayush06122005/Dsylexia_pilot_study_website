@@ -210,6 +210,31 @@
 
     
         <script>
+
+            // Add this in the document.addEventListener('DOMContentLoaded',...) block
+            document.addEventListener('DOMContentLoaded', function() {
+                // Check if this is a retake
+                const urlParams = new URLSearchParams(window.location.search);
+                const isRetake = urlParams.get('retake') === 'true';
+                
+                if (isRetake) {
+                    // Show a notification that this is a retake
+                    const notificationDiv = document.createElement('div');
+                    notificationDiv.className = 'bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4';
+                    notificationDiv.innerHTML = `
+                        <p class="font-bold">Retake Mode</p>
+                        <p>You are retaking this task. Your previous submission has been preserved.</p>
+                    `;
+                    
+                    // Insert at the top of the main content area
+                    const mainContent = document.querySelector('main');
+                    mainContent.insertBefore(notificationDiv, mainContent.firstChild);
+                }
+                
+                // Rest of your existing code
+                loadReadingContent();
+                // ...
+            });
             // Check if task is already completed
             document.addEventListener('DOMContentLoaded', function() {
                 fetch('/api/user-tasks')

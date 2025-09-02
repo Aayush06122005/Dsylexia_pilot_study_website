@@ -453,16 +453,17 @@ def login():
 def api_consent():
     """API endpoint to store consent status and timestamp, and check digital signature."""
     user_id = request.args.get('child_id') or session.get('user_id')
-    if not user_id:
-        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    # if not user_id:
+    #     return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    print("Consent API called. user_id:", user_id)
     data = request.get_json()
     consent_given = data.get('consent_given')
     consent_date = data.get('consent_date')
-    signature = data.get('signature', '').strip()
+    # signature = data.get('signature', '').strip()
     # Fetch user's name from DB
-    user_name = get_user_name(user_id)
-    if not user_name or signature.lower() != user_name.lower():
-        return jsonify({'success': False, 'message': 'Digital signature must match your name (case-insensitive)'}), 400
+    # user_name = get_user_name(user_id)
+    # if not user_name or signature.lower() != user_name.lower():
+    #     return jsonify({'success': False, 'message': 'Digital signature must match your name (case-insensitive)'}), 400
     try:
         conn = connect_db()
         cursor = conn.cursor()
@@ -2037,42 +2038,137 @@ def save_progress():
     else:
         return jsonify({'success': False, 'message': 'Invalid file type'}), 400
 
+# @app.route('/api/upload-audio', methods=['POST'])
+# def upload_audio():
+#     if 'user_id' not in session:
+#         return jsonify({'success': False, 'message': 'User not logged in'}), 401
+#     if 'audio' not in request.files:
+#         return jsonify({'success': False, 'message': 'No audio file provided'}), 400
+#     file = request.files['audio']
+#     if file.filename == '':
+#         return jsonify({'success': False, 'message': 'No selected file'}), 400
+#     if file and allowed_file(file.filename):
+#         filename = secure_filename(f"user{session['user_id']}_" + datetime.now().strftime('%Y%m%d%H%M%S') + '_' + file.filename)
+#         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+#         file.save(filepath)
+#         # Save metadata to DB and mark task as completed
+#         try:
+#             conn = connect_db()
+#             cursor = conn.cursor()
+#             # Insert audio recording
+#             cursor.execute("""
+#                 INSERT INTO audio_recordings (user_id, filename, uploaded_at)
+#                 VALUES (%s, %s, NOW())
+#             """, (session['user_id'], filename))
+#             # Mark task as completed
+#             cursor.execute("""
+#                 INSERT INTO user_tasks (user_id, task_name, status)
+#                 VALUES (%s, %s, %s)
+#                 ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
+#             """, (session['user_id'], 'Reading Aloud Task 1', 'Completed'))
+#             conn.commit()
+#             cursor.close()
+#             conn.close()
+#         except Exception as e:
+#             print(f"Audio metadata DB error: {e}")
+#         return jsonify({'success': True, 'message': 'Audio uploaded successfully and task marked as completed', 'filename': filename})
+#     else:
+#         return jsonify({'success': False, 'message': 'Invalid file type'}), 400
+
+
+
 @app.route('/api/upload-audio', methods=['POST'])
 def upload_audio():
+    """Upload audio recording and mark task as completed"""
     if 'user_id' not in session:
-        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+    
     if 'audio' not in request.files:
         return jsonify({'success': False, 'message': 'No audio file provided'}), 400
+    
     file = request.files['audio']
     if file.filename == '':
         return jsonify({'success': False, 'message': 'No selected file'}), 400
+    
+    task_name = request.form.get('task_name', 'Reading Aloud Task 1')
+    is_retake = request.form.get('retake') == 'true'
+    
     if file and allowed_file(file.filename):
-        filename = secure_filename(f"user{session['user_id']}_" + datetime.now().strftime('%Y%m%d%H%M%S') + '_' + file.filename)
+        # Generate a unique filename including timestamp to preserve all submissions
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        filename = secure_filename(f"user{session['user_id']}_{timestamp}_{'retake_' if is_retake else ''}{file.filename}")
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
+        
         # Save metadata to DB and mark task as completed
         try:
             conn = connect_db()
             cursor = conn.cursor()
-            # Insert audio recording
+            
+            # Save audio recording entry (preserving the previous one)
             cursor.execute("""
-                INSERT INTO audio_recordings (user_id, filename, uploaded_at)
-                VALUES (%s, %s, NOW())
-            """, (session['user_id'], filename))
-            # Mark task as completed
+                INSERT INTO audio_recordings (user_id, filename, task_name, uploaded_at)
+                VALUES (%s, %s, %s, NOW())
+            """, (session['user_id'], filename, task_name))
+            
+            # Update task status
             cursor.execute("""
                 INSERT INTO user_tasks (user_id, task_name, status)
-                VALUES (%s, %s, %s)
-                ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
-            """, (session['user_id'], 'Reading Aloud Task 1', 'Completed'))
+                VALUES (%s, %s, 'Completed')
+                ON DUPLICATE KEY UPDATE status = 'Completed', updated_at = CURRENT_TIMESTAMP
+            """, (session['user_id'], task_name))
+            
             conn.commit()
             cursor.close()
             conn.close()
+            
+            return jsonify({
+                'success': True, 
+                'message': 'Audio uploaded successfully and task marked as completed',
+                'filename': filename
+            })
         except Exception as e:
-            print(f"Audio metadata DB error: {e}")
-        return jsonify({'success': True, 'message': 'Audio uploaded successfully and task marked as completed', 'filename': filename})
+            print(f"Upload audio error: {e}")
+            return jsonify({'success': False, 'message': f'Database error: {str(e)}'}), 500
     else:
         return jsonify({'success': False, 'message': 'Invalid file type'}), 400
+    
+    
+@app.route('/api/retake-task', methods=['POST'])
+def retake_task():
+    """Mark a task as In Progress for retaking while preserving previous submissions"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+    
+    data = request.get_json()
+    task_name = data.get('task_name')
+    
+    if not task_name:
+        return jsonify({'success': False, 'message': 'Task name is required'}), 400
+    
+    try:
+        conn = connect_db()
+        cursor = conn.cursor()
+        
+        # Update task status to In Progress while preserving previous submissions
+        cursor.execute("""
+            UPDATE user_tasks 
+            SET status = 'In Progress', updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = %s AND task_name = %s
+        """, (session['user_id'], task_name))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Task reset for retake. Previous submissions preserved.',
+            'task_name': task_name
+        })
+    except Exception as e:
+        print(f"Error resetting task for retake: {e}")
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
 
 @app.route('/api/get-saved-progress', methods=['GET'])
 def get_saved_progress():
