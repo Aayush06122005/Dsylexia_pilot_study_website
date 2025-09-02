@@ -25,6 +25,41 @@ DB_CONFIG = {
     "database": os.getenv("MYSQLDATABASE", "aviendbnew"),
     "port": int(os.getenv("MYSQLPORT", 3306))
 }
+
+def ensure_suggested_tasks_table():
+    """Create suggested_tasks table if it doesn't exist."""
+    conn = connect_db()
+    if not conn:
+        return
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS suggested_tasks (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                school_id INT NOT NULL,
+                task_name VARCHAR(255) NOT NULL,
+                category VARCHAR(100) NOT NULL,
+                description TEXT,
+                estimated_time INT,
+                devices_required VARCHAR(255),
+                details TEXT,
+                status VARCHAR(50) DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (school_id) REFERENCES schools(id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            """
+        )
+        conn.commit()
+    except Exception as e:
+        print(f"Error ensuring suggested_tasks table: {e}")
+    finally:
+        try:
+            cursor.close()
+            conn.close()
+        except Exception:
+            pass
+
 def connect_db():
     """Establishes a connection to the MySQL database."""
     try:
@@ -34,6 +69,9 @@ def connect_db():
     except mysql.connector.Error as err:
         print(f"Error: {err}")
         return None
+
+# Ensure suggested_tasks table exists after DB connector is defined
+ensure_suggested_tasks_table()
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
 ALLOWED_EXTENSIONS = {'wav', 'webm', 'mp3', 'ogg', 'm4a', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'webp'}
@@ -973,6 +1011,49 @@ def get_school_parents():
             
     except Exception as e:
         print(f"Get parents error: {e}")
+        return jsonify({'success': False, 'message': 'Internal server error'}), 500
+
+@app.route('/api/school/suggest-task', methods=['POST'])
+def school_suggest_task():
+    """Allow logged-in schools to suggest a new task."""
+    try:
+        if 'school_id' not in session:
+            return jsonify({'success': False, 'message': 'Please log in as a school'}), 401
+
+        data = request.get_json() or {}
+        task_name = (data.get('task_name') or '').strip()
+        category = (data.get('category') or '').strip()
+        description = (data.get('description') or '').strip()
+        estimated_time = data.get('estimated_time')
+        devices_required = (data.get('devices_required') or '').strip()
+        details = (data.get('details') or '').strip()
+
+        if not task_name or not category:
+            return jsonify({'success': False, 'message': 'Task name and category are required'}), 400
+
+        conn = connect_db()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                INSERT INTO suggested_tasks (school_id, task_name, category, description, estimated_time, devices_required, details)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """,
+                (session['school_id'], task_name, category, description or None, estimated_time, devices_required or None, details or None)
+            )
+            conn.commit()
+            return jsonify({'success': True, 'message': 'Task suggestion submitted'})
+        except Exception as e:
+            conn.rollback()
+            print(f"Error inserting suggested task: {e}")
+            return jsonify({'success': False, 'message': 'Failed to submit suggestion'}), 500
+        finally:
+            cursor.close()
+            conn.close()
+    except Exception as e:
+        print(f"Suggest task error: {e}")
         return jsonify({'success': False, 'message': 'Internal server error'}), 500
 
 @app.route('/api/user-info', methods=['GET'])
@@ -4027,6 +4108,33 @@ def admin_users_grouped():
         return jsonify({'success': False, 'message': 'Error fetching grouped users'}), 500
     finally:
         cursor.close()
+        conn.close()
+
+@app.route('/api/admin/suggested-tasks', methods=['GET'])
+def admin_list_suggested_tasks():
+    if not session.get('is_admin'):
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+    conn = connect_db()
+    if not conn:
+        return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+    cur = conn.cursor(dictionary=True)
+    try:
+        cur.execute(
+            '''
+            SELECT st.id, st.task_name, st.category, st.description, st.estimated_time, st.devices_required, st.details,
+                   st.status, st.created_at, s.name AS school_name, s.email AS school_email
+            FROM suggested_tasks st
+            JOIN schools s ON s.id = st.school_id
+            ORDER BY st.created_at DESC
+            '''
+        )
+        rows = cur.fetchall()
+        return jsonify({'success': True, 'suggestions': rows})
+    except Exception as e:
+        print(f"Error fetching suggested tasks: {e}")
+        return jsonify({'success': False, 'message': 'Failed to fetch suggestions'}), 500
+    finally:
+        cur.close()
         conn.close()
 
 @app.route('/api/admin/users/<int:user_id>/export', methods=['GET'])
