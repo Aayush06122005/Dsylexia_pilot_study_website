@@ -4373,5 +4373,114 @@ def admin_logout():
     session.pop('is_admin', None)
     return '', 204  # No content, JS will handle redirect
 
+@app.route('/api/get-task-status', methods=['GET'])
+def get_task_status():
+    """Get the status of a specific task for the current user"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    
+    task_name = request.args.get('task_name')
+    if not task_name:
+        return jsonify({'success': False, 'message': 'Task name required'}), 400
+    
+    try:
+        conn = connect_db()
+        cursor = conn.cursor(dictionary=True)
+        query = "SELECT status FROM user_tasks WHERE user_id = %s AND task_name = %s"
+        cursor.execute(query, (session['user_id'], task_name))
+        result = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        
+        status = result['status'] if result else 'Not Started'
+        return jsonify({'success': True, 'status': status})
+        
+    except Exception as e:
+        print(f"Get task status error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to get task status'}), 500
+
+@app.route('/api/save-mathematical-comprehension-progress', methods=['POST'])
+def save_mathematical_comprehension_progress():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    data = request.get_json()
+    q1 = data.get('q1', '')
+    q2 = data.get('q2', '')
+    q3 = data.get('q3', '')
+    task_name = data.get('task_name', 'Mathematical Comprehension')
+    try:
+        conn = connect_db()
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO mathematical_comprehension_progress (user_id, q1, q2, q3, status, updated_at)
+            VALUES (%s, %s, %s, %s, %s, NOW())
+            ON DUPLICATE KEY UPDATE q1=VALUES(q1), q2=VALUES(q2), q3=VALUES(q3), status=VALUES(status), updated_at=NOW()
+        ''', (session['user_id'], q1, q2, q3, 'In Progress'))
+        # Mark task as In Progress
+        cursor.execute('''
+            INSERT INTO user_tasks (user_id, task_name, status)
+            VALUES (%s, %s, %s)
+            ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
+        ''', (session['user_id'], task_name, 'In Progress'))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({'success': True, 'message': 'Progress saved successfully'})
+    except Exception as e:
+        print(f"Save mathematical comprehension progress DB error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to save progress'}), 500
+
+@app.route('/api/get-mathematical-comprehension-progress', methods=['GET'])
+def get_mathematical_comprehension_progress():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    try:
+        conn = connect_db()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute('''
+            SELECT q1, q2, q3, status FROM mathematical_comprehension_progress WHERE user_id = %s
+        ''', (session['user_id'],))
+        result = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        if result:
+            return jsonify({'success': True, 'progress': result})
+        else:
+            return jsonify({'success': True, 'progress': None})
+    except Exception as e:
+        print(f"Get mathematical comprehension progress error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to get progress'}), 500
+
+@app.route('/api/submit-mathematical-comprehension', methods=['POST'])
+def submit_mathematical_comprehension():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    data = request.get_json()
+    q1 = data.get('q1', '')
+    q2 = data.get('q2', '')
+    q3 = data.get('q3', '')
+    task_name = data.get('task_name', 'Mathematical Comprehension')
+    try:
+        conn = connect_db()
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO mathematical_comprehension_progress (user_id, q1, q2, q3, status, updated_at)
+            VALUES (%s, %s, %s, %s, %s, NOW())
+            ON DUPLICATE KEY UPDATE q1=VALUES(q1), q2=VALUES(q2), q3=VALUES(q3), status=VALUES(status), updated_at=NOW()
+        ''', (session['user_id'], q1, q2, q3, 'Completed'))
+        # Mark task as Completed
+        cursor.execute('''
+            INSERT INTO user_tasks (user_id, task_name, status)
+            VALUES (%s, %s, %s)
+            ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
+        ''', (session['user_id'], task_name, 'Completed'))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({'success': True, 'message': 'Task submitted and marked as completed'})
+    except Exception as e:
+        print(f"Submit mathematical comprehension DB error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to submit task'}), 500
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

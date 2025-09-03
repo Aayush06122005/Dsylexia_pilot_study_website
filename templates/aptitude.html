@@ -447,6 +447,31 @@
             });
         });
 
+        // Check if this is a retake on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const isRetake = urlParams.get('retake') === 'true';
+            
+            if (isRetake) {
+                // Show a notification that this is a retake
+                const notificationDiv = document.createElement('div');
+                notificationDiv.className = 'bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4';
+                notificationDiv.innerHTML = `
+                    <p class="font-bold">Retake Mode</p>
+                    <p>You are retaking this task. Your previous submission has been preserved.</p>
+                `;
+                
+                // Insert at the top of the content wrapper
+                const contentWrapper = document.querySelector('.content-wrapper');
+                if (contentWrapper) {
+                    contentWrapper.insertBefore(notificationDiv, contentWrapper.firstChild);
+                }
+            }
+            
+            // Load saved progress if available
+            loadSavedProgress();
+        });
+
         // Test state
         let currentSection = 'logical';
         let answers = {
@@ -473,8 +498,73 @@
         startTestBtn.addEventListener('click', () => {
             instructions.style.display = 'none';
             testSections.classList.remove('hidden');
-            loadSavedProgress();
         });
+
+        function loadSavedProgress() {
+            fetch('/api/get-aptitude-progress')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.progress) {
+                    // Restore answers from saved progress
+                    if (data.progress.answers) {
+                        try {
+                            const savedAnswers = JSON.parse(data.progress.answers);
+                            answers = savedAnswers;
+                            
+                            // Restore current section
+                            if (data.progress.current_section) {
+                                currentSection = data.progress.current_section;
+                                showSection(currentSection);
+                            }
+                            
+                            // Restore answered questions count
+                            if (data.progress.answered_count) {
+                                answeredQuestions = data.progress.answered_count;
+                                updateProgress();
+                            }
+                            
+                            // Restore selected answers in UI
+                            Object.keys(answers).forEach(section => {
+                                Object.keys(answers[section]).forEach(questionIndex => {
+                                    const sectionElement = document.getElementById(section + 'Section');
+                                    if (sectionElement) {
+                                        const questions = sectionElement.querySelectorAll('.question');
+                                        if (questions[questionIndex]) {
+                                            const selectedValue = answers[section][questionIndex];
+                                            const optionBtn = questions[questionIndex].querySelector(`[data-value="${selectedValue}"]`);
+                                            if (optionBtn) {
+                                                optionBtn.classList.add('selected');
+                                            }
+                                        }
+                                    }
+                                });
+                            });
+                            
+                            // Show notification that progress was loaded
+                            const notificationDiv = document.createElement('div');
+                            notificationDiv.className = 'bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4';
+                            notificationDiv.innerHTML = `
+                                <p class="font-bold">Progress Loaded</p>
+                                <p>Your saved progress has been restored.</p>
+                            `;
+                            
+                            const contentWrapper = document.querySelector('.content-wrapper');
+                            if (contentWrapper) {
+                                contentWrapper.insertBefore(notificationDiv, contentWrapper.firstChild);
+                                setTimeout(() => {
+                                    notificationDiv.remove();
+                                }, 3000);
+                            }
+                        } catch (e) {
+                            console.error('Error parsing saved answers:', e);
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.log('Could not load saved progress:', error);
+            });
+        }
 
         // Section navigation
         sectionNavs.forEach(nav => {
