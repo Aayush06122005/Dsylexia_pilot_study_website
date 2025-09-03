@@ -241,13 +241,6 @@
                     </div>
                     
                     <form id="consentForm" class="space-y-6">
-                        <!-- Digital Signature
-                        <div>
-                            <label for="signature" class="block text-sm font-medium text-gray-700 mb-1">Digital Signature (Type your full name)</label>
-                            <input type="text" id="signature" name="signature" class="w-full px-4 py-2 border-2 border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-blue" required>
-                            <div id="signatureError" class="error-message hidden"></div>
-                        </div> -->
-                        
                         <!-- Consent Checkbox -->
                         <div class="flex items-start">
                             <div class="flex items-center h-5">
@@ -515,8 +508,8 @@
 
         // Form validation and submission
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOMContentLoaded event triggered');
             const form = document.getElementById('consentForm');
-            //const signature = document.getElementById('signature');
             const consentCheckbox = document.getElementById('consentCheckbox');
             const consentDate = document.getElementById('consentDate');
             const declineButton = document.getElementById('declineButton');
@@ -525,75 +518,107 @@
             const successModal = document.getElementById('successModal');
             const continueButton = document.getElementById('continueButton');
             
+            console.log('Form elements found:', {
+                form: !!form,
+                consentCheckbox: !!consentCheckbox,
+                consentDate: !!consentDate,
+                declineButton: !!declineButton,
+                declineModal: !!declineModal,
+                returnToHomeButton: !!returnToHomeButton,
+                successModal: !!successModal,
+                continueButton: !!continueButton
+            });
+            
             const urlParams = new URLSearchParams(window.location.search);
             const childId = urlParams.get('child_id');
+            console.log('Child ID from URL:', childId);
 
             // Set today's date as default
             const today = new Date().toISOString().split('T')[0];
-            consentDate.value = today;
+            if (consentDate) {
+                consentDate.value = today;
+            }
             
-            if (form && signature && consentCheckbox && consentDate && declineButton && declineModal && returnToHomeButton && successModal && continueButton) {
+            if (form && consentCheckbox && consentDate && declineButton && declineModal && returnToHomeButton && successModal && continueButton) {
+                console.log('All form elements found, setting up event listeners');
+                
                 // Handle form submission
+                console.log('Adding submit event listener to form');
                 form.addEventListener('submit', function(e) {
+                    console.log('Form submit event triggered');
                     e.preventDefault();
+                    console.log('Form submission prevented, handling manually');
                     
                     let isValid = true;
                     
-                    // Validate signature
-                    // if (signature.value.trim() === '') {
-                    //     showError(signature, 'signatureError', 'Please type your full name as your digital signature');
-                    //     isValid = false;
-                    // } else {
-                    //     hideError(signature, 'signatureError');
-                    // }
-                    
                     // Validate consent checkbox
                     if (!consentCheckbox.checked) {
+                        console.log('Consent checkbox not checked');
                         showError(null, 'consentCheckboxError', 'You must consent to participate in the study');
                         isValid = false;
                     } else {
+                        console.log('Consent checkbox checked');
                         hideError(null, 'consentCheckboxError');
                     }
                     
                     // Validate date
                     if (consentDate.value === '') {
+                        console.log('Date not entered');
                         showError(consentDate, 'consentDateError', 'Please enter today\'s date');
                         isValid = false;
                     } else {
+                        console.log('Date entered:', consentDate.value);
                         hideError(consentDate, 'consentDateError');
                     }
                     
+                    console.log('Form validation result:', isValid);
+                    
                     // If form is valid, show success modal
                     if (isValid) {
+                        console.log('Form is valid, proceeding with consent submission');
+                        
                         // Record consent status and timestamp
                         const consentData = {
                             consent_given: true,
                             consent_date: new Date().toISOString().slice(0, 19).replace('T', ' '),
-                            //signature: signature.value.trim()
                         };
+                        console.log('Sending consent data:', consentData);
+                        console.log('API URL:', '/api/consent');
+                        console.log('Child ID:', childId);
+                        
                         // Send to backend
                         let apiUrl = '/api/consent'
                         if (childId) {
                             apiUrl += '?child_id=' + encodeURIComponent(childId);
                         }
+                        console.log('Full API URL:', apiUrl);
+                        
                         fetch(apiUrl, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(consentData)
                         })
-                        .then(response => response.json())
+                        .then(response => {
+                            console.log('Fetch response:', response);
+                            return response.json();
+                        })
                         .then(data => {
+                            console.log('Consent API response:', data);
                             if (data.success) {
+                                console.log('Consent recorded successfully, showing success modal');
                                 // Show success modal
                                 successModal.classList.remove('hidden');
-                            } 
-                            // else {
-                            //     showError(signature, 'signatureError', data.message || 'Failed to record consent');
-                            // }
+                            } else {
+                                console.error('Failed to record consent:', data.message);
+                                alert('Failed to record consent: ' + data.message);
+                            }
                         })
-                        // .catch(() => {
-                        //     showError(signature, 'signatureError', 'Failed to record consent. Please try again.');
-                        // });
+                        .catch((error) => {
+                            console.error('Error recording consent:', error);
+                            alert('Error recording consent. Please try again.');
+                        });
+                    } else {
+                        console.log('Form validation failed');
                     }
                 });
                 
@@ -652,6 +677,18 @@
                     if (e.target === successModal) {
                         successModal.classList.add('hidden');
                     }
+                });
+            } else {
+                console.log('Not all form elements found, cannot set up event listeners');
+                console.log('Missing elements:', {
+                    form: !form,
+                    consentCheckbox: !consentCheckbox,
+                    consentDate: !consentDate,
+                    declineButton: !declineButton,
+                    declineModal: !declineModal,
+                    returnToHomeButton: !returnToHomeButton,
+                    successModal: !successModal,
+                    continueButton: !continueButton
                 });
             }
         });
