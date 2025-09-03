@@ -360,8 +360,86 @@
 
         // Load task content on page load
         document.addEventListener('DOMContentLoaded', function() {
+            // Check if this is a retake
+            const urlParams = new URLSearchParams(window.location.search);
+            const isRetake = urlParams.get('retake') === 'true';
+            
+            if (isRetake) {
+                // Show a notification that this is a retake
+                const notificationDiv = document.createElement('div');
+                notificationDiv.className = 'bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4';
+                notificationDiv.innerHTML = `
+                    <p class="font-bold">Retake Mode</p>
+                    <p>You are retaking this task. Your previous submission has been preserved.</p>
+                `;
+                
+                // Insert at the top of the content wrapper
+                const contentWrapper = document.querySelector('.content-wrapper');
+                if (contentWrapper) {
+                    contentWrapper.insertBefore(notificationDiv, contentWrapper.firstChild);
+                }
+            }
+            
+            // Load task content
             loadTaskContent();
+            
+            // Check task status and load progress
+            checkTaskStatusAndLoadProgress();
         });
+
+        function checkTaskStatusAndLoadProgress() {
+            // First check if task is already completed (but allow retakes)
+            const urlParams = new URLSearchParams(window.location.search);
+            const isRetake = urlParams.get('retake') === 'true';
+            
+            if (!isRetake) {
+                // Only check completion status if not in retake mode
+                fetch('/api/user-tasks')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const task = data.tasks.find(t => t.task_name === 'Writing Task');
+                        if (task && task.status === 'Completed') {
+                            alert('This task has already been completed. Redirecting to dashboard.');
+                            window.location.href = '/participant-dashboard';
+                            return;
+                        }
+                    }
+                })
+                .catch(() => {
+                    console.log('Could not check task status');
+                });
+            }
+
+            // Load saved writing progress (always check, even in retake mode)
+            const taskId = new URLSearchParams(window.location.search).get('task_id');
+            if (taskId) {
+                fetch(`/api/get-writing-progress?task_id=${taskId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.progress) {
+                        // Show notification that progress was loaded
+                        const notificationDiv = document.createElement('div');
+                        notificationDiv.className = 'bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4';
+                        notificationDiv.innerHTML = `
+                            <p class="font-bold">Progress Loaded</p>
+                            <p>Your previous writing sample has been preserved.</p>
+                        `;
+                        
+                        const contentWrapper = document.querySelector('.content-wrapper');
+                        if (contentWrapper) {
+                            contentWrapper.insertBefore(notificationDiv, contentWrapper.firstChild);
+                            setTimeout(() => {
+                                notificationDiv.remove();
+                            }, 3000);
+                        }
+                    }
+                })
+                .catch(() => {
+                    console.log('Could not load saved progress');
+                });
+            }
+        }
 
         function loadTaskContent() {
             // Get task ID from URL parameters

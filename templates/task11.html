@@ -228,32 +228,49 @@
                     
                     // Insert at the top of the main content area
                     const mainContent = document.querySelector('main');
-                    mainContent.insertBefore(notificationDiv, mainContent.firstChild);
-                }
-                
-                // Rest of your existing code
-                loadReadingContent();
-                // ...
-            });
-            // Check if task is already completed
-            document.addEventListener('DOMContentLoaded', function() {
-                fetch('/api/user-tasks')
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        const task = data.tasks.find(t => t.task_name === 'Reading Aloud Task 1');
-                        if (task && task.status === 'Completed') {
-                            alert('This task has already been completed. Redirecting to dashboard.');
-                            window.location.href = '/participant-dashboard';
-                            return;
+                    if (mainContent) {
+                        mainContent.insertBefore(notificationDiv, mainContent.firstChild);
+                    } else {
+                        // Fallback: insert at the top of the content wrapper
+                        const contentWrapper = document.querySelector('.content-wrapper');
+                        if (contentWrapper) {
+                            contentWrapper.insertBefore(notificationDiv, contentWrapper.firstChild);
                         }
                     }
-                })
-                .catch(() => {
-                    console.log('Could not check task status');
-                });
+                }
+                
+                // Load reading content
+                loadReadingContent();
+                
+                // Check task status and load progress
+                checkTaskStatusAndLoadProgress();
+            });
 
-                // Check for saved progress
+            function checkTaskStatusAndLoadProgress() {
+                // First check if task is already completed (but allow retakes)
+                const urlParams = new URLSearchParams(window.location.search);
+                const isRetake = urlParams.get('retake') === 'true';
+                
+                if (!isRetake) {
+                    // Only check completion status if not in retake mode
+                    fetch('/api/user-tasks')
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            const task = data.tasks.find(t => t.task_name === 'Reading Aloud Task 1');
+                            if (task && task.status === 'Completed') {
+                                alert('This task has already been completed. Redirecting to dashboard.');
+                                window.location.href = '/participant-dashboard';
+                                return;
+                            }
+                        }
+                    })
+                    .catch(() => {
+                        console.log('Could not check task status');
+                    });
+                }
+
+                // Check for saved progress (always check, even in retake mode)
                 fetch('/api/get-saved-progress')
                 .then(res => res.json())
                 .then(data => {
@@ -265,7 +282,7 @@
                 .catch(() => {
                     console.log('Could not check for saved progress');
                 });
-            });
+            }
 
             function loadSavedAudio(audioUrl) {
                 // Create audio element and load the saved recording

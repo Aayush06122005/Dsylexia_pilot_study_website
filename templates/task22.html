@@ -387,26 +387,58 @@
 
             // Check if task is already completed on page load
             document.addEventListener('DOMContentLoaded', function() {
+                // Check if this is a retake
+                const urlParams = new URLSearchParams(window.location.search);
+                const isRetake = urlParams.get('retake') === 'true';
+                
+                if (isRetake) {
+                    // Show a notification that this is a retake
+                    const notificationDiv = document.createElement('div');
+                    notificationDiv.className = 'bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4';
+                    notificationDiv.innerHTML = `
+                        <p class="font-bold">Retake Mode</p>
+                        <p>You are retaking this task. Your previous submission has been preserved.</p>
+                    `;
+                    
+                    // Insert at the top of the content wrapper
+                    const contentWrapper = document.querySelector('.content-wrapper');
+                    if (contentWrapper) {
+                        contentWrapper.insertBefore(notificationDiv, contentWrapper.firstChild);
+                    }
+                }
+                
                 // Load typing task content first
                 loadTypingContent();
                 
-                fetch('/api/user-tasks')
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        const task = data.tasks.find(t => t.task_name === 'Typing Task');
-                        if (task && task.status === 'Completed') {
-                            alert('This task has already been completed. Redirecting to dashboard.');
-                            window.location.href = '/participant-dashboard';
-                            return;
-                        }
-                    }
-                })
-                .catch(() => {
-                    console.log('Could not check task status');
-                });
+                // Check task status and load progress
+                checkTaskStatusAndLoadProgress();
+            });
 
-                // Load saved typing progress
+            function checkTaskStatusAndLoadProgress() {
+                // First check if task is already completed (but allow retakes)
+                const urlParams = new URLSearchParams(window.location.search);
+                const isRetake = urlParams.get('retake') === 'true';
+                
+                if (!isRetake) {
+                    // Only check completion status if not in retake mode
+                    fetch('/api/user-tasks')
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            const task = data.tasks.find(t => t.task_name === 'Typing Task');
+                            if (task && task.status === 'Completed') {
+                                alert('This task has already been completed. Redirecting to dashboard.');
+                                window.location.href = '/participant-dashboard';
+                                return;
+                            }
+                        }
+                    })
+                    .catch(() => {
+                        console.log('Could not check task status');
+                    });
+                }
+
+                // Load saved typing progress (always check, even in retake mode)
                 fetch('/api/get-typing-progress')
                 .then(res => res.json())
                 .then(data => {
@@ -434,7 +466,7 @@
                 .catch(() => {
                     console.log('Could not load saved progress');
                 });
-            });
+            }
 
             function loadTypingContent() {
                 // Get task ID from URL parameters

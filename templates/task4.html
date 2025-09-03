@@ -482,6 +482,10 @@
         }
 
         function startTask(taskId, taskName) {
+            // Check if this is a retake
+            const urlParams = new URLSearchParams(window.location.search);
+            const isRetake = urlParams.get('retake') === 'true';
+            
             // Mark task as started
             fetch('/api/start-mathematical-comprehension-task', {
                 method: 'POST',
@@ -493,7 +497,9 @@
                 if (data.success) {
                     // Close modal and redirect to task execution page
                     document.getElementById('taskPreviewModal').classList.add('hidden');
-                    window.location.href = `/task44.html?task_id=${taskId}`;
+                    // Pass retake parameter if this is a retake
+                    const retakeParam = isRetake ? '&retake=true' : '';
+                    window.location.href = `/task44.html?task_id=${taskId}${retakeParam}`;
                 } else {
                     alert('Failed to start task: ' + (data.message || 'Unknown error'));
                 }

@@ -134,15 +134,7 @@
     <div id="formMsg" class="mt-2 text-green-700 font-semibold hidden"></div>
     <div id="returnDashboardContainer" class="mt-4 hidden">
         <button id="returnDashboardBtn" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold transition">Return to Dashboard</button>
-                <div class="flex gap-4">
-                    <button type="button" id="saveProgressBtn" class="bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold transition flex-1">Save Progress</button>
-                    
-                    <button type="submit" id="submitBtn" class="primary-bg text-white px-6 py-3 rounded-lg font-semibold transition flex-1">Submit Answers</button>
-            </div>
-                <div id="formMsg" class="mt-2 text-green-700 font-semibold hidden"></div>
-                <div id="returnDashboardContainer" class="mt-4 hidden">
-                    <button id="returnDashboardBtn" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold transition">Return to Dashboard</button>
-            </div>
+    </div>
             </form>
         </div>
     </main>
@@ -318,32 +310,63 @@
     let currentTask = null;
 
     document.addEventListener('DOMContentLoaded', function() {
+        // Check if this is a retake
+        const urlParams = new URLSearchParams(window.location.search);
+        const isRetake = urlParams.get('retake') === 'true';
+        
+        if (isRetake) {
+            // Show a notification that this is a retake
+            const notificationDiv = document.createElement('div');
+            notificationDiv.className = 'bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4';
+            notificationDiv.innerHTML = `
+                <p class="font-bold">Retake Mode</p>
+                <p>You are retaking this task. Your previous submission has been preserved.</p>
+            `;
+            
+            // Insert at the top of the content wrapper
+            const contentWrapper = document.querySelector('.content-wrapper');
+            if (contentWrapper) {
+                contentWrapper.insertBefore(notificationDiv, contentWrapper.firstChild);
+            }
+        }
+        
         // Load mathematical comprehension task content first
         loadMathematicalContent();
         
-        // Check if task is already completed
-        fetch('/api/user-tasks')
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                const task = data.tasks.find(t => t.task_name === 'Mathematical Comprehension');
-                if (task && task.status === 'Completed') {
-                    alert('This task has already been completed. Redirecting to dashboard.');
-                    window.location.href = '/participant-dashboard';
-                    return;
-                }
-            }
-        })
-        .catch(() => {
-            console.log('Could not check task status');
-        });
+        // Check task status and load progress
+        checkTaskStatusAndLoadProgress();
+    });
 
-        // Load saved mathematical comprehension progress
-        fetch('/api/get-comprehension-progress')
+    function checkTaskStatusAndLoadProgress() {
+        // First check if task is already completed (but allow retakes)
+        const urlParams = new URLSearchParams(window.location.search);
+        const isRetake = urlParams.get('retake') === 'true';
+        
+        if (!isRetake) {
+            // Only check completion status if not in retake mode
+            fetch('/api/user-tasks')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const task = data.tasks.find(t => t.task_name === 'Mathematical Comprehension');
+                    if (task && task.status === 'Completed') {
+                        alert('This task has already been completed. Redirecting to dashboard.');
+                        window.location.href = '/participant-dashboard';
+                        return;
+                    }
+                }
+            })
+            .catch(() => {
+                console.log('Could not check task status');
+            });
+        }
+
+        // Load saved mathematical comprehension progress (always check, even in retake mode)
+        fetch('/api/get-mathematical-comprehension-progress')
         .then(res => res.json())
         .then(data => {
             if (data.success && data.progress) {
-                // Prefill answers if they exist
+                // Restore saved answers
                 const q1Input = document.getElementById('q1');
                 const q2Input = document.getElementById('q2');
                 const q3Input = document.getElementById('q3');
@@ -360,12 +383,28 @@
                     document.getElementById('formMsg').classList.remove('hidden', 'text-red-600');
                     document.getElementById('formMsg').classList.add('text-green-700');
                 }
+                
+                // Show notification that progress was loaded
+                const notificationDiv = document.createElement('div');
+                notificationDiv.className = 'bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4';
+                notificationDiv.innerHTML = `
+                    <p class="font-bold">Progress Loaded</p>
+                    <p>Your saved progress has been restored.</p>
+                `;
+                
+                const contentWrapper = document.querySelector('.content-wrapper');
+                if (contentWrapper) {
+                    contentWrapper.insertBefore(notificationDiv, contentWrapper.firstChild);
+                    setTimeout(() => {
+                        notificationDiv.remove();
+                    }, 3000);
+                }
             }
         })
         .catch(() => {
             console.log('Could not load saved progress');
         });
-    });
+    }
 
     function loadMathematicalContent() {
         // Get task ID from URL parameters
@@ -501,30 +540,7 @@ function displayMathematicalContent(task) {
     `;
     questionsContainer.appendChild(q3Div);
 
-    // --- FIX: Load saved progress after rendering the form fields ---
-    fetch('/api/get-comprehension-progress')
-    .then(res => res.json())
-    .then(data => {
-        if (data.success && data.progress) {
-            const q1Input = document.getElementById('q1');
-            const q2Input = document.getElementById('q2');
-            const q3Input = document.getElementById('q3');
-            if (q1Input) q1Input.value = data.progress.q1 || '';
-            if (q2Input) q2Input.value = data.progress.q2 || '';
-            if (q3Input) q3Input.value = data.progress.q3 || '';
-            if (data.progress.status === 'Completed') {
-                taskCompleted = true;
-                document.getElementById('saveProgressBtn').disabled = true;
-                document.getElementById('submitBtn').disabled = true;
-                document.getElementById('formMsg').textContent = 'This task has already been submitted.';
-                document.getElementById('formMsg').classList.remove('hidden', 'text-red-600');
-                document.getElementById('formMsg').classList.add('text-green-700');
-            }
-        }
-    })
-    .catch(() => {
-        console.log('Could not load saved progress');
-    });
+
 }
 
 // ...existing code...
@@ -562,7 +578,7 @@ function displayMathematicalContent(task) {
             task_id: currentTaskId,
             task_name: currentTask ? currentTask.task_name : 'Mathematical Comprehension'
         };
-        fetch('/api/save-comprehension-progress', {
+        fetch('/api/save-mathematical-comprehension-progress', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(taskData)
@@ -606,7 +622,7 @@ function displayMathematicalContent(task) {
             task_id: currentTaskId,
             task_name: currentTask ? currentTask.task_name : 'Mathematical Comprehension'
         };
-        fetch('/api/submit-comprehension', {
+        fetch('/api/submit-mathematical-comprehension', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(taskData)
