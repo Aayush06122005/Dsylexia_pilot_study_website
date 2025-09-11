@@ -14,21 +14,6 @@ CREATE TABLE IF NOT EXISTS schools (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- Table for school-suggested tasks
-CREATE TABLE IF NOT EXISTS suggested_tasks (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    school_id INT NOT NULL,
-    task_name VARCHAR(255) NOT NULL,
-    category VARCHAR(100) NOT NULL,
-    description TEXT,
-    estimated_time INT,
-    devices_required VARCHAR(255),
-    details TEXT,
-    status VARCHAR(50) DEFAULT 'pending',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (school_id) REFERENCES schools(id) ON DELETE CASCADE
-);
-
 -- Create users table (for parents and children)
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -156,16 +141,6 @@ CREATE TABLE IF NOT EXISTS comprehension_progress (
     q3 TEXT,
     status ENUM('In Progress', 'Completed') DEFAULT 'In Progress',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS mathematical_comprehension_progress (
-    user_id INT PRIMARY KEY,
-    q1 TEXT,
-    q2 VARCHAR(255),
-    q3 TEXT,
-    status ENUM('In Progress', 'Completed') DEFAULT 'In Progress',
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS tasks (
@@ -517,7 +492,17 @@ CREATE TABLE IF NOT EXISTS writing_samples (
     FOREIGN KEY (task_id) REFERENCES writing_tasks(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS mathematical_comprehension_progress (
+    user_id INT PRIMARY KEY,
+    q1 TEXT,
+    q2 VARCHAR(255),
+    q3 TEXT,
+    status ENUM('In Progress', 'Completed') DEFAULT 'In Progress',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
 
+SELECT * FROM mathematical_comprehension_progress;
 USE dyslexia_study;
 SELECT * from tasks;
 SELECT * FROM user_tasks;
@@ -533,7 +518,7 @@ TRUNCATE TABLE schools;
 TRUNCATE TABLE school_parents;
 TRUNCATE TABLE parent_children;
 
-delete from users;
+delete from users where email='tchild112';
 
  SELECT * FROM SCHOOL_PARENTS;
 -- SELECT * from tasks;

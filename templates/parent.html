@@ -457,40 +457,45 @@
         }
 
         // Display Children Function
-        function displayChildren(children) {
-            childrenList.innerHTML = '';
-            
-            children.forEach(child => {
-                const childCard = document.createElement('div');
-                childCard.className = 'bg-gray-50 rounded-lg p-4 border border-gray-200';
-                
-                const createdDate = new Date(child.created_at).toLocaleDateString();
-                
-                childCard.innerHTML = `
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <h4 class="text-lg font-semibold text-gray-800">${child.name}</h4>
-                            <p class="text-gray-600">${child.email}</p>
-                            <p class="text-sm text-gray-500">Added: ${createdDate}</p>
-                        </div>
-                        <div class="flex space-x-2">
-                            <button onclick="viewChildProgress(${child.id})" 
-                                    class="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition">
-                                View Progress
-                            </button>
-                            <!-- <button onclick="manageChild(${child.id})" 
-                                    class="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600 transition">
-                                Manage
-                            </button> -->
-                        </div>
-                    </div>
-                `;
-                
-                childrenList.appendChild(childCard);
-            });
-            
-            childrenList.classList.remove('hidden');
-        }
+        // ...existing code...
+
+function displayChildren(children) {
+    childrenList.innerHTML = '';
+    children.forEach(child => {
+        const childCard = document.createElement('div');
+        childCard.className = 'bg-gray-50 rounded-lg p-4 border border-gray-200';
+        const createdDate = new Date(child.created_at).toLocaleDateString();
+        childCard.innerHTML = `
+            <div class="flex justify-between items-start">
+                <div>
+                    <h4 class="text-lg font-semibold text-gray-800">${child.name}</h4>
+                    <p class="text-gray-600">${child.email}</p>
+                    <p class="text-sm text-gray-500">Added: ${createdDate}</p>
+                </div>
+                <div class="flex space-x-2">
+                    <button onclick="viewChildProgress(${child.id})" 
+                            class="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition">
+                        View Progress
+                    </button>
+                    <button onclick="redirectToStudentSignIn('${child.email}')"
+                            class="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600 transition">
+                        Student Sign In
+                    </button>
+                </div>
+            </div>
+        `;
+        childrenList.appendChild(childCard);
+    });
+    childrenList.classList.remove('hidden');
+}
+
+// Add this function to handle the redirect
+function redirectToStudentSignIn(childEmail) {
+    // Optionally, you can prefill the username field using query params
+    window.location.href = `/student-signin?username=${encodeURIComponent(childEmail)}`;
+}
+
+// ...existing code...
 
         // View Child Progress (placeholder function)
         function viewChildProgress(childId) {
