@@ -4100,6 +4100,25 @@ def admin_users_grouped():
             ''', (s['id'],))
             s['num_children'] = cursor.fetchone()['c']
 
+            core_tasks = ['Reading Aloud Task 1', 'Typing Task', 'Reading Comprehension', 'Mathematical Comprehension', 'Writing Task', 'Aptitude Test']
+            cursor.execute('''
+                SELECT u.id
+                FROM users u
+                WHERE u.user_type = 'child' AND u.parent_id IN (
+                    SELECT id FROM users WHERE user_type = 'parent' AND school_id = %s
+                )
+            ''', (s['id'],))
+            child_ids = [row['id'] for row in cursor.fetchall()]
+            assessments_completed = 0
+            for child_id in child_ids:
+                cursor.execute('''
+                    SELECT task_name, status FROM user_tasks WHERE user_id = %s
+                ''', (child_id,))
+                statuses = {row['task_name']: row['status'] for row in cursor.fetchall()}
+                if all(statuses.get(t) == 'Completed' for t in core_tasks):
+                    assessments_completed += 1
+            s['assessments_completed'] = assessments_completed
+
         # return jsonify({'success': True, 'parents': parents, 'children': children, 'schools': schools})
         combined_users=(parents or []) + (children or [])
         return jsonify({'success':True, 'parents':parents, 'children': children, 'schools': schools, 'users': combined_users})
