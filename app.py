@@ -1055,6 +1055,8 @@ def school_suggest_task():
     except Exception as e:
         print(f"Suggest task error: {e}")
         return jsonify({'success': False, 'message': 'Internal server error'}), 500
+    
+
 
 @app.route('/api/user-info', methods=['GET'])
 def get_user_info():

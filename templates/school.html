@@ -113,16 +113,57 @@
                             <option value="reading-comprehension">Reading Comprehension</option>
                             <option value="mathematical-comprehension">Mathematical Comprehension</option>
                             <option value="aptitude">Aptitude</option>
+                             <option value="other">Other</option>
                         </select>
+                    </div>
+
+                    <!-- Add this right after the category select -->
+                    <div id="otherCategoryDiv" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Specify Other Category</label>
+                        <input type="text" id="s_other_category" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Estimated Time (min)</label>
                         <input type="number" id="s_estimated_time" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
                     </div>
+                    
+
+                    <!-- Replace the multi-select with a dropdown checkbox list for Devices Required -->
+
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Devices Required</label>
-                        <input type="text" id="s_devices_required" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                        <div class="relative">
+                            <button type="button" id="devicesDropdownBtn" class="w-full px-3 py-2 border border-gray-300 rounded-md text-left bg-white focus:ring-blue-500 focus:border-blue-500">
+                                <span id="devicesDropdownLabel">Select devices</span>
+                                <svg class="w-4 h-4 float-right mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            <div id="devicesDropdown" class="absolute left-0 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg z-10 hidden">
+                                <label class="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer">
+                                    <input type="checkbox" value="Laptop" class="device-checkbox mr-2"> Laptop
+                                </label>
+                                <label class="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer">
+                                    <input type="checkbox" value="Microphone" class="device-checkbox mr-2"> Microphone
+                                </label>
+                                <label class="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer">
+                                    <input type="checkbox" value="Camera" class="device-checkbox mr-2"> Camera
+                                </label>
+                                <label class="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer">
+                                    <input type="checkbox" value="Mobile" class="device-checkbox mr-2"> Mobile
+                                </label>
+                                <label class="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer">
+                                    <input type="checkbox" value="Tablet" class="device-checkbox mr-2"> Tablet
+                                </label>
+                                <label class="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer">
+                                    <input type="checkbox" value="Headphones" class="device-checkbox mr-2"> Headphones
+                                </label>
+                            </div>
+                        </div>
+                        <input type="hidden" id="s_devices_required" name="devices_required">
+                        <p class="text-xs text-gray-500 mt-1">Click to select one or more devices.</p>
                     </div>
+                   
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Short Description</label>
                         <input type="text" id="s_description" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
@@ -212,6 +253,19 @@
                     <!-- Parents will be populated here -->
                 </div>
             </div>
+
+            <!-- Class Statistics Section -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">Class Statistics</h3>
+                
+                <!-- Grid for class stats -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="classStats">
+                    <!-- Stats cards will be populated here -->
+                    <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <h4 class="font-medium text-gray-700">Loading statistics...</h4>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -231,6 +285,25 @@
                         <input type="email" id="parentEmail" name="email" required
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
                     </div>
+                    <div>
+                        <label for="parentClass" class="block text-sm font-medium text-gray-700 mb-1">Class/Grade</label>
+                        <select id="parentClass" name="class" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Select Class</option>
+                            <option value="Class 1">Class 1</option>
+                            <option value="Class 2">Class 2</option>
+                            <option value="Class 3">Class 3</option>
+                            <option value="Class 4">Class 4</option>
+                            <option value="Class 5">Class 5</option>
+                            <option value="Class 6">Class 6</option>
+                            <option value="Class 7">Class 7</option>
+                            <option value="Class 8">Class 8</option>
+                            <option value="Class 9">Class 9</option>
+                            <option value="Class 10">Class 10</option>
+                            <option value="Class 11">Class 11</option>
+                            <option value="Class 12">Class 12</option>
+                        </select>
+                    </div>  
                     <div class="flex justify-end space-x-3 pt-4">
                         <button type="button" id="cancelAddParent" 
                                 class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition">
@@ -478,6 +551,7 @@
             const data = {
                 name: formData.get('name'),
                 email: formData.get('email'),
+                class: formData.get('class') 
             };
 
             fetch('/api/school/add-parent', {
@@ -553,6 +627,7 @@
                         <div>
                             <h4 class="text-lg font-semibold text-gray-800">${parent.name}</h4>
                             <p class="text-gray-600">${parent.email}</p>
+                            <p class="text-sm text-gray-500">Class: ${parent.class || 'Not specified'}</p>
                             <p class="text-sm text-gray-500">Registered: ${createdDate}</p>
                         </div>
                         <div class="flex space-x-2">
@@ -607,69 +682,171 @@
         });
 
         function processExcelFile(file, msgDiv) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, {type: 'array'});
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(firstSheet);
-        let added = 0, failed = 0;
-        let processed = 0;
-        msgDiv.textContent = `Uploading ${rows.length} parents...`;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(firstSheet);
+            let added = 0, failed = 0;
+            let processed = 0;
+            msgDiv.textContent = `Uploading ${rows.length} parents...`;
 
-        function uploadNext(index) {
-            if (index >= rows.length) {
-                msgDiv.textContent = `Upload complete: ${added} added, ${failed} failed.`;
-                loadParents();
-                return;
-            }
-            const row = rows[index];
-            const name = row['Name'] || row['Parent Name'] || row['name'] || '';
-            const email = row['Email'] || row['Parent Email'] || row['email'] || '';
-            if (name && email) {
-                fetch('/api/school/add-parent', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) added++;
-                    else failed++;
-                    processed++;
-                    msgDiv.textContent = `Processed ${processed}/${rows.length}... (${added} added, ${failed} failed)`;
-                    uploadNext(index + 1);
-                })
-                .catch(() => {
+            function uploadNext(index) {
+                if (index >= rows.length) {
+                    msgDiv.textContent = `Upload complete: ${added} added, ${failed} failed.`;
+                    loadParents();
+                    return;
+                }
+                const row = rows[index];
+                const name = row['Name'] || row['Parent Name'] || row['name'] || '';
+                const email = row['Email'] || row['Parent Email'] || row['email'] || '';
+                const classGrade = row['Class'] || row['Grade'] || row['class'] || '';
+                if (name && email) {
+                    fetch('/api/school/add-parent', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name, email, class: classGrade })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) added++;
+                        else failed++;
+                        processed++;
+                        msgDiv.textContent = `Processed ${processed}/${rows.length}... (${added} added, ${failed} failed)`;
+                        uploadNext(index + 1);
+                    })
+                    .catch(() => {
+                        failed++;
+                        processed++;
+                        msgDiv.textContent = `Processed ${processed}/${rows.length}... (${added} added, ${failed} failed)`;
+                        uploadNext(index + 1);
+                    });
+                } else {
                     failed++;
                     processed++;
                     msgDiv.textContent = `Processed ${processed}/${rows.length}... (${added} added, ${failed} failed)`;
                     uploadNext(index + 1);
-                });
-            } else {
-                failed++;
-                processed++;
-                msgDiv.textContent = `Processed ${processed}/${rows.length}... (${added} added, ${failed} failed)`;
-                uploadNext(index + 1);
+                }
             }
+            uploadNext(0);
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+
+        // Add this after your existing DOMContentLoaded event listener
+        function loadClassStats() {
+            fetch('/api/school/class-stats')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        displayClassStats(data.stats);
+                    }
+                })
+                .catch(err => console.error('Error loading class stats:', err));
         }
-        uploadNext(0);
-    };
-    reader.readAsArrayBuffer(file);
-}
+
+        function displayClassStats(stats) {
+            const statsContainer = document.getElementById('classStats');
+            statsContainer.innerHTML = '';
+
+            Object.entries(stats).forEach(([className, counts]) => {
+                const card = document.createElement('div');
+                card.className = 'p-4 bg-gray-50 rounded-lg border border-gray-200 hover:shadow-md transition';
+                card.innerHTML = `
+                    <h4 class="font-medium text-gray-700 mb-2">${className}</h4>
+                    <div class="space-y-1">
+                        <p class="text-sm text-gray-600">
+                            <span class="font-semibold">${counts.parents}</span> Parents
+                        </p>
+                        <p class="text-sm text-gray-600">
+                            <span class="font-semibold">${counts.students}</span> Students
+                        </p>
+                    </div>
+                `;
+                statsContainer.appendChild(card);
+            });
+        }
+
+        // Add this to your existing document.addEventListener('DOMContentLoaded', ...)
+        document.addEventListener('DOMContentLoaded', function() {
+            loadParents();
+            loadClassStats(); // Add this line
+        });
+
+        const devicesDropdownBtn = document.getElementById('devicesDropdownBtn');
+        const devicesDropdown = document.getElementById('devicesDropdown');
+        const devicesDropdownLabel = document.getElementById('devicesDropdownLabel');
+        const devicesHiddenInput = document.getElementById('s_devices_required');
+
+        // Toggle dropdown
+        devicesDropdownBtn.addEventListener('click', function(e) {
+            devicesDropdown.classList.toggle('hidden');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!devicesDropdown.contains(e.target) && !devicesDropdownBtn.contains(e.target)) {
+                devicesDropdown.classList.add('hidden');
+            }
+        });
+
+        // Update label and hidden input when checkboxes change
+        devicesDropdown.querySelectorAll('.device-checkbox').forEach(cb => {
+            cb.addEventListener('change', function() {
+                const selected = Array.from(devicesDropdown.querySelectorAll('.device-checkbox:checked')).map(cb => cb.value);
+                devicesDropdownLabel.textContent = selected.length ? selected.join(', ') : 'Select devices';
+                devicesHiddenInput.value = selected.join(', ');
+            });
+        });
+
+        document.getElementById('s_category').addEventListener('change', function() {
+            const otherCategoryDiv = document.getElementById('otherCategoryDiv');
+            const otherCategoryInput = document.getElementById('s_other_category');
+            
+            if (this.value === 'other') {
+                otherCategoryDiv.classList.remove('hidden');
+                otherCategoryInput.required = true;
+            } else {
+                otherCategoryDiv.classList.add('hidden');
+                otherCategoryInput.required = false;
+                otherCategoryInput.value = '';
+            }
+        });
 
         // Submit Suggest Task
         if (suggestTaskForm) {
             suggestTaskForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
+
+                // const devicesSelect = document.getElementById('s_devices_required');
+                // const selectedDevices = Array.from(devicesSelect.selectedOptions).map(opt => opt.value);
+
+
+
+                // const payload = {
+                //     task_name: document.getElementById('s_task_name').value.trim(),
+                //     devices_required: selectedDevices.join(', '), // or use the array directly if your backend supports it
+                //     category: document.getElementById('s_category').value,
+                //     estimated_time: parseInt(document.getElementById('s_estimated_time').value || '0') || null,
+                //     devices_required: document.getElementById('s_devices_required').value.trim(),
+                //     description: document.getElementById('s_description').value.trim(),
+                //     details: document.getElementById('s_details').value.trim()
+                // };
+
+                const category = document.getElementById('s_category').value;
+                const otherCategory = document.getElementById('s_other_category').value;
+
                 const payload = {
                     task_name: document.getElementById('s_task_name').value.trim(),
-                    category: document.getElementById('s_category').value,
+                    category: category === 'other' ? otherCategory : category,
                     estimated_time: parseInt(document.getElementById('s_estimated_time').value || '0') || null,
                     devices_required: document.getElementById('s_devices_required').value.trim(),
                     description: document.getElementById('s_description').value.trim(),
                     details: document.getElementById('s_details').value.trim()
                 };
+
                 if (!payload.task_name || !payload.category) {
                     alert('Please provide task name and category.');
                     return;
@@ -685,6 +862,8 @@
                         alert('Suggestion submitted!');
                         suggestTaskModal.classList.add('hidden');
                         suggestTaskForm.reset();
+                         document.getElementById('otherCategoryDiv').classList.add('hidden');
+          
                     } else {
                         alert(data.message || 'Failed to submit');
                     }
