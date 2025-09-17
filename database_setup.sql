@@ -29,6 +29,8 @@ CREATE TABLE IF NOT EXISTS users (
     FOREIGN KEY (school_id) REFERENCES schools(id) ON DELETE SET NULL,
     FOREIGN KEY (parent_id) REFERENCES users(id) ON DELETE SET NULL
 );
+ALTER TABLE users 
+ADD COLUMN class VARCHAR(50) DEFAULT NULL;
 
 -- Create school_parents table to track school-parent relationships
 CREATE TABLE IF NOT EXISTS school_parents (
@@ -502,6 +504,20 @@ CREATE TABLE IF NOT EXISTS mathematical_comprehension_progress (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS suggested_tasks (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                school_id INT NOT NULL,
+                task_name VARCHAR(255) NOT NULL,
+                category VARCHAR(100) NOT NULL,
+                description TEXT,
+                estimated_time INT,
+                devices_required VARCHAR(255),
+                details TEXT,
+                status VARCHAR(50) DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (school_id) REFERENCES schools(id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 SELECT * FROM mathematical_comprehension_progress;
 USE dyslexia_study;
 SELECT * from tasks;
@@ -532,9 +548,36 @@ delete from users where email='tchild112';
 -- SELECT * FROM user_tasks;
 -- SELECT * FROM AUDIO_RECORDINGS;
 -- SELECT * FROM TYPING_PROGRESS;
--- SELECT * FROM users;
+SELECT * FROM users;
 -- SELECT * FROM consent_data;
 -- SELECT * FROM demographics;
 
 -- DROP DATABASE IF EXISTS dyslexia_study;
 -- select * from  parent_children ;
+
+SELECT id, name, class FROM users 
+WHERE name IN ('Testing Parent 11', 'Testing Child 111', 'Testing Child 112', 'Testing Parent 2');
+
+UPDATE users SET class = 'Class 6' WHERE id = 18;
+UPDATE users SET class = 'Class 6' WHERE id = 19;
+UPDATE users SET class = 'Class 7' WHERE id = 21;
+UPDATE users SET class = 'Class 5' WHERE id = 22;
+
+-- Add academic year and class tracking
+ALTER TABLE users 
+ADD COLUMN academic_year INT DEFAULT NULL,
+ADD INDEX idx_class_year (class, academic_year);
+
+-- Create a table to track class history
+CREATE TABLE class_records (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    school_id INT NOT NULL,
+    class VARCHAR(50) NOT NULL,
+    academic_year INT NOT NULL,
+    total_students INT DEFAULT 0,
+    total_parents INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (school_id) REFERENCES schools(id),
+    UNIQUE KEY unique_class_year (school_id, class, academic_year)
+);
