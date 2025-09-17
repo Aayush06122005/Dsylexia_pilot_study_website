@@ -595,6 +595,179 @@ def api_register():
         print(f"Registration error: {e}")
         return jsonify({'success': False, 'message': 'Internal server error'}), 500
 
+@app.route('/api/parent-login-child', methods=['POST'])
+def parent_login_child():
+    """API endpoint for parent to directly login their child."""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'success': False, 'message': 'No data received'}), 400
+        
+        child_id = data.get('child_id')
+        
+        if not child_id:
+            return jsonify({'success': False, 'message': 'Child ID is required'}), 400
+        
+        # Check if we have a parent session (either current or stored)
+        if 'parent_user_id' in session:
+            # We're switching from child back to parent, use stored parent info
+            parent_id = session['parent_user_id']
+        elif 'user_id' in session and 'user_type' in session and session['user_type'] == 'parent':
+            # We're currently logged in as parent
+            parent_id = session['user_id']
+        else:
+            return jsonify({'success': False, 'message': 'Parent must be logged in'}), 401
+        
+        conn = connect_db()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+        
+        cursor = conn.cursor()
+        
+        # Verify that this parent has access to this child
+        cursor.execute("""
+            SELECT pc.child_id, u.email, u.user_type 
+            FROM parent_children pc 
+            JOIN users u ON pc.child_id = u.id 
+            WHERE pc.parent_id = %s AND pc.child_id = %s
+        """, (parent_id, child_id))
+        
+        result = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        
+        if not result:
+            return jsonify({'success': False, 'message': 'Child not found or access denied'}), 404
+        
+        child_id_from_db, child_email, child_user_type = result
+        
+        if child_user_type != 'child':
+            return jsonify({'success': False, 'message': 'Invalid child account'}), 400
+        
+        # Store parent session info before switching to child
+        session['parent_user_id'] = parent_id
+        session['parent_email'] = session.get('email')
+        session['parent_user_type'] = 'parent'
+        
+        # Log in the child
+        session['user_id'] = child_id_from_db
+        session['email'] = child_email
+        session['user_type'] = 'child'
+        
+        return jsonify({
+            'success': True,
+            'message': 'Child logged in successfully',
+            'child_id': child_id_from_db,
+            'email': child_email,
+            'user_type': 'child'
+        })
+        
+    except Exception as e:
+        print(f"Parent login child error: {e}")
+        return jsonify({'success': False, 'message': 'Internal server error'}), 500
+
+@app.route('/api/switch-back-to-parent', methods=['POST'])
+def switch_back_to_parent():
+    """API endpoint to switch back from child session to parent session."""
+    try:
+        # Check if we have parent session stored
+        if 'parent_user_id' not in session:
+            return jsonify({'success': False, 'message': 'No parent session found'}), 400
+        
+        # Restore parent session
+        session['user_id'] = session['parent_user_id']
+        session['email'] = session['parent_email']
+        session['user_type'] = session['parent_user_type']
+        
+        # Clean up parent session data
+        session.pop('parent_user_id', None)
+        session.pop('parent_email', None)
+        session.pop('parent_user_type', None)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Switched back to parent session',
+            'user_id': session['user_id'],
+            'email': session['email'],
+            'user_type': session['user_type']
+        })
+        
+    except Exception as e:
+        print(f"Switch back to parent error: {e}")
+        return jsonify({'success': False, 'message': 'Internal server error'}), 500
+
+@app.route('/api/unified-login', methods=['POST'])
+def unified_login():
+    """Unified API endpoint to handle login for all user types (school, parent, child)."""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'success': False, 'message': 'No data received'}), 400
+        
+        email = data.get('email', '').strip()
+        password = data.get('password', '')
+        
+        if not email or not password:
+            return jsonify({'success': False, 'message': 'Email and password are required'}), 400
+        
+        conn = connect_db()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+        
+        cursor = conn.cursor()
+        
+        # First check schools table
+        cursor.execute("SELECT id, password_hash FROM schools WHERE email = %s", (email,))
+        school_result = cursor.fetchone()
+        
+        if school_result:
+            school_id, stored_password_hash = school_result
+            if bcrypt.checkpw(password.encode('utf-8'), stored_password_hash.encode('utf-8')):
+                session['school_id'] = school_id
+                session['email'] = email
+                session['user_type'] = 'school'
+                cursor.close()
+                conn.close()
+                
+                return jsonify({
+                    'success': True,
+                    'message': 'School login successful!',
+                    'school_id': school_id,
+                    'email': email,
+                    'user_type': 'school'
+                })
+        
+        # Then check users table (parent, child, participant)
+        cursor.execute("SELECT id, password_hash, user_type FROM users WHERE email = %s", (email,))
+        user_result = cursor.fetchone()
+        
+        cursor.close()
+        conn.close()
+        
+        if user_result:
+            user_id, stored_password_hash, user_type = user_result
+            if bcrypt.checkpw(password.encode('utf-8'), stored_password_hash.encode('utf-8')):
+                session['user_id'] = user_id
+                session['email'] = email
+                session['user_type'] = user_type
+                
+                return jsonify({
+                    'success': True,
+                    'message': 'Login successful!',
+                    'user_id': user_id,
+                    'email': email,
+                    'user_type': user_type
+                })
+        
+        # If no match found in either table
+        return jsonify({'success': False, 'message': 'Invalid credentials'}), 401
+            
+    except Exception as e:
+        print(f"Unified login error: {e}")
+        return jsonify({'success': False, 'message': 'Internal server error'}), 500
+
 @app.route('/api/login', methods=['POST'])
 def api_login():
     """API endpoint to handle user login."""
