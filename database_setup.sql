@@ -581,3 +581,43 @@ CREATE TABLE class_records (
     FOREIGN KEY (school_id) REFERENCES schools(id),
     UNIQUE KEY unique_class_year (school_id, class, academic_year)
 );
+
+-- Classes and Sections layer
+CREATE TABLE IF NOT EXISTS school_classes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    school_id INT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    academic_year INT DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (school_id) REFERENCES schools(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_school_class_year (school_id, name, academic_year)
+);
+
+CREATE TABLE IF NOT EXISTS class_sections (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    class_id INT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (class_id) REFERENCES school_classes(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_class_section (class_id, name)
+);
+
+-- Map section to assigned assessments (by task_name from tasks table)
+CREATE TABLE IF NOT EXISTS section_assessments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    section_id INT NOT NULL,
+    task_name VARCHAR(100) NOT NULL,
+    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (section_id) REFERENCES class_sections(id) ON DELETE CASCADE,
+    FOREIGN KEY (task_name) REFERENCES tasks(task_name) ON DELETE CASCADE,
+    UNIQUE KEY unique_section_task (section_id, task_name)
+);
+
+-- Extend users to support section membership and activation state
+ALTER TABLE users 
+ADD COLUMN IF NOT EXISTS section_id INT NULL,
+ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT FALSE,
+ADD COLUMN IF NOT EXISTS pending_parent_email VARCHAR(255) NULL,
+ADD FOREIGN KEY (section_id) REFERENCES class_sections(id) ON DELETE SET NULL;

@@ -179,6 +179,17 @@ def create_user(name, email, password_hash, is_18_or_above, user_type='participa
             conn.close()
     return False
 
+def get_db_cursor(dictionary: bool = False):
+    conn = connect_db()
+    if not conn:
+        return None, None
+    return conn, conn.cursor(dictionary=dictionary)
+
+def ensure_school_logged_in():
+    if 'school_id' not in session:
+        return jsonify({'success': False, 'message': 'Please log in as a school'}), 401
+    return None
+
 def create_school(name, email, password_hash, address=None, phone=None):
     """Inserts a new school into the schools table."""
     conn = connect_db()
@@ -841,54 +852,63 @@ def logout():
 
 @app.route('/api/parent/register', methods=['POST'])
 def parent_register():
-    """API endpoint to handle parent registration."""
+    """API endpoint to handle parent registration.
+    If a parent email exists without password, set password. If none exists, create a new parent.
+    Also claim any inactive children with pending_parent_email matching this parent and activate them.
+    """
     try:
         data = request.get_json()
         if not data:
             return jsonify({'success': False, 'message': 'No data received'}), 400
 
-        name = data.get('name', '').strip()
-        email = data.get('email', '').strip()
-        password = data.get('password', '')
+        name = (data.get('name') or '').strip()
+        email = (data.get('email') or '').strip().lower()
+        password = data.get('password') or ''
 
         if not name or not email or not password:
             return jsonify({'success': False, 'message': 'All fields are required'}), 400
 
-        conn = connect_db()
+        conn, cur = get_db_cursor()
         if not conn:
             return jsonify({'success': False, 'message': 'Database connection failed'}), 500
-        cursor = conn.cursor()
 
-        # Check if parent exists
-        cursor.execute("""
-            SELECT id, password_hash FROM users 
-            WHERE email = %s AND user_type = 'parent'
-        """, (email,))
-        result = cursor.fetchone()
+        # Look up existing parent by email
+        cur.execute("SELECT id, password_hash, school_id FROM users WHERE email=%s AND user_type='parent'", (email,))
+        existing = cur.fetchone()
 
-        if not result:
-            cursor.close()
-            conn.close()
-            return jsonify({'success': False, 'message': 'You are not enrolled by any school. Please contact your school.'}), 403
+        if existing:
+            user_id, password_hash_db, school_id = existing
+            if password_hash_db is not None:
+                cur.close(); conn.close()
+                return jsonify({'success': False, 'message': 'You are already registered. Please sign in.'}), 409
+            # set password and name
+            password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            cur.execute("UPDATE users SET name=%s, password_hash=%s WHERE id=%s", (name, password_hash, user_id))
+        else:
+            # Create fresh parent (not previously added by school)
+            password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            cur.execute(
+                "INSERT INTO users (name, email, password_hash, is_18_or_above, user_type) VALUES (%s,%s,%s,%s,'parent')",
+                (name, email, password_hash, True)
+            )
+            user_id = cur.lastrowid
 
-        user_id, password_hash_db = result
+        # Claim inactive children for this parent email
+        cur.execute(
+            "SELECT id FROM users WHERE user_type='child' AND is_active=FALSE AND pending_parent_email=%s",
+            (email,)
+        )
+        children = [row[0] for row in cur.fetchall()]
+        for child_id in children:
+            cur.execute("UPDATE users SET is_active=TRUE, pending_parent_email=NULL, parent_id=%s WHERE id=%s", (user_id, child_id))
+            try:
+                cur.execute("INSERT IGNORE INTO parent_children (parent_id, child_id) VALUES (%s,%s)", (user_id, child_id))
+            except Exception:
+                pass
 
-        if password_hash_db is not None:
-            cursor.close()
-            conn.close()
-            return jsonify({'success': False, 'message': 'You are already registered. Please sign in.'}), 409
-
-        password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-
-        # Update the parent record with password and name (in case name changed)
-        cursor.execute("""
-            UPDATE users SET name=%s, password_hash=%s WHERE id=%s
-        """, (name, password_hash, user_id))
         conn.commit()
-        cursor.close()
-        conn.close()
+        cur.close(); conn.close()
 
-        # Set session
         session['user_id'] = user_id
         session['email'] = email
         session['user_type'] = 'parent'
@@ -1184,6 +1204,419 @@ def get_school_parents():
             
     except Exception as e:
         print(f"Get parents error: {e}")
+        return jsonify({'success': False, 'message': 'Internal server error'}), 500
+
+# ---------- Classes & Sections APIs ----------
+
+@app.route('/api/school/classes', methods=['GET'])
+def list_classes():
+    auth = ensure_school_logged_in()
+    if auth:
+        return auth
+    try:
+        conn, cur = get_db_cursor(dictionary=True)
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+        cur.execute("""
+            SELECT c.id, c.name, c.academic_year,
+                   COUNT(DISTINCT s.id) AS sections
+            FROM school_classes c
+            LEFT JOIN class_sections s ON s.class_id = c.id
+            WHERE c.school_id = %s
+            GROUP BY c.id
+            ORDER BY c.academic_year DESC, c.name ASC
+        """, (session['school_id'],))
+        rows = cur.fetchall()
+        cur.close(); conn.close()
+        return jsonify({'success': True, 'classes': rows})
+    except Exception as e:
+        print(f"List classes error: {e}")
+        return jsonify({'success': False, 'message': 'Internal server error'}), 500
+
+@app.route('/api/school/classes', methods=['POST'])
+def create_class():
+    auth = ensure_school_logged_in()
+    if auth:
+        return auth
+    try:
+        data = request.get_json() or {}
+        name = (data.get('name') or '').strip()
+        academic_year = data.get('academic_year')
+        if not name:
+            return jsonify({'success': False, 'message': 'Class name is required'}), 400
+        conn, cur = get_db_cursor()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+        try:
+            cur.execute(
+                """
+                INSERT INTO school_classes (school_id, name, academic_year)
+                VALUES (%s, %s, %s)
+                """,
+                (session['school_id'], name, academic_year)
+            )
+            conn.commit()
+            new_id = cur.lastrowid
+            return jsonify({'success': True, 'id': new_id})
+        except Exception as e:
+            conn.rollback(); print(f"Create class error: {e}")
+            return jsonify({'success': False, 'message': 'Failed to create class'}), 500
+        finally:
+            cur.close(); conn.close()
+    except Exception as e:
+        print(f"Create class outer error: {e}")
+        return jsonify({'success': False, 'message': 'Internal server error'}), 500
+
+@app.route('/api/school/classes/<int:class_id>/sections', methods=['GET'])
+def list_sections(class_id: int):
+    auth = ensure_school_logged_in()
+    if auth:
+        return auth
+    try:
+        conn, cur = get_db_cursor(dictionary=True)
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+        # Verify class belongs to school
+        cur.execute("SELECT id FROM school_classes WHERE id=%s AND school_id=%s", (class_id, session['school_id']))
+        if not cur.fetchone():
+            cur.close(); conn.close()
+            return jsonify({'success': False, 'message': 'Not found'}), 404
+        cur.execute("""
+            SELECT id, name FROM class_sections WHERE class_id=%s ORDER BY name ASC
+        """, (class_id,))
+        rows = cur.fetchall()
+        cur.close(); conn.close()
+        return jsonify({'success': True, 'sections': rows})
+    except Exception as e:
+        print(f"List sections error: {e}")
+        return jsonify({'success': False, 'message': 'Internal server error'}), 500
+
+@app.route('/api/school/classes/<int:class_id>/sections', methods=['POST'])
+def create_section(class_id: int):
+    auth = ensure_school_logged_in()
+    if auth:
+        return auth
+    try:
+        data = request.get_json() or {}
+        name = (data.get('name') or '').strip()
+        if not name:
+            return jsonify({'success': False, 'message': 'Section name is required'}), 400
+        conn, cur = get_db_cursor()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+        try:
+            # Verify class belongs to school
+            cur.execute("SELECT id FROM school_classes WHERE id=%s AND school_id=%s", (class_id, session['school_id']))
+            if not cur.fetchone():
+                return jsonify({'success': False, 'message': 'Not found'}), 404
+            cur.execute(
+                "INSERT INTO class_sections (class_id, name) VALUES (%s, %s)",
+                (class_id, name)
+            )
+            conn.commit()
+            return jsonify({'success': True, 'id': cur.lastrowid})
+        except Exception as e:
+            conn.rollback(); print(f"Create section error: {e}")
+            return jsonify({'success': False, 'message': 'Failed to create section'}), 500
+        finally:
+            cur.close(); conn.close()
+    except Exception as e:
+        print(f"Create section outer error: {e}")
+        return jsonify({'success': False, 'message': 'Internal server error'}), 500
+
+# ---------- Students management ----------
+
+@app.route('/api/school/sections/<int:section_id>/students', methods=['POST'])
+def add_student_to_section(section_id: int):
+    auth = ensure_school_logged_in()
+    if auth:
+        return auth
+    try:
+        data = request.get_json() or {}
+        student_name = (data.get('student_name') or '').strip()
+        parent_email = (data.get('parent_email') or '').strip().lower()
+        student_email = (data.get('student_email') or '').strip().lower() or None
+        if not student_name or not parent_email:
+            return jsonify({'success': False, 'message': 'student_name and parent_email are required'}), 400
+        conn, cur = get_db_cursor()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+        try:
+            # Verify section belongs to school
+            cur.execute(
+                """
+                SELECT s.id FROM class_sections s
+                JOIN school_classes c ON c.id = s.class_id
+                WHERE s.id=%s AND c.school_id=%s
+                """,
+                (section_id, session['school_id'])
+            )
+            if not cur.fetchone():
+                return jsonify({'success': False, 'message': 'Not found'}), 404
+
+            # Ensure parent user exists or create placeholder inactive parent under this school
+            cur.execute("SELECT id FROM users WHERE email=%s AND user_type='parent'", (parent_email,))
+            parent_user = cur.fetchone()
+            parent_id = None
+            if parent_user:
+                parent_id = parent_user[0]
+            else:
+                cur.execute(
+                    "INSERT INTO users (name, email, password_hash, is_18_or_above, user_type, school_id) VALUES (%s,%s,%s,%s,%s,%s)",
+                    (parent_email.split('@')[0].title(), parent_email, None, True, 'parent', session['school_id'])
+                )
+                parent_id = cur.lastrowid
+
+            # Create inactive child linked to pending parent email and section
+            cur.execute(
+                """
+                INSERT INTO users (name, email, password_hash, is_18_or_above, user_type, parent_id, school_id, section_id, is_active, pending_parent_email)
+                VALUES (%s, %s, %s, %s, 'child', %s, %s, %s, %s, %s)
+                """,
+                (student_name, student_email, None, True, parent_id, session['school_id'], section_id, False, parent_email)
+            )
+            child_id = cur.lastrowid
+
+            # Link in parent_children if parent exists
+            if parent_id:
+                try:
+                    cur.execute("INSERT IGNORE INTO parent_children (parent_id, child_id) VALUES (%s,%s)", (parent_id, child_id))
+                except Exception:
+                    pass
+
+            conn.commit()
+            return jsonify({'success': True, 'child_id': child_id})
+        except Exception as e:
+            conn.rollback(); print(f"Add student error: {e}")
+            return jsonify({'success': False, 'message': 'Failed to add student'}), 500
+        finally:
+            cur.close(); conn.close()
+    except Exception as e:
+        print(f"Add student outer error: {e}")
+        return jsonify({'success': False, 'message': 'Internal server error'}), 500
+
+@app.route('/api/school/sections/<int:section_id>/students/bulk', methods=['POST'])
+def bulk_add_students(section_id: int):
+    auth = ensure_school_logged_in()
+    if auth:
+        return auth
+    try:
+        data = request.get_json() or {}
+        rows = data.get('students') or []
+        if not isinstance(rows, list):
+            return jsonify({'success': False, 'message': 'students must be a list'}), 400
+        conn, cur = get_db_cursor()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+        added = 0; failed = 0
+        try:
+            # Verify section belongs to school
+            cur.execute(
+                """
+                SELECT s.id FROM class_sections s
+                JOIN school_classes c ON c.id = s.class_id
+                WHERE s.id=%s AND c.school_id=%s
+                """,
+                (section_id, session['school_id'])
+            )
+            if not cur.fetchone():
+                return jsonify({'success': False, 'message': 'Not found'}), 404
+            for row in rows:
+                try:
+                    student_name = (row.get('student_name') or row.get('name') or '').strip()
+                    parent_email = (row.get('parent_email') or row.get('Parent Email') or '').strip().lower()
+                    student_email = (row.get('student_email') or row.get('Email') or '').strip().lower() or None
+                    if not student_name or not parent_email:
+                        failed += 1; continue
+                    # ensure parent
+                    cur.execute("SELECT id FROM users WHERE email=%s AND user_type='parent'", (parent_email,))
+                    res = cur.fetchone()
+                    if res:
+                        parent_id = res[0]
+                    else:
+                        cur.execute(
+                            "INSERT INTO users (name, email, password_hash, is_18_or_above, user_type, school_id) VALUES (%s,%s,%s,%s,%s,%s)",
+                            (parent_email.split('@')[0].title(), parent_email, None, True, 'parent', session['school_id'])
+                        )
+                        parent_id = cur.lastrowid
+                    # child
+                    cur.execute(
+                        """
+                        INSERT INTO users (name, email, password_hash, is_18_or_above, user_type, parent_id, school_id, section_id, is_active, pending_parent_email)
+                        VALUES (%s,%s,%s,%s,'child',%s,%s,%s,%s,%s)
+                        """,
+                        (student_name, student_email, None, True, parent_id, session['school_id'], section_id, False, parent_email)
+                    )
+                    child_id = cur.lastrowid
+                    try:
+                        cur.execute("INSERT IGNORE INTO parent_children (parent_id, child_id) VALUES (%s,%s)", (parent_id, child_id))
+                    except Exception:
+                        pass
+                    added += 1
+                except Exception as ie:
+                    print(f"Row failed: {ie}"); failed += 1
+            conn.commit()
+            return jsonify({'success': True, 'added': added, 'failed': failed})
+        except Exception as e:
+            conn.rollback(); print(f"Bulk add error: {e}")
+            return jsonify({'success': False, 'message': 'Failed to bulk add'}), 500
+        finally:
+            cur.close(); conn.close()
+    except Exception as e:
+        print(f"Bulk add outer error: {e}")
+        return jsonify({'success': False, 'message': 'Internal server error'}), 500
+
+# ---------- Section Assessments ----------
+
+@app.route('/api/school/sections/<int:section_id>/assessments', methods=['POST'])
+def assign_assessments(section_id: int):
+    auth = ensure_school_logged_in()
+    if auth:
+        return auth
+    try:
+        data = request.get_json() or {}
+        task_names = data.get('task_names') or []
+        if not isinstance(task_names, list) or not task_names:
+            return jsonify({'success': False, 'message': 'task_names list is required'}), 400
+        conn, cur = get_db_cursor()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+        try:
+            # Verify section belongs to school
+            cur.execute(
+                """
+                SELECT s.id FROM class_sections s
+                JOIN school_classes c ON c.id = s.class_id
+                WHERE s.id=%s AND c.school_id=%s
+                """,
+                (section_id, session['school_id'])
+            )
+            if not cur.fetchone():
+                return jsonify({'success': False, 'message': 'Not found'}), 404
+            # Insert assignments
+            for tname in task_names:
+                cur.execute(
+                    "INSERT IGNORE INTO section_assessments (section_id, task_name) VALUES (%s,%s)",
+                    (section_id, tname)
+                )
+            conn.commit()
+            return jsonify({'success': True})
+        except Exception as e:
+            conn.rollback(); print(f"Assign assessments error: {e}")
+            return jsonify({'success': False, 'message': 'Failed to assign assessments'}), 500
+        finally:
+            cur.close(); conn.close()
+    except Exception as e:
+        print(f"Assign assessments outer error: {e}")
+        return jsonify({'success': False, 'message': 'Internal server error'}), 500
+
+@app.route('/api/school/class-stats', methods=['GET'])
+def class_stats():
+    auth = ensure_school_logged_in()
+    if auth:
+        return auth
+    try:
+        conn, cur = get_db_cursor(dictionary=True)
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+        cur.execute(
+            """
+            SELECT sc.name AS class_name,
+                   COUNT(CASE WHEN u.user_type='parent' THEN 1 END) AS parents,
+                   COUNT(CASE WHEN u.user_type='child' THEN 1 END) AS students
+            FROM users u
+            LEFT JOIN school_classes sc ON sc.id = (
+                SELECT c2.id FROM class_sections s2 JOIN school_classes c2 ON c2.id = s2.class_id WHERE s2.id = u.section_id LIMIT 1
+            )
+            WHERE u.school_id = %s
+            GROUP BY sc.name
+            ORDER BY sc.name
+            """,
+            (session['school_id'],)
+        )
+        rows = cur.fetchall()
+        cur.close(); conn.close()
+        stats = { (r['class_name'] or 'Unassigned'): {'parents': int(r['parents']), 'students': int(r['students'])} for r in rows }
+        return jsonify({'success': True, 'stats': stats})
+    except Exception as e:
+        print(f"Class stats error: {e}")
+        return jsonify({'success': False, 'message': 'Internal server error'}), 500
+
+# ---------- Auxiliary listing endpoints ----------
+
+@app.route('/api/tasks', methods=['GET'])
+def list_tasks():
+    try:
+        conn, cur = get_db_cursor(dictionary=True)
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+        cur.execute("SELECT task_name, description, estimated_time FROM tasks ORDER BY task_name ASC")
+        rows = cur.fetchall()
+        cur.close(); conn.close()
+        return jsonify({'success': True, 'tasks': rows})
+    except Exception as e:
+        print(f"List tasks error: {e}")
+        return jsonify({'success': False, 'message': 'Internal server error'}), 500
+
+@app.route('/api/school/sections/<int:section_id>/students', methods=['GET'])
+def list_students_in_section(section_id: int):
+    auth = ensure_school_logged_in()
+    if auth:
+        return auth
+    try:
+        conn, cur = get_db_cursor(dictionary=True)
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+        # Verify section belongs to school
+        cur.execute(
+            """
+            SELECT s.id FROM class_sections s
+            JOIN school_classes c ON c.id = s.class_id
+            WHERE s.id=%s AND c.school_id=%s
+            """,
+            (section_id, session['school_id'])
+        )
+        if not cur.fetchone():
+            cur.close(); conn.close()
+            return jsonify({'success': False, 'message': 'Not found'}), 404
+        cur.execute(
+            "SELECT id, name, email, is_active, created_at FROM users WHERE user_type='child' AND section_id=%s ORDER BY created_at DESC",
+            (section_id,)
+        )
+        students = cur.fetchall()
+        cur.close(); conn.close()
+        return jsonify({'success': True, 'students': students})
+    except Exception as e:
+        print(f"List students error: {e}")
+        return jsonify({'success': False, 'message': 'Internal server error'}), 500
+
+@app.route('/api/school/sections/<int:section_id>/assessments', methods=['GET'])
+def list_assigned_assessments(section_id: int):
+    auth = ensure_school_logged_in()
+    if auth:
+        return auth
+    try:
+        conn, cur = get_db_cursor(dictionary=True)
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+        # Verify section belongs to school
+        cur.execute(
+            """
+            SELECT s.id FROM class_sections s
+            JOIN school_classes c ON c.id = s.class_id
+            WHERE s.id=%s AND c.school_id=%s
+            """,
+            (section_id, session['school_id'])
+        )
+        if not cur.fetchone():
+            cur.close(); conn.close()
+            return jsonify({'success': False, 'message': 'Not found'}), 404
+        cur.execute("SELECT task_name, assigned_at FROM section_assessments WHERE section_id=%s ORDER BY task_name", (section_id,))
+        rows = cur.fetchall()
+        cur.close(); conn.close()
+        return jsonify({'success': True, 'assessments': rows})
+    except Exception as e:
+        print(f"List section assessments error: {e}")
         return jsonify({'success': False, 'message': 'Internal server error'}), 500
 
 @app.route('/api/school/suggest-task', methods=['POST'])

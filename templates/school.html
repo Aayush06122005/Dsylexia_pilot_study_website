@@ -266,6 +266,43 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Classes & Sections Management -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-semibold text-gray-800">Classes & Sections</h3>
+                    <button id="addClassBtn" class="px-4 py-2 primary-bg text-white rounded-md hover:bg-blue-600 transition" style="background-color: #1A237E;">Add Class</button>
+                </div>
+                <div id="classesContainer" class="space-y-4">
+                    <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <h4 class="font-medium text-gray-700">Loading classes...</h4>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section Detail -->
+            <div id="sectionDetail" class="bg-white rounded-lg shadow-md p-6 mb-8 hidden">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-semibold text-gray-800" id="sectionTitle">Section</h3>
+                    <div class="space-x-2">
+                        <button id="assignAssessmentsBtn" class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition">Assign Assessments</button>
+                        <button id="addStudentBtn" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition">Add Student</button>
+                        <button id="bulkStudentsBtn" class="px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-800 transition">Bulk Upload Students</button>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">Students</h4>
+                    <div id="studentsContainer" class="space-y-2">
+                        <div class="p-3 bg-gray-50 rounded border border-gray-200">Loading students...</div>
+                    </div>
+                </div>
+                <div class="mt-6">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">Assigned Assessments</h4>
+                    <div id="assessmentsContainer" class="space-y-2">
+                        <div class="p-3 bg-gray-50 rounded border border-gray-200">Loading assessments...</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -500,6 +537,16 @@
         const suggestTaskModal = document.getElementById('suggestTaskModal');
         const suggestTaskForm = document.getElementById('suggestTaskForm');
         const cancelSuggestTask = document.getElementById('cancelSuggestTask');
+        const addClassBtn = document.getElementById('addClassBtn');
+        const classesContainer = document.getElementById('classesContainer');
+        const sectionDetail = document.getElementById('sectionDetail');
+        const sectionTitle = document.getElementById('sectionTitle');
+        const studentsContainer = document.getElementById('studentsContainer');
+        const assessmentsContainer = document.getElementById('assessmentsContainer');
+        const addStudentBtn = document.getElementById('addStudentBtn');
+        const bulkStudentsBtn = document.getElementById('bulkStudentsBtn');
+        const assignAssessmentsBtn = document.getElementById('assignAssessmentsBtn');
+        let currentSectionId = null;
 
         // Load parents on page load
         document.addEventListener('DOMContentLoaded', function() {
@@ -773,6 +820,8 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadParents();
             loadClassStats(); // Add this line
+            loadClasses();
+            loadClasses();
         });
 
         const devicesDropdownBtn = document.getElementById('devicesDropdownBtn');
@@ -873,6 +922,234 @@
             });
         }
         
+        // ------- Classes & Sections UI -------
+        function loadClasses() {
+            fetch('/api/school/classes')
+                .then(res => res.json())
+                .then(data => {
+                    classesContainer.innerHTML = '';
+                    if (!data.success || !data.classes || data.classes.length === 0) {
+                        classesContainer.innerHTML = '<div class="p-4 bg-gray-50 rounded-lg border border-gray-200">No classes yet. Click "Add Class".</div>';
+                        return;
+                    }
+                    data.classes.forEach(cls => {
+                        const wrap = document.createElement('div');
+                        wrap.className = 'p-4 bg-gray-50 rounded-lg border border-gray-200';
+                        wrap.innerHTML = `
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <h4 class="font-semibold text-gray-800">${cls.name} ${cls.academic_year ? '(' + cls.academic_year + ')' : ''}</h4>
+                                    <p class="text-sm text-gray-600">Sections: ${cls.sections}</p>
+                                    <div class="mt-2" id="sections-of-${cls.id}">Loading sections...</div>
+                                </div>
+                                <div class="space-x-2">
+                                    <button class="px-3 py-1 bg-blue-600 text-white text-sm rounded add-section-btn" data-classid="${cls.id}">Add Section</button>
+                                    <button class="px-3 py-1 bg-gray-700 text-white text-sm rounded refresh-sections-btn" data-classid="${cls.id}">Refresh</button>
+                                </div>
+                            </div>
+                        `;
+                        classesContainer.appendChild(wrap);
+                        loadSections(cls.id);
+                    });
+                    bindSectionButtons();
+                })
+                .catch(() => {
+                    classesContainer.innerHTML = '<div class="p-4 bg-gray-50 rounded-lg border border-gray-200">Failed to load classes.</div>';
+                });
+        }
+
+        function loadSections(classId) {
+            fetch(`/api/school/classes/${classId}/sections`)
+                .then(res => res.json())
+                .then(data => {
+                    const mount = document.getElementById(`sections-of-${classId}`);
+                    if (!data.success) { mount.textContent = 'Failed to load sections'; return; }
+                    if (!data.sections || data.sections.length === 0) { mount.textContent = 'No sections yet'; return; }
+                    mount.innerHTML = '';
+                    data.sections.forEach(sec => {
+                        const btn = document.createElement('button');
+                        btn.className = 'mr-2 mb-2 px-3 py-1 border border-gray-300 rounded hover:bg-gray-100';
+                        btn.textContent = `Section ${sec.name}`;
+                        btn.addEventListener('click', () => openSection(sec.id, `${sec.name}`));
+                        mount.appendChild(btn);
+                    });
+                })
+                .catch(() => {
+                    const mount = document.getElementById(`sections-of-${classId}`);
+                    if (mount) mount.textContent = 'Failed to load sections';
+                });
+        }
+
+        function bindSectionButtons() {
+            classesContainer.querySelectorAll('.add-section-btn').forEach(btn => {
+                btn.addEventListener('click', async function() {
+                    const classId = this.getAttribute('data-classid');
+                    const name = prompt('Enter section name (e.g., A):');
+                    if (!name) return;
+                    const res = await fetch(`/api/school/classes/${classId}/sections`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        loadSections(classId);
+                        loadClasses();
+                    } else {
+                        alert(data.message || 'Failed to create section');
+                    }
+                });
+            });
+            classesContainer.querySelectorAll('.refresh-sections-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    loadSections(btn.getAttribute('data-classid'));
+                });
+            });
+        }
+
+        addClassBtn.addEventListener('click', async function() {
+            const name = prompt('Enter class name (e.g., Class 5):');
+            if (!name) return;
+            let academic_year = prompt('Enter academic year (optional, e.g., 2025):');
+            academic_year = academic_year ? parseInt(academic_year) : null;
+            const res = await fetch('/api/school/classes', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, academic_year })
+            });
+            const data = await res.json();
+            if (data.success) {
+                loadClasses();
+                loadClassStats();
+            } else {
+                alert(data.message || 'Failed to create class');
+            }
+        });
+
+        async function openSection(sectionId, sectionName) {
+            currentSectionId = sectionId;
+            sectionTitle.textContent = `Section ${sectionName}`;
+            sectionDetail.classList.remove('hidden');
+            await Promise.all([loadStudents(sectionId), loadSectionAssessments(sectionId)]);
+        }
+
+        async function loadStudents(sectionId) {
+            studentsContainer.innerHTML = '<div class="p-3 bg-gray-50 rounded border border-gray-200">Loading students...</div>';
+            const res = await fetch(`/api/school/sections/${sectionId}/students`);
+            const data = await res.json();
+            if (!data.success) { studentsContainer.innerHTML = 'Failed to load'; return; }
+            if (!data.students || data.students.length === 0) { studentsContainer.innerHTML = '<div class="p-3 bg-gray-50 rounded border border-gray-200">No students yet</div>'; return; }
+            studentsContainer.innerHTML = '';
+            data.students.forEach(st => {
+                const row = document.createElement('div');
+                row.className = 'p-3 bg-gray-50 rounded border border-gray-200 flex justify-between';
+                row.innerHTML = `<div>
+                    <div class="font-medium text-gray-800">${st.name}</div>
+                    <div class="text-sm text-gray-600">${st.email || ''}</div>
+                </div>
+                <div class="text-sm ${st.is_active ? 'text-green-700' : 'text-yellow-700'}">${st.is_active ? 'Active' : 'Inactive'}</div>`;
+                studentsContainer.appendChild(row);
+            });
+        }
+
+        async function loadSectionAssessments(sectionId) {
+            assessmentsContainer.innerHTML = '<div class="p-3 bg-gray-50 rounded border border-gray-200">Loading assessments...</div>';
+            const res = await fetch(`/api/school/sections/${sectionId}/assessments`);
+            const data = await res.json();
+            if (!data.success) { assessmentsContainer.innerHTML = 'Failed to load'; return; }
+            if (!data.assessments || data.assessments.length === 0) { assessmentsContainer.innerHTML = '<div class="p-3 bg-gray-50 rounded border border-gray-200">None assigned</div>'; return; }
+            assessmentsContainer.innerHTML = '';
+            data.assessments.forEach(a => {
+                const row = document.createElement('div');
+                row.className = 'p-3 bg-gray-50 rounded border border-gray-200';
+                const dateStr = a.assigned_at ? new Date(a.assigned_at).toLocaleString() : '';
+                row.textContent = `${a.task_name} ${dateStr ? '(' + dateStr + ')' : ''}`;
+                assessmentsContainer.appendChild(row);
+            });
+        }
+
+        addStudentBtn.addEventListener('click', async function() {
+            if (!currentSectionId) return alert('Open a section first');
+            const student_name = prompt('Student full name:');
+            if (!student_name) return;
+            const parent_email = prompt('Parent email:');
+            if (!parent_email) return;
+            const student_email = prompt('Student email (optional):') || '';
+            const res = await fetch(`/api/school/sections/${currentSectionId}/students`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ student_name, parent_email, student_email })
+            });
+            const data = await res.json();
+            if (data.success) {
+                loadStudents(currentSectionId);
+            } else {
+                alert(data.message || 'Failed to add student');
+            }
+        });
+
+        bulkStudentsBtn.addEventListener('click', async function() {
+            if (!currentSectionId) return alert('Open a section first');
+            // Reuse XLSX loading approach
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.xlsx,.xls';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                if (typeof XLSX === 'undefined') {
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js';
+                    script.onload = () => parseAndUpload(file);
+                    document.head.appendChild(script);
+                } else {
+                    parseAndUpload(file);
+                }
+            };
+            input.click();
+
+            function parseAndUpload(file) {
+                const reader = new FileReader();
+                reader.onload = async function(ev) {
+                    const data = new Uint8Array(ev.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(firstSheet);
+                    const payload = rows.map(r => ({
+                        student_name: r['Student Name'] || r['Name'] || r['student_name'] || r['name'] || '',
+                        parent_email: r['Parent Email'] || r['parent_email'] || r['Email'] || r['email'] || '',
+                        student_email: r['Student Email'] || r['student_email'] || ''
+                    })).filter(r => r.student_name && r.parent_email);
+                    const res = await fetch(`/api/school/sections/${currentSectionId}/students/bulk`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ students: payload })
+                    });
+                    const result = await res.json();
+                    if (result.success) {
+                        alert(`Bulk upload: ${result.added} added, ${result.failed} failed`);
+                        loadStudents(currentSectionId);
+                    } else {
+                        alert(result.message || 'Bulk upload failed');
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        });
+
+        assignAssessmentsBtn.addEventListener('click', async function() {
+            if (!currentSectionId) return alert('Open a section first');
+            // Fetch tasks
+            const res = await fetch('/api/tasks');
+            const data = await res.json();
+            if (!data.success || !data.tasks) return alert('Failed to load tasks');
+            const names = data.tasks.map(t => t.task_name);
+            const chosen = prompt('Enter comma-separated task names to assign:\n' + names.join(', '));
+            if (!chosen) return;
+            const list = chosen.split(',').map(s => s.trim()).filter(Boolean);
+            const post = await fetch(`/api/school/sections/${currentSectionId}/assessments`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ task_names: list })
+            });
+            const resp = await post.json();
+            if (resp.success) {
+                loadSectionAssessments(currentSectionId);
+            } else {
+                alert(resp.message || 'Failed to assign assessments');
+            }
+        });
+
     </script>
 </body>
 </html> 
