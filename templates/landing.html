@@ -509,47 +509,10 @@
 //     // else do nothing if cancelled or invalid input
 // });
 
-// Add this modal HTML right before the closing </body> tag
-document.body.insertAdjacentHTML('beforeend', `
-  <div id="loginModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50 flex items-center justify-center">
-    <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-      <div class="flex justify-between items-center mb-6">
-        <h3 class="text-2xl font-semibold text-gray-800">Sign In</h3>
-        <button id="closeLoginModal" class="text-gray-400 hover:text-gray-600">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
-        </button>
-      </div>
-      <p class="mb-6 text-gray-600">Please select your account type:</p>
-      <div class="flex flex-col space-y-4">
-        <a href="/student-signin" class="primary-bg hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition text-center" style="background-color: #1A237E;">
-          Sign In as Student
-        </a>
-        <a href="/signin" class="border-2 border-blue-900 text-blue-900 hover:bg-blue-50 font-medium py-3 px-4 rounded-lg transition text-center">
-          Sign In as Parent/School
-        </a>
-      </div>
-    </div>
-  </div>
-`);
-
-// Replace your existing event listener with this
+// Direct redirect to unified signin page
 document.getElementById('signinBtn').addEventListener('click', function(e) {
   e.preventDefault();
-  document.getElementById('loginModal').classList.remove('hidden');
-});
-
-// Close modal when clicking the close button
-document.getElementById('closeLoginModal').addEventListener('click', function() {
-  document.getElementById('loginModal').classList.add('hidden');
-});
-
-// Close modal when clicking outside the modal content
-document.getElementById('loginModal').addEventListener('click', function(e) {
-  if (e.target === this) {
-    this.classList.add('hidden');
-  }
+  window.location.href = '/signin';
 });
 
 document.getElementById('contactForm').addEventListener('submit', function(e) {

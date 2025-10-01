@@ -166,11 +166,11 @@
                     <div class="text-center">
                         <h3 class="text-lg font-medium text-gray-900 mb-2">Reset Your Password</h3>
                         <p class="text-sm text-gray-600 mb-6">
-                            Enter your email address and we'll send you a link to reset your password.
+                            Enter your email address or username and we'll send you a link to reset your password.
                         </p>
                         <form id="resetPasswordForm" class="space-y-4">
                             <div>
-                                <input type="email" id="resetEmail" name="resetEmail" placeholder="Enter your email address" class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-blue" required>
+                                <input type="text" id="resetEmail" name="resetEmail" placeholder="Enter your email address or username" class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-blue" required>
                                 <div id="resetEmailError" class="error-message hidden"></div>
                             </div>
                             <div class="flex justify-between">
@@ -427,11 +427,11 @@
                     // If form is valid, submit to backend
                     if (isValid) {
                 const formData = {
-                    username: username.value.trim(),
+                    email: username.value.trim(),
                     password: password.value
                 };
                 
-                fetch('/api/student-login', {
+                fetch('/api/unified-login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -441,7 +441,16 @@
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
-                        window.location.href = '/participant-dashboard';
+                        // Redirect based on user type
+                        if (data.user_type === 'school') {
+                            window.location.href = '/school.html';
+                        } else if (data.user_type === 'parent') {
+                            window.location.href = '/parent';
+                        } else if (data.user_type === 'child') {
+                            window.location.href = '/participant-dashboard';
+                        } else {
+                            window.location.href = '/participant-dashboard';
+                        }
                     } else {
                         showError(password, 'passwordError', data.message || 'Invalid username or password');
                     }
@@ -503,9 +512,9 @@
                     const resetEmail = document.getElementById('resetEmail');
                     const resetEmailError = document.getElementById('resetEmailError');
                     
-                    // Validate email
+                    // Validate email/username
                     if (!validateEmail(resetEmail.value)) {
-                        resetEmailError.textContent = 'Please enter a valid email address';
+                        resetEmailError.textContent = 'Please enter a valid email address or username';
                         resetEmailError.classList.remove('hidden');
                         resetEmail.classList.add('input-error');
                     } else {
@@ -540,8 +549,10 @@
                 
                 // Helper function for email validation
                 function validateEmail(email) {
-                    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                    return re.test(email);
+                    // Accept both email format (@domain.com) and username format (no @)
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    const usernameRegex = /^[a-zA-Z0-9_]+$/;
+                    return emailRegex.test(email) || usernameRegex.test(email);
                 }
                 
                 // Close modals when clicking outside

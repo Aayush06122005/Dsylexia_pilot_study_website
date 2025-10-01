@@ -365,7 +365,12 @@
 
         // Load children on page load
         document.addEventListener('DOMContentLoaded', function() {
-            loadChildren();
+            // Check if we're viewing as a child (have parent session stored)
+            if (sessionStorage.getItem('viewing_as_child') === 'true') {
+                showBackToParentButton();
+            } else {
+                loadChildren();
+            }
         });
 
         // Add Child Button Click
@@ -477,7 +482,7 @@ function displayChildren(children) {
                             class="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition">
                         View Progress
                     </button>
-                    <button onclick="redirectToStudentSignIn('${child.email}')"
+                    <button onclick="loginChildDirectly(${child.id})"
                             class="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600 transition">
                         Student Sign In
                     </button>
@@ -489,10 +494,87 @@ function displayChildren(children) {
     childrenList.classList.remove('hidden');
 }
 
-// Add this function to handle the redirect
-function redirectToStudentSignIn(childEmail) {
-    // Optionally, you can prefill the username field using query params
-    window.location.href = `/student-signin?username=${encodeURIComponent(childEmail)}`;
+// Function to directly login child without requiring credentials
+function loginChildDirectly(childId) {
+    // Show loading state on the button
+    const button = event.target;
+    const originalText = button.textContent;
+    button.textContent = 'Signing in...';
+    button.disabled = true;
+    
+    fetch('/api/parent-login-child', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            child_id: childId
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            // Set flag to indicate we're viewing as child
+            sessionStorage.setItem('viewing_as_child', 'true');
+            // Successfully logged in child, redirect to student dashboard
+            window.location.href = '/participant-dashboard';
+        } else {
+            // Show error message
+            alert('Error: ' + data.message);
+            // Reset button state
+            button.textContent = originalText;
+            button.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Login child error:', error);
+        alert('An error occurred while signing in the child');
+        // Reset button state
+        button.textContent = originalText;
+        button.disabled = false;
+    });
+}
+
+// Function to switch back to parent session
+function switchBackToParent() {
+    fetch('/api/switch-back-to-parent', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            // Clear the viewing_as_child flag and reload
+            sessionStorage.removeItem('viewing_as_child');
+            window.location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Switch back error:', error);
+        alert('An error occurred while switching back to parent');
+    });
+}
+
+// Function to show back to parent button
+function showBackToParentButton() {
+    const childrenList = document.getElementById('childrenList');
+    childrenList.innerHTML = `
+        <div class="text-center py-8">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 max-w-md mx-auto">
+                <h3 class="text-lg font-semibold text-blue-800 mb-2">Viewing as Child</h3>
+                <p class="text-blue-600 mb-4">You are currently viewing the dashboard as a child. Click below to switch back to parent view.</p>
+                <button onclick="switchBackToParent()" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition">
+                    Back to Parent Dashboard
+                </button>
+            </div>
+        </div>
+    `;
+    childrenList.classList.remove('hidden');
 }
 
 // ...existing code...

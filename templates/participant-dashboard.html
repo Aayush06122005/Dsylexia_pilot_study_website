@@ -21,6 +21,7 @@
                     <li><a href="{{ url_for('landing') }}#contact" class="hover:text-yellow-100 transition">Contact</a></li>
                     <li><a href="/profile" class="hover:text-yellow-100 transition ">Profile</a></li>
                     <li><a href="/stats" class="hover:text-yellow-100 transition">Stats</a></li>
+                    <li id="backToParentNav" class="hidden"><a href="#" onclick="switchBackToParent()" class="hover:text-yellow-100 transition bg-yellow-500 text-blue-900 px-3 py-1 rounded">Back to Parent</a></li>
                     <li><a href="#" id="logoutBtn" class="hover:text-yellow-100 transition ">Logout</a></li>
                 </ul>
             </nav>
@@ -495,6 +496,37 @@
         
         // Call this function when page loads
         checkSavedProgress();
+        
+        // Check if viewing as child and show back to parent button
+        document.addEventListener('DOMContentLoaded', function() {
+            if (sessionStorage.getItem('viewing_as_child') === 'true') {
+                document.getElementById('backToParentNav').classList.remove('hidden');
+            }
+        });
+        
+        // Function to switch back to parent session
+        function switchBackToParent() {
+            fetch('/api/switch-back-to-parent', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    // Clear the viewing_as_child flag and redirect to parent dashboard
+                    sessionStorage.removeItem('viewing_as_child');
+                    window.location.href = '/parent';
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Switch back error:', error);
+                alert('An error occurred while switching back to parent');
+            });
+        }
         
         // Refresh dashboard data when page becomes visible (returning from tasks)
         document.addEventListener('visibilitychange', function() {
