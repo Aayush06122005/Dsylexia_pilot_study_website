@@ -2060,23 +2060,22 @@ def admin_tasks_by_category(category_slug: str):
         cursor.execute(f"""
             SELECT *
             FROM {base_table}
-            ORDER BY age_min, id
+            ORDER BY class_level, id
         """)
         rows = cursor.fetchall()
         cursor.close()
         conn.close()
 
-        # Group by age ranges (age_min, age_max)
+        # Group by class level
         groups = {}
         for row in rows:
-            age_min = row.get('age_min')
-            age_max = row.get('age_max')
-            key = (age_min, age_max)
+            class_level = row.get('class_level')
+            key = class_level
             if key not in groups:
-                label = f"Ages {age_min}+" if age_max is not None and int(age_max) >= 99 else f"Ages {age_min}-{age_max}"
+                label = f"Class {class_level}"
                 groups[key] = {
                     'label': label,
-                    'age_min': age_min,
+                    'class_level': class_level,
                     'tasks': []
                 }
             # Common fields
@@ -2196,8 +2195,8 @@ def admin_tasks_by_category(category_slug: str):
                     set_pair('spatial', sr)
             groups[key]['tasks'].append(task_common)
 
-        # Sort groups by age_min
-        age_groups = [groups[k] for k in sorted(groups.keys(), key=lambda t: (t[0], t[1]))]
+        # Sort groups by class_level
+        age_groups = [groups[k] for k in sorted(groups.keys())]
 
         return render_template(
             'admin_tasks_category.html',
@@ -2223,6 +2222,54 @@ def _category_config(category_slug: str):
     }.get(category_slug)
 
 
+def _get_user_class_level(conn, user_id: int):
+    """Determine numeric class_level (1-12) for a user based on `users.class` or their section's class name."""
+    try:
+        cur = conn.cursor(dictionary=True)
+        # First try direct users.class (e.g., "Class 6" or "6")
+        cur.execute("SELECT class, section_id FROM users WHERE id=%s", (user_id,))
+        row = cur.fetchone()
+        class_level = None
+        if row:
+            user_class = row.get('class')
+            if user_class:
+                import re
+                m = re.search(r"(\d+)", str(user_class))
+                if m:
+                    num = int(m.group(1))
+                    if 1 <= num <= 12:
+                        class_level = num
+            if class_level is None and row.get('section_id'):
+                # Derive via section -> school_classes.name (e.g., "Class 5")
+                cur2 = conn.cursor(dictionary=True)
+                cur2.execute(
+                    """
+                    SELECT sc.name AS class_name
+                    FROM class_sections s
+                    JOIN school_classes sc ON sc.id = s.class_id
+                    WHERE s.id = %s
+                    """,
+                    (row['section_id'],)
+                )
+                r2 = cur2.fetchone()
+                cur2.close()
+                if r2 and r2.get('class_name'):
+                    import re as _re
+                    m2 = _re.search(r"(\d+)", str(r2['class_name']))
+                    if m2:
+                        num2 = int(m2.group(1))
+                        if 1 <= num2 <= 12:
+                            class_level = num2
+        cur.close()
+        return class_level
+    except Exception:
+        try:
+            cur.close()
+        except Exception:
+            pass
+        return None
+
+
 @app.route('/api/admin/categories/<string:category_slug>/tasks', methods=['GET', 'POST'])
 def admin_category_tasks(category_slug: str):
     if not session.get('is_admin'):
@@ -2242,33 +2289,33 @@ def admin_category_tasks(category_slug: str):
             if category_slug == 'reading-aloud':
                 cursor.execute(
                     """
-                    INSERT INTO reading_tasks (task_name, age_min, age_max, difficulty_level, content, instructions, estimated_time)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    INSERT INTO reading_tasks (task_name, class_level, difficulty_level, content, instructions, estimated_time)
+                    VALUES (%s, %s, %s, %s, %s, %s)
                     """,
                     (
-                        data.get('task_name'), data.get('age_min'), data.get('age_max'), data.get('difficulty_level'),
+                        data.get('task_name'), data.get('class_level'), data.get('difficulty_level'),
                         data.get('content'), data.get('instructions'), data.get('estimated_time')
                     )
                 )
             elif category_slug == 'typing':
                 cursor.execute(
                     """
-                    INSERT INTO typing_tasks (task_name, age_min, age_max, difficulty_level, prompt, instructions, word_limit_min, word_limit_max, estimated_time)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    INSERT INTO typing_tasks (task_name, class_level, difficulty_level, prompt, instructions, word_limit_min, word_limit_max, estimated_time)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                     """,
                     (
-                        data.get('task_name'), data.get('age_min'), data.get('age_max'), data.get('difficulty_level'),
+                        data.get('task_name'), data.get('class_level'), data.get('difficulty_level'),
                         data.get('prompt'), data.get('instructions'), data.get('word_limit_min'), data.get('word_limit_max'), data.get('estimated_time')
                     )
                 )
             elif category_slug == 'writing':
                 cursor.execute(
                     """
-                    INSERT INTO writing_tasks (task_name, age_min, age_max, difficulty_level, prompt, instructions, word_limit_min, word_limit_max, estimated_time)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    INSERT INTO writing_tasks (task_name, class_level, difficulty_level, prompt, instructions, word_limit_min, word_limit_max, estimated_time)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                     """,
                     (
-                        data.get('task_name'), data.get('age_min'), data.get('age_max'), data.get('difficulty_level'),
+                        data.get('task_name'), data.get('class_level'), data.get('difficulty_level'),
                         data.get('prompt'), data.get('instructions'), data.get('word_limit_min'), data.get('word_limit_max'), data.get('estimated_time')
                     )
                 )
@@ -2276,11 +2323,11 @@ def admin_category_tasks(category_slug: str):
                 import json as _json
                 cursor.execute(
                     """
-                    INSERT INTO reading_comprehension_tasks (task_name, age_min, age_max, difficulty_level, passage, question1, question2, question3, answer1_options, answer2_options, answer3_type, instructions, estimated_time)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    INSERT INTO reading_comprehension_tasks (task_name, class_level, difficulty_level, passage, question1, question2, question3, answer1_options, answer2_options, answer3_type, instructions, estimated_time)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """,
                     (
-                        data.get('task_name'), data.get('age_min'), data.get('age_max'), data.get('difficulty_level'),
+                        data.get('task_name'), data.get('class_level'), data.get('difficulty_level'),
                         data.get('passage'), data.get('question1'), data.get('question2'), data.get('question3'),
                         _json.dumps(data.get('answer1_options') or []), _json.dumps(data.get('answer2_options') or []),
                         data.get('answer3_type'), data.get('instructions'), data.get('estimated_time')
@@ -2290,11 +2337,11 @@ def admin_category_tasks(category_slug: str):
                 import json as _json
                 cursor.execute(
                     """
-                    INSERT INTO mathematical_comprehension_tasks (task_name, age_min, age_max, difficulty_level, problem_text, question1, question2, question3, answer1_options, answer2_options, answer3_type, instructions, estimated_time)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    INSERT INTO mathematical_comprehension_tasks (task_name, class_level, difficulty_level, problem_text, question1, question2, question3, answer1_options, answer2_options, answer3_type, instructions, estimated_time)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """,
                     (
-                        data.get('task_name'), data.get('age_min'), data.get('age_max'), data.get('difficulty_level'),
+                        data.get('task_name'), data.get('class_level'), data.get('difficulty_level'),
                         data.get('problem_text'), data.get('question1'), data.get('question2'), data.get('question3'),
                         _json.dumps(data.get('answer1_options') or []), _json.dumps(data.get('answer2_options') or []),
                         data.get('answer3_type'), data.get('instructions'), data.get('estimated_time')
@@ -2322,13 +2369,13 @@ def admin_category_tasks(category_slug: str):
                     cursor.execute(
                         """
                         INSERT INTO aptitude_tasks (
-                            task_name, age_min, age_max, difficulty_level,
+                            task_name, class_level, difficulty_level,
                             logical_reasoning_questions, numerical_ability_questions, verbal_ability_questions, spatial_reasoning_questions,
                             instructions, estimated_time
-                        ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                        ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
                         """,
                         (
-                            data.get('task_name'), data.get('age_min'), data.get('age_max'), data.get('difficulty_level'),
+                            data.get('task_name'), data.get('class_level'), data.get('difficulty_level'),
                             section_from('logical'), section_from('numerical'), section_from('verbal'), section_from('spatial'),
                             data.get('instructions'), data.get('estimated_time')
                         )
@@ -2337,16 +2384,16 @@ def admin_category_tasks(category_slug: str):
                     cursor.execute(
                         """
                         INSERT INTO aptitude_tasks (
-                            task_name, age_min, age_max, difficulty_level, instructions, estimated_time, example,
+                            task_name, class_level, difficulty_level, instructions, estimated_time, example,
                             logical_question1, logical_question1_options, logical_question2, logical_question2_options,
                             numerical_question1, numerical_question1_options, numerical_question2, numerical_question2_options,
                             verbal_question1, verbal_question1_options, verbal_question2, verbal_question2_options,
                             spatial_question1, spatial_question1_options, spatial_question2, spatial_question2_options
                         )
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         """,
                         (
-                            data.get('task_name'), data.get('age_min'), data.get('age_max'), data.get('difficulty_level'),
+                            data.get('task_name'), data.get('class_level'), data.get('difficulty_level'),
                             data.get('instructions'), data.get('estimated_time'), data.get('example'),
                             data.get('logical_question1'), _json.dumps(data.get('logical_question1_options') or []),
                             data.get('logical_question2'), _json.dumps(data.get('logical_question2_options') or []),
@@ -3471,7 +3518,7 @@ def submit_aptitude():
 
 @app.route('/api/reading-tasks/<int:user_id>', methods=['GET'])
 def get_reading_tasks(user_id):
-    """Get age-appropriate reading tasks for a user"""
+    """Get class-appropriate reading tasks for a user"""
     try:
         print(f"Fetching reading tasks for user_id: {user_id}")
         
@@ -3489,37 +3536,11 @@ def get_reading_tasks(user_id):
             print(f"User {user_id} not found")
             return jsonify({'success': False, 'message': 'User not found'}), 404
         
-        # Get user's age from demographics
-        cursor.execute("SELECT age, date_of_birth FROM demographics WHERE user_id = %s", (user_id,))
-        result = cursor.fetchone()
-        
-        print(f"Demographics result: {result}")
-        
-        if not result:
-            print(f"No demographics found for user {user_id}")
-            # Return default tasks instead of error
+        # Determine user's class level
+        class_level = _get_user_class_level(conn, user_id)
+        if not class_level:
+            print("No class level; returning default reading tasks")
             return getDefaultReadingTasks()
-        
-        if not result['age'] and not result['date_of_birth']:
-            print(f"No age or date_of_birth found for user {user_id}")
-            # Return default tasks instead of error
-            return getDefaultReadingTasks()
-        
-        # Use age if available, otherwise calculate from date_of_birth
-        if result['age']:
-            user_age = result['age']
-        elif result['date_of_birth']:
-            from datetime import datetime
-            today = datetime.now()
-            birth_date = result['date_of_birth']
-            user_age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
-        else:
-            user_age = None
-        
-        print(f"Calculated user age: {user_age}")
-        
-        if user_age is None or user_age <= 0:
-            return jsonify({'success': False, 'message': 'Invalid age. Please update your profile.'}), 400
         
         # Check if reading_tasks table exists
         cursor.execute("SHOW TABLES LIKE 'reading_tasks'")
@@ -3528,26 +3549,26 @@ def get_reading_tasks(user_id):
             print("reading_tasks table does not exist")
             return jsonify({'success': False, 'message': 'Reading tasks not configured. Please contact administrator.'}), 500
         
-        # Get appropriate reading tasks for user's age
+        # Get appropriate reading tasks for user's class
         cursor.execute("""
             SELECT * FROM reading_tasks 
-            WHERE age_min <= %s AND age_max >= %s 
-            ORDER BY difficulty_level, age_min
-        """, (user_age, user_age))
+            WHERE class_level = %s
+            ORDER BY difficulty_level, class_level
+        """, (class_level,))
         
         tasks = cursor.fetchall()
-        print(f"Found {len(tasks)} tasks for age {user_age}")
+        print(f"Found {len(tasks)} tasks for class {class_level}")
         
         cursor.close()
         conn.close()
         
         if not tasks:
-            return jsonify({'success': False, 'message': f'No reading tasks found for age {user_age}. Please contact administrator.'}), 404
+            return jsonify({'success': False, 'message': f'No reading tasks found for class {class_level}. Please contact administrator.'}), 404
         
         return jsonify({
             'success': True, 
             'tasks': tasks, 
-            'user_age': user_age,
+            'class_level': class_level,
             'total_tasks': len(tasks)
         })
         
@@ -3559,7 +3580,7 @@ def get_reading_tasks(user_id):
 
 
 def getDefaultReadingTasks():
-    """Return default reading tasks when user age is not available"""
+    """Return default reading tasks when class is not available"""
     try:
         conn = connect_db()
         if not conn:
@@ -3568,7 +3589,7 @@ def getDefaultReadingTasks():
         cursor = conn.cursor(dictionary=True)
         
         # Get all available reading tasks
-        cursor.execute("SELECT * FROM reading_tasks ORDER BY difficulty_level, age_min")
+        cursor.execute("SELECT * FROM reading_tasks ORDER BY difficulty_level, class_level")
         tasks = cursor.fetchall()
         
         cursor.close()
@@ -3580,9 +3601,9 @@ def getDefaultReadingTasks():
         return jsonify({
             'success': True, 
             'tasks': tasks, 
-            'user_age': 'Not specified',
+            'class_level': 'Not specified',
             'total_tasks': len(tasks),
-            'message': 'Showing all available reading tasks. Please complete your profile setup for personalized tasks.'
+            'message': 'Showing all available reading tasks. Please update class info for personalized tasks.'
         })
         
     except Exception as e:
@@ -3622,7 +3643,7 @@ def get_reading_task_by_id(task_id):
 
 @app.route('/api/reading-comprehension-tasks/<int:user_id>', methods=['GET'])
 def get_reading_comprehension_tasks(user_id):
-    """Get age-appropriate reading comprehension tasks for a user"""
+    """Get class-appropriate reading comprehension tasks for a user"""
     try:
         print(f"Fetching reading comprehension tasks for user_id: {user_id}")
         
@@ -3640,37 +3661,11 @@ def get_reading_comprehension_tasks(user_id):
             print(f"User {user_id} not found")
             return jsonify({'success': False, 'message': 'User not found'}), 404
         
-        # Get user's age from demographics
-        cursor.execute("SELECT age, date_of_birth FROM demographics WHERE user_id = %s", (user_id,))
-        result = cursor.fetchone()
-        
-        print(f"Demographics result: {result}")
-        
-        if not result:
-            print(f"No demographics found for user {user_id}")
-            # Return default tasks instead of error
+        # Determine user's class level
+        class_level = _get_user_class_level(conn, user_id)
+        if not class_level:
+            print("No class level; returning default RC tasks")
             return getDefaultReadingComprehensionTasks()
-        
-        if not result['age'] and not result['date_of_birth']:
-            print(f"No age or date_of_birth found for user {user_id}")
-            # Return default tasks instead of error
-            return getDefaultReadingComprehensionTasks()
-        
-        # Use age if available, otherwise calculate from date_of_birth
-        if result['age']:
-            user_age = result['age']
-        elif result['date_of_birth']:
-            from datetime import datetime
-            today = datetime.now()
-            birth_date = result['date_of_birth']
-            user_age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
-        else:
-            user_age = None
-        
-        print(f"Calculated user age: {user_age}")
-        
-        if user_age is None or user_age <= 0:
-            return jsonify({'success': False, 'message': 'Invalid age. Please update your profile.'}), 400
         
         # Check if reading_comprehension_tasks table exists
         cursor.execute("SHOW TABLES LIKE 'reading_comprehension_tasks'")
@@ -3679,26 +3674,26 @@ def get_reading_comprehension_tasks(user_id):
             print("reading_comprehension_tasks table does not exist")
             return jsonify({'success': False, 'message': 'Reading comprehension tasks not configured. Please contact administrator.'}), 500
         
-        # Get appropriate reading comprehension tasks for user's age
+        # Get appropriate reading comprehension tasks for user's class
         cursor.execute("""
             SELECT * FROM reading_comprehension_tasks 
-            WHERE age_min <= %s AND age_max >= %s 
-            ORDER BY difficulty_level, age_min
-        """, (user_age, user_age))
+            WHERE class_level = %s
+            ORDER BY difficulty_level, class_level
+        """, (class_level,))
         
         tasks = cursor.fetchall()
-        print(f"Found {len(tasks)} comprehension tasks for age {user_age}")
+        print(f"Found {len(tasks)} comprehension tasks for class {class_level}")
         
         cursor.close()
         conn.close()
         
         if not tasks:
-            return jsonify({'success': False, 'message': f'No reading comprehension tasks found for age {user_age}. Please contact administrator.'}), 404
+            return jsonify({'success': False, 'message': f'No reading comprehension tasks found for class {class_level}. Please contact administrator.'}), 404
         
         return jsonify({
             'success': True, 
             'tasks': tasks, 
-            'user_age': user_age,
+            'class_level': class_level,
             'total_tasks': len(tasks)
         })
         
@@ -3710,7 +3705,7 @@ def get_reading_comprehension_tasks(user_id):
 
 
 def getDefaultReadingComprehensionTasks():
-    """Return default reading comprehension tasks when user age is not available"""
+    """Return default reading comprehension tasks when class is not available"""
     try:
         conn = connect_db()
         if not conn:
@@ -3719,7 +3714,7 @@ def getDefaultReadingComprehensionTasks():
         cursor = conn.cursor(dictionary=True)
         
         # Get all available reading comprehension tasks
-        cursor.execute("SELECT * FROM reading_comprehension_tasks ORDER BY difficulty_level, age_min")
+        cursor.execute("SELECT * FROM reading_comprehension_tasks ORDER BY difficulty_level, class_level")
         tasks = cursor.fetchall()
         
         cursor.close()
@@ -3731,9 +3726,9 @@ def getDefaultReadingComprehensionTasks():
         return jsonify({
             'success': True, 
             'tasks': tasks, 
-            'user_age': 'Not specified',
+            'class_level': 'Not specified',
             'total_tasks': len(tasks),
-            'message': 'Showing all available reading comprehension tasks. Please complete your profile setup for personalized tasks.'
+            'message': 'Showing all available reading comprehension tasks. Please update class info for personalized tasks.'
         })
         
     except Exception as e:
@@ -3773,7 +3768,7 @@ def get_reading_comprehension_task_by_id(task_id):
 
 @app.route('/api/typing-tasks/<int:user_id>', methods=['GET'])
 def get_typing_tasks(user_id):
-    """Get age-appropriate typing tasks for a user"""
+    """Get class-appropriate typing tasks for a user"""
     try:
         print(f"Fetching typing tasks for user_id: {user_id}")
         
@@ -3791,37 +3786,11 @@ def get_typing_tasks(user_id):
             print(f"User {user_id} not found")
             return jsonify({'success': False, 'message': 'User not found'}), 404
         
-        # Get user's age from demographics
-        cursor.execute("SELECT age, date_of_birth FROM demographics WHERE user_id = %s", (user_id,))
-        result = cursor.fetchone()
-        
-        print(f"Demographics result: {result}")
-        
-        if not result:
-            print(f"No demographics found for user {user_id}")
-            # Return default tasks instead of error
+        # Determine user's class level
+        class_level = _get_user_class_level(conn, user_id)
+        if not class_level:
+            print("No class level; returning default typing tasks")
             return getDefaultTypingTasks()
-        
-        if not result['age'] and not result['date_of_birth']:
-            print(f"No age or date_of_birth found for user {user_id}")
-            # Return default tasks instead of error
-            return getDefaultTypingTasks()
-        
-        # Use age if available, otherwise calculate from date_of_birth
-        if result['age']:
-            user_age = result['age']
-        elif result['date_of_birth']:
-            from datetime import datetime
-            today = datetime.now()
-            birth_date = result['date_of_birth']
-            user_age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
-        else:
-            user_age = None
-        
-        print(f"Calculated user age: {user_age}")
-        
-        if user_age is None or user_age <= 0:
-            return jsonify({'success': False, 'message': 'Invalid age. Please update your profile.'}), 400
         
         # Check if typing_tasks table exists
         cursor.execute("SHOW TABLES LIKE 'typing_tasks'")
@@ -3830,26 +3799,26 @@ def get_typing_tasks(user_id):
             print("typing_tasks table does not exist")
             return jsonify({'success': False, 'message': 'Typing tasks not configured. Please contact administrator.'}), 500
         
-        # Get appropriate typing tasks for user's age
+        # Get appropriate typing tasks for user's class
         cursor.execute("""
             SELECT * FROM typing_tasks 
-            WHERE age_min <= %s AND age_max >= %s 
-            ORDER BY difficulty_level, age_min
-        """, (user_age, user_age))
+            WHERE class_level = %s
+            ORDER BY difficulty_level, class_level
+        """, (class_level,))
         
         tasks = cursor.fetchall()
-        print(f"Found {len(tasks)} typing tasks for age {user_age}")
+        print(f"Found {len(tasks)} typing tasks for class {class_level}")
         
         cursor.close()
         conn.close()
         
         if not tasks:
-            return jsonify({'success': False, 'message': f'No typing tasks found for age {user_age}. Please contact administrator.'}), 404
+            return jsonify({'success': False, 'message': f'No typing tasks found for class {class_level}. Please contact administrator.'}), 404
         
         return jsonify({
             'success': True, 
             'tasks': tasks, 
-            'user_age': user_age,
+            'class_level': class_level,
             'total_tasks': len(tasks)
         })
         
@@ -3861,7 +3830,7 @@ def get_typing_tasks(user_id):
 
 
 def getDefaultTypingTasks():
-    """Return default typing tasks when user age is not available"""
+    """Return default typing tasks when class is not available"""
     try:
         conn = connect_db()
         if not conn:
@@ -3870,7 +3839,7 @@ def getDefaultTypingTasks():
         cursor = conn.cursor(dictionary=True)
         
         # Get all available typing tasks
-        cursor.execute("SELECT * FROM typing_tasks ORDER BY difficulty_level, age_min")
+        cursor.execute("SELECT * FROM typing_tasks ORDER BY difficulty_level, class_level")
         tasks = cursor.fetchall()
         
         cursor.close()
@@ -3882,9 +3851,9 @@ def getDefaultTypingTasks():
         return jsonify({
             'success': True, 
             'tasks': tasks, 
-            'user_age': 'Not specified',
+            'class_level': 'Not specified',
             'total_tasks': len(tasks),
-            'message': 'Showing all available typing tasks. Please complete your profile setup for personalized tasks.'
+            'message': 'Showing all available typing tasks. Please update class info for personalized tasks.'
         })
         
     except Exception as e:
@@ -4029,7 +3998,7 @@ def start_reading_task():
 
 @app.route('/api/mathematical-comprehension-tasks/<int:user_id>', methods=['GET'])
 def get_mathematical_comprehension_tasks(user_id):
-    """Get age-appropriate mathematical comprehension tasks for a user"""
+    """Get class-appropriate mathematical comprehension tasks for a user"""
     try:
         print(f"Fetching mathematical comprehension tasks for user_id: {user_id}")
         
@@ -4047,37 +4016,11 @@ def get_mathematical_comprehension_tasks(user_id):
             print(f"User {user_id} not found")
             return jsonify({'success': False, 'message': 'User not found'}), 404
         
-        # Get user's age from demographics
-        cursor.execute("SELECT age, date_of_birth FROM demographics WHERE user_id = %s", (user_id,))
-        result = cursor.fetchone()
-        
-        print(f"Demographics result: {result}")
-        
-        if not result:
-            print(f"No demographics found for user {user_id}")
-            # Return default tasks instead of error
+        # Determine user's class level
+        class_level = _get_user_class_level(conn, user_id)
+        if not class_level:
+            print("No class level; returning default math comp tasks")
             return getDefaultMathematicalComprehensionTasks()
-        
-        if not result['age'] and not result['date_of_birth']:
-            print(f"No age or date_of_birth found for user {user_id}")
-            # Return default tasks instead of error
-            return getDefaultMathematicalComprehensionTasks()
-        
-        # Use age if available, otherwise calculate from date_of_birth
-        if result['age']:
-            user_age = result['age']
-        elif result['date_of_birth']:
-            from datetime import datetime
-            today = datetime.now()
-            birth_date = result['date_of_birth']
-            user_age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
-        else:
-            user_age = None
-        
-        print(f"Calculated user age: {user_age}")
-        
-        if user_age is None or user_age <= 0:
-            return jsonify({'success': False, 'message': 'Invalid age. Please update your profile.'}), 400
         
         # Check if mathematical_comprehension_tasks table exists
         cursor.execute("SHOW TABLES LIKE 'mathematical_comprehension_tasks'")
@@ -4086,26 +4029,26 @@ def get_mathematical_comprehension_tasks(user_id):
             print("mathematical_comprehension_tasks table does not exist")
             return jsonify({'success': False, 'message': 'Mathematical comprehension tasks not configured. Please contact administrator.'}), 500
         
-        # Get appropriate mathematical comprehension tasks for user's age
+        # Get appropriate mathematical comprehension tasks for user's class
         cursor.execute("""
             SELECT * FROM mathematical_comprehension_tasks 
-            WHERE age_min <= %s AND age_max >= %s 
-            ORDER BY difficulty_level, age_min
-        """, (user_age, user_age))
+            WHERE class_level = %s
+            ORDER BY difficulty_level, class_level
+        """, (class_level,))
         
         tasks = cursor.fetchall()
-        print(f"Found {len(tasks)} mathematical comprehension tasks for age {user_age}")
+        print(f"Found {len(tasks)} mathematical comprehension tasks for class {class_level}")
         
         cursor.close()
         conn.close()
         
         if not tasks:
-            return jsonify({'success': False, 'message': f'No mathematical comprehension tasks found for age {user_age}. Please contact administrator.'}), 404
+            return jsonify({'success': False, 'message': f'No mathematical comprehension tasks found for class {class_level}. Please contact administrator.'}), 404
         
         return jsonify({
             'success': True, 
             'tasks': tasks, 
-            'user_age': user_age,
+            'class_level': class_level,
             'total_tasks': len(tasks)
         })
         
@@ -4117,7 +4060,7 @@ def get_mathematical_comprehension_tasks(user_id):
 
 
 def getDefaultMathematicalComprehensionTasks():
-    """Return default mathematical comprehension tasks when user age is not available"""
+    """Return default mathematical comprehension tasks when class is not available"""
     try:
         conn = connect_db()
         if not conn:
@@ -4126,7 +4069,7 @@ def getDefaultMathematicalComprehensionTasks():
         cursor = conn.cursor(dictionary=True)
         
         # Get all available mathematical comprehension tasks
-        cursor.execute("SELECT * FROM mathematical_comprehension_tasks ORDER BY difficulty_level, age_min")
+        cursor.execute("SELECT * FROM mathematical_comprehension_tasks ORDER BY difficulty_level, class_level")
         tasks = cursor.fetchall()
         
         cursor.close()
@@ -4138,9 +4081,9 @@ def getDefaultMathematicalComprehensionTasks():
         return jsonify({
             'success': True, 
             'tasks': tasks, 
-            'user_age': 'Not specified',
+            'class_level': 'Not specified',
             'total_tasks': len(tasks),
-            'message': 'Showing all available mathematical comprehension tasks. Please complete your profile setup for personalized tasks.'
+            'message': 'Showing all available mathematical comprehension tasks. Please update class info for personalized tasks.'
         })
         
     except Exception as e:
@@ -4214,7 +4157,7 @@ def start_mathematical_comprehension_task():
 
 @app.route('/api/writing-tasks/<int:user_id>', methods=['GET'])
 def get_writing_tasks(user_id):
-    """Get age-appropriate writing tasks for a user"""
+    """Get class-appropriate writing tasks for a user"""
     try:
         conn = connect_db()
         if not conn:
@@ -4222,35 +4165,26 @@ def get_writing_tasks(user_id):
             
         cursor = conn.cursor(dictionary=True)
         
-        # Get user's age from demographics table
-        cursor.execute("SELECT age FROM demographics WHERE user_id = %s", (user_id,))
-        age_result = cursor.fetchone()
+        # Determine user's class level
+        class_level = _get_user_class_level(conn, user_id)
+        if not class_level:
+            return getDefaultWritingTasks()
         
-        user_age = None
-        if age_result and age_result['age']:
-            user_age = age_result['age']
-        
-        # Get writing tasks based on age
-        if user_age:
-            cursor.execute("""
-                SELECT * FROM writing_tasks 
-                WHERE age_min <= %s AND age_max >= %s 
-                ORDER BY difficulty_level, age_min
-            """, (user_age, user_age))
-            tasks = cursor.fetchall()
-            
-            if tasks:
-                return jsonify({
-                    'success': True,
-                    'tasks': tasks,
-                    'user_age': user_age,
-                    'message': f'Showing writing tasks for age {user_age}'
-                })
-            else:
-                # If no tasks found for specific age, get default tasks
-                return getDefaultWritingTasks()
+        # Get writing tasks for class
+        cursor.execute("""
+            SELECT * FROM writing_tasks 
+            WHERE class_level = %s
+            ORDER BY difficulty_level, class_level
+        """, (class_level,))
+        tasks = cursor.fetchall()
+        if tasks:
+            return jsonify({
+                'success': True,
+                'tasks': tasks,
+                'class_level': class_level,
+                'message': f'Showing writing tasks for class {class_level}'
+            })
         else:
-            # If no age found, get default tasks
             return getDefaultWritingTasks()
             
     except Exception as e:
@@ -4263,7 +4197,7 @@ def get_writing_tasks(user_id):
             conn.close()
 
 def getDefaultWritingTasks():
-    """Get default writing tasks when user age is not available"""
+    """Get default writing tasks when class is not available"""
     try:
         conn = connect_db()
         cursor = conn.cursor(dictionary=True)
@@ -4271,7 +4205,7 @@ def getDefaultWritingTasks():
         # Get all writing tasks ordered by difficulty
         cursor.execute("""
             SELECT * FROM writing_tasks 
-            ORDER BY difficulty_level, age_min
+            ORDER BY difficulty_level, class_level
         """)
         tasks = cursor.fetchall()
         
@@ -4281,7 +4215,7 @@ def getDefaultWritingTasks():
         return jsonify({
             'success': True,
             'tasks': tasks,
-            'user_age': 'Not specified',
+            'class_level': 'Not specified',
             'message': 'Showing all available writing tasks'
         })
         
@@ -4354,7 +4288,7 @@ def start_writing_task():
 
 @app.route('/api/aptitude-tasks/<int:user_id>', methods=['GET'])
 def get_aptitude_tasks(user_id):
-    """Get age-appropriate aptitude tasks for a user"""
+    """Get class-appropriate aptitude tasks for a user"""
     try:
         print(f"Fetching aptitude tasks for user_id: {user_id}")
         
@@ -4372,37 +4306,10 @@ def get_aptitude_tasks(user_id):
             print(f"User {user_id} not found")
             return jsonify({'success': False, 'message': 'User not found'}), 404
         
-        # Get user's age from demographics
-        cursor.execute("SELECT age, date_of_birth FROM demographics WHERE user_id = %s", (user_id,))
-        result = cursor.fetchone()
-        
-        print(f"Demographics result: {result}")
-        
-        if not result:
-            print(f"No demographics found for user {user_id}")
-            # Return default tasks instead of error
+        # Determine user's class level
+        class_level = _get_user_class_level(conn, user_id)
+        if not class_level:
             return getDefaultAptitudeTasks()
-        
-        if not result['age'] and not result['date_of_birth']:
-            print(f"No age or date_of_birth found for user {user_id}")
-            # Return default tasks instead of error
-            return getDefaultAptitudeTasks()
-        
-        # Use age if available, otherwise calculate from date_of_birth
-        if result['age']:
-            user_age = result['age']
-        elif result['date_of_birth']:
-            from datetime import datetime
-            today = datetime.now()
-            birth_date = result['date_of_birth']
-            user_age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
-        else:
-            user_age = None
-        
-        print(f"Calculated user age: {user_age}")
-        
-        if user_age is None or user_age <= 0:
-            return jsonify({'success': False, 'message': 'Invalid age. Please update your profile.'}), 400
         
         # Check if aptitude_tasks table exists
         cursor.execute("SHOW TABLES LIKE 'aptitude_tasks'")
@@ -4411,26 +4318,26 @@ def get_aptitude_tasks(user_id):
             print("aptitude_tasks table does not exist")
             return jsonify({'success': False, 'message': 'Aptitude tasks not configured. Please contact administrator.'}), 500
         
-        # Get appropriate aptitude tasks for user's age
+        # Get appropriate aptitude tasks for user's class
         cursor.execute("""
             SELECT * FROM aptitude_tasks 
-            WHERE age_min <= %s AND age_max >= %s 
-            ORDER BY difficulty_level, age_min
-        """, (user_age, user_age))
+            WHERE class_level = %s 
+            ORDER BY difficulty_level, class_level
+        """, (class_level,))
         
         tasks = cursor.fetchall()
-        print(f"Found {len(tasks)} aptitude tasks for age {user_age}")
+        print(f"Found {len(tasks)} aptitude tasks for class {class_level}")
         
         cursor.close()
         conn.close()
         
         if not tasks:
-            return jsonify({'success': False, 'message': f'No aptitude tasks found for age {user_age}. Please contact administrator.'}), 404
+            return jsonify({'success': False, 'message': f'No aptitude tasks found for class {class_level}. Please contact administrator.'}), 404
         
         return jsonify({
             'success': True, 
             'tasks': tasks, 
-            'user_age': user_age,
+            'class_level': class_level,
             'total_tasks': len(tasks)
         })
         
@@ -4442,7 +4349,7 @@ def get_aptitude_tasks(user_id):
 
 
 def getDefaultAptitudeTasks():
-    """Return default aptitude tasks when user age is not available"""
+    """Return default aptitude tasks when class is not available"""
     try:
         conn = connect_db()
         if not conn:
@@ -4451,7 +4358,7 @@ def getDefaultAptitudeTasks():
         cursor = conn.cursor(dictionary=True)
         
         # Get all available aptitude tasks
-        cursor.execute("SELECT * FROM aptitude_tasks ORDER BY difficulty_level, age_min")
+        cursor.execute("SELECT * FROM aptitude_tasks ORDER BY difficulty_level, class_level")
         tasks = cursor.fetchall()
         
         cursor.close()
@@ -4463,9 +4370,9 @@ def getDefaultAptitudeTasks():
         return jsonify({
             'success': True, 
             'tasks': tasks, 
-            'user_age': 'Not specified',
+            'class_level': 'Not specified',
             'total_tasks': len(tasks),
-            'message': 'Showing all available aptitude tasks. Please complete your profile setup for personalized tasks.'
+            'message': 'Showing all available aptitude tasks. Please update class info for personalized tasks.'
         })
         
     except Exception as e:

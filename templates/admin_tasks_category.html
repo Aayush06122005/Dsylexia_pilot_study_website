@@ -27,7 +27,7 @@
 
     <main class="content-wrapper py-8">
         <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl font-bold text-gray-800">{{ category_title }} (by Age Groups)</h2>
+            <h2 class="text-2xl font-bold text-gray-800">{{ category_title }} (by Class)</h2>
             <button class="px-4 py-2 rounded bg-green-600 text-white" onclick="addTask()">Add Task</button>
         </div>
         {% if age_groups and age_groups|length > 0 %}
@@ -751,8 +751,7 @@ async function editTask(taskId) {
     
     // Create common fields for all categories
     formFields.appendChild(createFormField('task_name', 'Task Name', ''));
-    formFields.appendChild(createFormField('age_min', 'Age Min', '', 'number'));
-    formFields.appendChild(createFormField('age_max', 'Age Max', '', 'number'));
+    formFields.appendChild(createFormField('class_level', 'Class Level (1-12)', '', 'number'));
     formFields.appendChild(createFormField('difficulty_level', 'Difficulty Level', '', 'select', ['Easy', 'Medium', 'Hard']));
     
     // Create category-specific fields
@@ -859,7 +858,7 @@ async function editTask(taskId) {
             if (key.includes('_options')) {
                 // Handle array fields (comma-separated values)
                 payload[key] = value.split(',').map(v => v.trim()).filter(Boolean);
-            } else if (key.includes('age_') || key === 'word_limit_min' || key === 'word_limit_max' || key === 'estimated_time') {
+            } else if (key === 'class_level' || key === 'word_limit_min' || key === 'word_limit_max' || key === 'estimated_time') {
                 // Convert numeric fields
                 payload[key] = parseInt(value) || 0;
             } else {
