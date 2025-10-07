@@ -999,15 +999,101 @@ def get_parent_children():
             cursor.close()
             conn.close()
             
-            return jsonify({
-                'success': True,
-                'children': children
-            })
+            return jsonify({'success': True, 'children': children})
         else:
             return jsonify({'success': False, 'message': 'Database connection failed'}), 500
             
     except Exception as e:
         print(f"Get children error: {e}")
+        return jsonify({'success': False, 'message': 'Internal server error'}), 500
+
+# --- Parent: Child Details API ---
+@app.route('/api/parent/child-details', methods=['GET'])
+def get_parent_child_details():
+    """Return detailed info for a specific child belonging to the logged-in parent, including school/class/section.
+       For non-school children, return NA for school, class, section.
+    """
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Please log in as a parent'}), 401
+        child_id = request.args.get('child_id', type=int)
+        if not child_id:
+            return jsonify({'success': False, 'message': 'child_id is required'}), 400
+
+        conn = connect_db()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+        cursor = conn.cursor(dictionary=True)
+        try:
+            # Ensure the child belongs to this parent (direct parent_id or via parent_children table)
+            cursor.execute(
+                """
+                SELECT u.id FROM users u
+                WHERE u.id = %s AND u.user_type = 'child' AND (
+                    u.parent_id = %s OR EXISTS (
+                        SELECT 1 FROM parent_children pc WHERE pc.child_id = u.id AND pc.parent_id = %s
+                    )
+                )
+                """,
+                (child_id, session['user_id'], session['user_id'])
+            )
+            if not cursor.fetchone():
+                cursor.close(); conn.close()
+                return jsonify({'success': False, 'message': 'Child not found'}), 404
+
+            # Fetch child details with joins to section, class, school
+            cursor.execute(
+                """
+                SELECT 
+                    u.id, u.name, u.email, u.created_at,
+                    u.school_id,
+                    scls.name AS school_name,
+                    sec.id AS section_id,
+                    sec.name AS section_name,
+                    cls.id AS class_id,
+                    cls.name AS class_name,
+                    d.age, d.gender, d.dyslexia_status, d.education_level, d.native_language
+                FROM users u
+                LEFT JOIN class_sections sec ON sec.id = u.section_id
+                LEFT JOIN school_classes cls ON cls.id = sec.class_id
+                LEFT JOIN schools scls ON scls.id = u.school_id
+                LEFT JOIN demographics d ON d.user_id = u.id
+                WHERE u.id = %s
+                """,
+                (child_id,)
+            )
+            row = cursor.fetchone()
+            if not row:
+                cursor.close(); conn.close()
+                return jsonify({'success': False, 'message': 'Child not found'}), 404
+
+            # Normalize NA values
+            if not row.get('school_id'):
+                row['school_name'] = 'NA'
+                row['class_name'] = 'NA'
+                row['section_name'] = 'NA'
+            result = {
+                'id': row['id'],
+                'name': row['name'],
+                'email': row.get('email'),
+                'created_at': row.get('created_at'),
+                'school_name': row.get('school_name') or 'NA',
+                'class_name': row.get('class_name') or 'NA',
+                'section_name': row.get('section_name') or 'NA',
+                'age': row.get('age'),
+                'gender': row.get('gender'),
+                'dyslexia_status': row.get('dyslexia_status'),
+                'education_level': row.get('education_level'),
+                'native_language': row.get('native_language')
+            }
+            cursor.close(); conn.close()
+            return jsonify({'success': True, 'child': result})
+        except Exception as ie:
+            cursor.close(); conn.close()
+            print(f"Parent child details error: {ie}")
+            return jsonify({'success': False, 'message': 'Failed to fetch child details'}), 500
+    except Exception as e:
+        print(f"Parent child details outer error: {e}")
         return jsonify({'success': False, 'message': 'Internal server error'}), 500
 
 @app.route('/api/school/register', methods=['POST'])
@@ -1360,10 +1446,15 @@ def add_student_to_section(section_id: int):
             parent_id = None
             if parent_user:
                 parent_id = parent_user[0]
+                # Also associate parent to the school's section for convenience
+                try:
+                    cur.execute("UPDATE users SET school_id=%s, section_id=%s WHERE id=%s AND user_type='parent'", (session['school_id'], section_id, parent_id))
+                except Exception:
+                    pass
             else:
                 cur.execute(
-                    "INSERT INTO users (name, email, password_hash, is_18_or_above, user_type, school_id) VALUES (%s,%s,%s,%s,%s,%s)",
-                    (parent_email.split('@')[0].title(), parent_email, None, True, 'parent', session['school_id'])
+                    "INSERT INTO users (name, email, password_hash, is_18_or_above, user_type, school_id, section_id) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                    (parent_email.split('@')[0].title(), parent_email, None, True, 'parent', session['school_id'], section_id)
                 )
                 parent_id = cur.lastrowid
 
@@ -1433,10 +1524,14 @@ def bulk_add_students(section_id: int):
                     res = cur.fetchone()
                     if res:
                         parent_id = res[0]
+                        try:
+                            cur.execute("UPDATE users SET school_id=%s, section_id=%s WHERE id=%s AND user_type='parent'", (session['school_id'], section_id, parent_id))
+                        except Exception:
+                            pass
                     else:
                         cur.execute(
-                            "INSERT INTO users (name, email, password_hash, is_18_or_above, user_type, school_id) VALUES (%s,%s,%s,%s,%s,%s)",
-                            (parent_email.split('@')[0].title(), parent_email, None, True, 'parent', session['school_id'])
+                            "INSERT INTO users (name, email, password_hash, is_18_or_above, user_type, school_id, section_id) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                            (parent_email.split('@')[0].title(), parent_email, None, True, 'parent', session['school_id'], section_id)
                         )
                         parent_id = cur.lastrowid
                     # child
@@ -1802,9 +1897,29 @@ def participant_dashboard():
                 'Aptitude Test'
             ]
             
-            # Get all available tasks from database
-            cursor.execute("SELECT task_name FROM tasks")
-            db_tasks = [row['task_name'] for row in cursor.fetchall()]
+            # Determine allowed tasks based on section assignments.
+            # If the user belongs to a section (school-going), use section_assessments.
+            # Otherwise, show all tasks by default.
+            cursor.execute("SELECT section_id, school_id FROM users WHERE id = %s", (user_id,))
+            user_row = cursor.fetchone()
+            section_id = user_row['section_id'] if user_row else None
+            school_id = user_row['school_id'] if user_row else None
+
+            if school_id:
+                # Logged-in child belongs to a school: show only tasks assigned to their current section
+                cursor.execute("""
+                    SELECT t.task_name
+                    FROM users u
+                    JOIN section_assessments sa ON sa.section_id = u.section_id
+                    JOIN tasks t ON t.task_name = sa.task_name
+                    WHERE u.id = %s
+                    ORDER BY t.id
+                """, (user_id,))
+                db_tasks = [row['task_name'] for row in cursor.fetchall()]
+            else:
+                # Non-school-going: show all tasks
+                cursor.execute("SELECT task_name FROM tasks")
+                db_tasks = [row['task_name'] for row in cursor.fetchall()]
             
             # Get user task statuses
             cursor.execute("SELECT task_name, status FROM user_tasks WHERE user_id = %s", (user_id,))
@@ -2507,6 +2622,52 @@ def get_user_tasks():
     except Exception as e:
         print(f"Get user tasks error: {e}")
         return jsonify({'success': False, 'message': 'Failed to fetch tasks'}), 500
+
+# --- Student: allowed tasks for dashboard (strict by class/section) ---
+@app.route('/api/allowed-tasks', methods=['GET'])
+def api_allowed_tasks():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    try:
+        user_id = session['user_id']
+        conn = connect_db()
+        cursor = conn.cursor(dictionary=True)
+        # Determine if school child
+        cursor.execute("SELECT section_id, school_id FROM users WHERE id = %s", (user_id,))
+        row = cursor.fetchone()
+        section_id = row['section_id'] if row else None
+        school_id = row['school_id'] if row else None
+
+        tasks = []
+        if school_id:
+            # Only tasks assigned to this student's section
+            cursor.execute(
+                """
+                SELECT t.task_name
+                FROM users u
+                JOIN section_assessments sa ON sa.section_id = u.section_id
+                JOIN tasks t ON t.task_name = sa.task_name
+                WHERE u.id = %s
+                ORDER BY t.id
+                """,
+                (user_id,)
+            )
+            allowed = [r['task_name'] for r in cursor.fetchall()]
+        else:
+            cursor.execute("SELECT task_name FROM tasks ORDER BY id")
+            allowed = [r['task_name'] for r in cursor.fetchall()]
+
+        # Map with user status
+        cursor.execute("SELECT task_name, status FROM user_tasks WHERE user_id = %s", (user_id,))
+        status_map = {r['task_name']: r['status'] for r in cursor.fetchall()}
+        for name in allowed:
+            tasks.append({'task_name': name, 'status': status_map.get(name, 'Not Started')})
+
+        cursor.close(); conn.close()
+        return jsonify({'success': True, 'tasks': tasks})
+    except Exception as e:
+        print(f"Allowed tasks API error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to fetch allowed tasks'}), 500
 
 @app.route('/api/user-tasks', methods=['POST'])
 def update_user_task():
@@ -4663,11 +4824,15 @@ def admin_users_grouped():
         ''')
         parents = cursor.fetchall()
 
-        # Children
+        # Children (with school/class/section labels)
         cursor.execute('''
-            SELECT u.id, u.name, u.email, d.age, d.gender, d.dyslexia_status, d.education_level, d.native_language, u.created_at
+            SELECT u.id, u.name, u.email, d.age, d.gender, d.dyslexia_status, d.education_level, d.native_language, u.created_at,
+                   scls.name AS school_name, cls.name AS class_name, sec.name AS section_name
             FROM users u
             LEFT JOIN demographics d ON u.id = d.user_id
+            LEFT JOIN class_sections sec ON sec.id = u.section_id
+            LEFT JOIN school_classes cls ON cls.id = sec.class_id
+            LEFT JOIN schools scls ON scls.id = u.school_id
             WHERE u.user_type = 'child'
         ''')
         children = cursor.fetchall()
@@ -4727,9 +4892,33 @@ def admin_users_grouped():
                     assessments_completed += 1
             s['assessments_completed'] = assessments_completed
 
-        # return jsonify({'success': True, 'parents': parents, 'children': children, 'schools': schools})
+        # Build hierarchy: School -> Class -> Section -> Parent -> Student; plus unassigned
+        hierarchy = []
+        cursor.execute("SELECT id, name FROM schools ORDER BY name")
+        for school in cursor.fetchall():
+            school_entry = {'id': school['id'], 'name': school['name'], 'classes': []}
+            cursor.execute("SELECT id, name FROM school_classes WHERE school_id = %s ORDER BY name", (school['id'],))
+            for cls in cursor.fetchall():
+                class_entry = {'id': cls['id'], 'name': cls['name'], 'sections': []}
+                cursor.execute("SELECT id, name FROM class_sections WHERE class_id = %s ORDER BY name", (cls['id'],))
+                for sec in cursor.fetchall():
+                    section_entry = {'id': sec['id'], 'name': sec['name'], 'parents': [], 'students': []}
+                    cursor.execute("SELECT id, name, email FROM users WHERE user_type='parent' AND section_id=%s ORDER BY name", (sec['id'],))
+                    section_entry['parents'] = cursor.fetchall()
+                    cursor.execute("SELECT id, name, email FROM users WHERE user_type='child' AND section_id=%s ORDER BY name", (sec['id'],))
+                    section_entry['students'] = cursor.fetchall()
+                    class_entry['sections'].append(section_entry)
+                school_entry['classes'].append(class_entry)
+            hierarchy.append(school_entry)
+
+        cursor.execute("SELECT id, name, email FROM users WHERE user_type='parent' AND school_id IS NULL ORDER BY name")
+        unassigned_parents = cursor.fetchall()
+        for p in unassigned_parents:
+            cursor.execute("SELECT id, name, email FROM users WHERE user_type='child' AND (parent_id=%s OR id IN (SELECT child_id FROM parent_children WHERE parent_id=%s)) AND school_id IS NULL ORDER BY name", (p['id'], p['id']))
+            p['children'] = cursor.fetchall()
+
         combined_users=(parents or []) + (children or [])
-        return jsonify({'success':True, 'parents':parents, 'children': children, 'schools': schools, 'users': combined_users})
+        return jsonify({'success':True, 'parents':parents, 'children': children, 'schools': schools, 'users': combined_users, 'hierarchy': hierarchy, 'unassigned': {'parents': unassigned_parents}})
     except Exception as e:
         print(f"Error fetching grouped users: {e}")
         return jsonify({'success': False, 'message': 'Error fetching grouped users'}), 500

@@ -113,7 +113,7 @@
         </div>
 
         <!-- Task Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-4">
+        <div id="taskGrid" class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-4">
         
             {% for task in tasks %}
             <div class="card bg-white rounded-xl shadow-md p-6 flex flex-col items-center text-center">
@@ -184,38 +184,6 @@
                 {% endif %}
             </div>
             {% endfor %}
-            <!-- Mathematical Comprehension Card (if not already in tasks) -->
-            {% if not tasks|selectattr('task_name', 'equalto', 'Mathematical Comprehension')|list %}
-            <div class="card bg-white rounded-xl shadow-md p-6 flex flex-col items-center text-center transition hover:shadow-lg hover:ring-2 hover:ring-blue-200">
-                <img src="{{ url_for('static', filename='math.jpg') }}" alt="Mathematical Comprehension" class="h-20 w-20 mb-4 rounded-full shadow">
-                <h3 class="text-lg font-bold mb-2">Mathematical Comprehension</h3>
-                <p class="mb-4 text-gray-600">Solve math-based comprehension questions.</p>
-                <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-yellow-200 text-yellow-800 mb-3">Not Started</span>
-                <button class="primary-bg text-white px-4 py-2 rounded-md font-semibold mt-auto w-full transition task-btn" data-task="Mathematical Comprehension" data-status="Not Started">Start Task</button>
-            </div>
-            {% endif %}
-
-            <!-- Writing Task Card (if not already in tasks) -->
-            {% if not tasks|selectattr('task_name', 'equalto', 'Writing Task')|list %}
-            <div class="card bg-white rounded-xl shadow-md p-6 flex flex-col items-center text-center transition hover:shadow-lg hover:ring-2 hover:ring-blue-200">
-                <img src="{{ url_for('static', filename='write.jpg') }}" alt="Writing Task" class="h-20 w-20 mb-4 rounded-full shadow">
-                <h3 class="text-lg font-bold mb-2">Writing Task</h3>
-                <p class="mb-4 text-gray-600">Write a creative story or essay as instructed.</p>
-                <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-yellow-200 text-yellow-800 mb-3">Not Started</span>
-                <button class="primary-bg text-white px-4 py-2 rounded-md font-semibold mt-auto w-full transition task-btn" data-task="Writing Task" data-status="Not Started">Start Task</button>
-            </div>
-            {% endif %}
-
-            <!-- Aptitude Test Card (if not already in tasks) -->
-            {% if not tasks|selectattr('task_name', 'equalto', 'Aptitude Test')|list %}
-            <div class="card bg-white rounded-xl shadow-md p-6 flex flex-col items-center text-center transition hover:shadow-lg hover:ring-2 hover:ring-blue-200">
-                <img src="{{ url_for('static', filename='aptitude.png') }}" alt="Aptitude Test" class="h-20 w-20 mb-4 rounded-full shadow">
-                <h3 class="text-lg font-bold mb-2">Aptitude Test</h3>
-                <p class="mb-4 text-gray-600">Test your logical, numerical, verbal, and spatial reasoning abilities.</p>
-                <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-yellow-200 text-yellow-800 mb-3">Not Started</span>
-                <button class="primary-bg text-white px-4 py-2 rounded-md font-semibold mt-auto w-full transition task-btn" data-task="Aptitude Test" data-status="Not Started">Start Task</button>
-            </div>
-            {% endif %}
 
         </div>
     </div>
@@ -386,14 +354,55 @@
         });
 
         // Task status update logic
-        const totalTasks = {{ total_tasks }};
+        let totalTasks = {{ total_tasks }};
         
         function updateProgressBar(tasks) {
             const completed = tasks.filter(t => t.status === 'Completed').length;
+            totalTasks = tasks.length || 1;
             const progress = Math.round((completed / totalTasks) * 100);
             document.getElementById('progressBar').style.width = progress + '%';
             document.getElementById('progressText').textContent = `${completed} of ${totalTasks} tasks completed`;
         }
+
+        // Render tasks strictly from backend-allowed list
+        function iconFor(taskName){
+            if (taskName === 'Reading Aloud Task 1') return '{{ url_for('static', filename='read.jpg') }}';
+            if (taskName === 'Typing Task') return '{{ url_for('static', filename='type.jpg') }}';
+            if (taskName === 'Reading Comprehension') return '{{ url_for('static', filename='comprehend.jpg') }}';
+            if (taskName === 'Mathematical Comprehension') return '{{ url_for('static', filename='math.jpg') }}';
+            if (taskName === 'Writing Task') return '{{ url_for('static', filename='write.jpg') }}';
+            if (taskName === 'Aptitude Test') return '{{ url_for('static', filename='aptitude.png') }}';
+            return '{{ url_for('static', filename='gauge.png') }}';
+        }
+
+        function renderAllowedTasks(tasks){
+            const grid = document.getElementById('taskGrid');
+            if (!grid) return;
+            grid.innerHTML = '';
+            (tasks || []).forEach(task => {
+                const card = document.createElement('div');
+                card.className = 'card bg-white rounded-xl shadow-md p-6 flex flex-col items-center text-center';
+                card.innerHTML = `
+                    <img src="${iconFor(task.task_name)}" alt="${task.task_name}" class="h-20 w-20 mb-4 rounded-full shadow">
+                    <h3 class="text-lg font-bold mb-2">${task.task_name}</h3>
+                    <p class="mb-4 text-gray-600"></p>
+                    ${task.status === 'Not Started' ? '<span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-yellow-200 text-yellow-800 mb-3">Not Started</span>' : (task.status === 'In Progress' ? '<span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-200 text-blue-800 mb-3">In Progress</span>' : '<span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-green-200 text-green-800 mb-3">Completed</span>')}
+                    <button class="primary-bg text-white px-4 py-2 rounded-md font-semibold mt-auto w-full transition task-btn" data-task="${task.task_name}" data-status="${task.status}">${task.status === 'Not Started' ? 'Start Task' : (task.status === 'In Progress' ? 'Continue' : 'Retake')}</button>
+                `;
+                grid.appendChild(card);
+            });
+            updateProgressBar(tasks || []);
+        }
+
+        // Load allowed tasks on page load
+        document.addEventListener('DOMContentLoaded', function(){
+            fetch('/api/allowed-tasks')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) renderAllowedTasks(data.tasks);
+                })
+                .catch(() => {});
+        });
         
         // Add event listeners to task buttons
         // document.addEventListener('click', function(e) {

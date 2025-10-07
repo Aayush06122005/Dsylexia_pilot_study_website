@@ -151,6 +151,25 @@
         </div>
     </main>
 
+    <!-- Child Details Modal -->
+    <div id="childDetailsModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-xl w-full max-h-screen overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Child Details</h3>
+                        <button onclick="closeChildDetails()" class="text-gray-400 hover:text-gray-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="childDetailsContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Add Child Modal -->
     <div id="addChildModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
         <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
@@ -478,6 +497,10 @@ function displayChildren(children) {
                     <p class="text-sm text-gray-500">Added: ${createdDate}</p>
                 </div>
                 <div class="flex space-x-2">
+                    <button onclick="viewChildDetails(${child.id})"
+                            class="px-3 py-1 bg-indigo-500 text-white text-sm rounded hover:bg-indigo-600 transition">
+                        View Details
+                    </button>
                     <button onclick="viewChildProgress(${child.id})" 
                             class="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition">
                         View Progress
@@ -492,6 +515,41 @@ function displayChildren(children) {
         childrenList.appendChild(childCard);
     });
     childrenList.classList.remove('hidden');
+}
+
+async function viewChildDetails(childId){
+    try{
+        const res = await fetch(`/api/parent/child-details?child_id=${childId}`);
+        const data = await res.json();
+        if(data.success){
+            const c = data.child;
+            const content = document.getElementById('childDetailsContent');
+            content.innerHTML = `
+                <div class="space-y-2 text-sm text-gray-700">
+                    <div><span class="font-semibold">Name:</span> ${c.name}</div>
+                    <div><span class="font-semibold">Email:</span> ${c.email || 'N/A'}</div>
+                    <div><span class="font-semibold">School:</span> ${c.school_name}</div>
+                    <div><span class="font-semibold">Class:</span> ${c.class_name}</div>
+                    <div><span class="font-semibold">Section:</span> ${c.section_name}</div>
+                    <div><span class="font-semibold">Age:</span> ${c.age || 'N/A'}</div>
+                    <div><span class="font-semibold">Gender:</span> ${c.gender || 'N/A'}</div>
+                    <div><span class="font-semibold">Dyslexia Status:</span> ${c.dyslexia_status || 'N/A'}</div>
+                    <div><span class="font-semibold">Education Level:</span> ${c.education_level || 'N/A'}</div>
+                    <div><span class="font-semibold">Native Language:</span> ${c.native_language || 'N/A'}</div>
+                    <div><span class="font-semibold">Created At:</span> ${new Date(c.created_at).toLocaleString()}</div>
+                </div>
+            `;
+            document.getElementById('childDetailsModal').classList.remove('hidden');
+        }else{
+            alert(data.message || 'Failed to load child details');
+        }
+    }catch(e){
+        alert('Error loading details');
+    }
+}
+
+function closeChildDetails(){
+    document.getElementById('childDetailsModal').classList.add('hidden');
 }
 
 // Function to directly login child without requiring credentials

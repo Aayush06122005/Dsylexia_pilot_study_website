@@ -133,8 +133,6 @@
                         </div>
                     </div>
 
-                  
-
                     <!-- Schools -->
                     <div class="mb-2">
                         <h3 class="text-xl font-semibold text-gray-800 mb-3">Schools</h3>
@@ -157,6 +155,14 @@
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+
+                    <!-- Hierarchy View -->
+                    <div class="mt-10">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-3">Hierarchy View</h3>
+                        <div id="hierarchyContainer" class="space-y-4"></div>
+                        <h4 class="text-lg font-semibold text-gray-800 mt-6">Unassigned (Non-school)</h4>
+                        <div id="unassignedContainer" class="space-y-2"></div>
                     </div>
                 </div>
 
@@ -581,13 +587,63 @@
                     groupedUsers.parents = data.parents || [];
                     groupedUsers.children = data.children || [];
                     groupedUsers.schools = data.schools || [];
+                    groupedUsers.hierarchy = data.hierarchy || [];
+                    groupedUsers.unassigned = data.unassigned || { parents: [] };
                     filterAndDisplayUsers();
+                    renderHierarchy(groupedUsers.hierarchy, groupedUsers.unassigned);
                 } else{
                     alert('Failed to load. Please try again.');
                 }
             } catch (error) {
                 alert('Error loading user data:', error);
             }
+        }
+
+        function renderHierarchy(hierarchy, unassigned){
+            const container = document.getElementById('hierarchyContainer');
+            const unassignedContainer = document.getElementById('unassignedContainer');
+            if(!container || !unassignedContainer) return;
+            container.innerHTML = '';
+            unassignedContainer.innerHTML = '';
+
+            (hierarchy || []).forEach(school => {
+                const schoolDiv = document.createElement('div');
+                schoolDiv.className = 'border rounded p-4 bg-white';
+                const classesHtml = (school.classes || []).map(cls => {
+                    const sectionsHtml = (cls.sections || []).map(sec => {
+                        const parents = (sec.parents || []).map(p => `<li class="ml-6 list-disc text-sm">Parent: ${p.name} <span class=\"text-gray-500\">(${p.email})</span></li>`).join('');
+                        const students = (sec.students || []).map(st => `<li class="ml-6 list-disc text-sm">Student: ${st.name} <span class=\"text-gray-500\">(${st.email})</span></li>`).join('');
+                        return `
+                            <div class="ml-4 mt-2">
+                                <div class="font-medium">Section: ${sec.name}</div>
+                                <ul class="ml-4">${parents}${students}</ul>
+                            </div>
+                        `;
+                    }).join('');
+                    return `
+                        <div class="ml-3 mt-2">
+                            <div class="font-semibold">Class: ${cls.name}</div>
+                            ${sectionsHtml}
+                        </div>
+                    `;
+                }).join('');
+                schoolDiv.innerHTML = `
+                    <div class="text-lg font-semibold">School: ${school.name}</div>
+                    ${classesHtml || '<div class="ml-3 text-sm text-gray-500">No classes</div>'}
+                `;
+                container.appendChild(schoolDiv);
+            });
+
+            (unassigned?.parents || []).forEach(p => {
+                const row = document.createElement('div');
+                row.className = 'border rounded p-3 bg-white';
+                const kids = (p.children || []).map(st => `<li class="ml-6 list-disc text-sm">Student: ${st.name} <span class=\"text-gray-500\">(${st.email})</span></li>`).join('');
+                row.innerHTML = `
+                    <div class="font-medium">Parent: ${p.name} <span class="text-gray-500">(${p.email})</span></div>
+                    <ul class="ml-3">${kids || '<li class="ml-6 list-disc text-sm text-gray-500">No students</li>'}</ul>
+                `;
+                unassignedContainer.appendChild(row);
+            });
         }
 
         function filterAndDisplayUsers() {
