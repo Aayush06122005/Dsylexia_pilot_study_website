@@ -127,13 +127,26 @@ BEGIN
 END$$
 DELIMITER ;
 
-CREATE TABLE typing_progress (
-    user_id INT NOT NULL,
+-- CREATE TABLE typing_progress (
+--     user_id INT NOT NULL,
+--     text TEXT,
+--     keystrokes LONGTEXT,
+--     timer INT,
+--     updated_at DATETIME,
+--     PRIMARY KEY (user_id)
+-- );
+-- SELECT * FROM typing_progress;
+
+drop table typing_progress;
+
+CREATE TABLE IF NOT EXISTS typing_progress (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    attempt_id INT NOT NULL,
     text TEXT,
     keystrokes LONGTEXT,
     timer INT,
     updated_at DATETIME,
-    PRIMARY KEY (user_id)
+    FOREIGN KEY (attempt_id) REFERENCES user_task_attempts(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS comprehension_progress (
