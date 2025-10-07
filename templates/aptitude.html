@@ -771,7 +771,7 @@ function saveProgress(scores) {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert('Test submitted successfully! Your score: ' + scores.total_score + '/' + totalQuestions);
+                    //alert('Test submitted successfully! Your score: ' + scores.total_score + '/' + totalQuestions);
                     window.location.href = '/participant-dashboard';
                 } else {
                     alert('Failed to submit test: ' + data.message);

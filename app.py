@@ -1254,6 +1254,52 @@ def add_parent():
         print(f"Add parent error: {e}")
         return jsonify({'success': False, 'message': 'Internal server error'}), 500
 
+@app.route('/api/school/class-stats')
+def get_class_stats():
+    """Get class-wise statistics for the current school."""
+    if 'school_id' not in session:
+        return jsonify({'success': False, 'message': 'Not logged in'}), 401
+
+    try:
+        conn = connect_db()
+        cursor = conn.cursor(dictionary=True)
+
+        # Get stats grouped by class, counting parents and their children
+        cursor.execute('''
+            SELECT 
+                u1.class,
+                COUNT(DISTINCT CASE WHEN u1.user_type = 'parent' THEN u1.id END) as parents,
+                COUNT(DISTINCT CASE WHEN u2.user_type = 'child' THEN u2.id END) as students
+            FROM users u1
+            LEFT JOIN parent_children pc ON u1.id = pc.parent_id
+            LEFT JOIN users u2 ON pc.child_id = u2.id
+            WHERE u1.school_id = %s AND u1.class IS NOT NULL
+            GROUP BY u1.class
+            ORDER BY u1.class
+        ''', (session['school_id'],))
+
+        results = cursor.fetchall()
+        cursor.close()
+        conn.close()
+
+        # Format the stats
+        stats = {}
+        for row in results:
+            if row['class']:
+                stats[row['class']] = {
+                    'parents': int(row['parents'] or 0),
+                    'students': int(row['students'] or 0)
+                }
+
+        return jsonify({
+            'success': True,
+            'stats': stats
+        })
+
+    except Exception as e:
+        print(f"Error getting class stats: {e}")
+        return jsonify({'success': False, 'message': 'Failed to load statistics'}), 500
+
 @app.route('/api/school/parents', methods=['GET'])
 def get_school_parents():
     """API endpoint to get all parents of a school."""
@@ -1756,8 +1802,6 @@ def school_suggest_task():
     except Exception as e:
         print(f"Suggest task error: {e}")
         return jsonify({'success': False, 'message': 'Internal server error'}), 500
-    
-
 
 @app.route('/api/user-info', methods=['GET'])
 def get_user_info():

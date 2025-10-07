@@ -32,6 +32,18 @@ CREATE TABLE IF NOT EXISTS users (
 ALTER TABLE users 
 ADD COLUMN class VARCHAR(50) DEFAULT NULL;
 
+-- Add academic year and class tracking
+ALTER TABLE users 
+ADD COLUMN academic_year INT DEFAULT NULL,
+ADD INDEX idx_class_year (class, academic_year);
+
+-- Extend users to support section membership and activation state
+ALTER TABLE users 
+ADD COLUMN IF NOT EXISTS section_id INT NULL,
+ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT FALSE,
+ADD COLUMN IF NOT EXISTS pending_parent_email VARCHAR(255) NULL,
+ADD FOREIGN KEY (section_id) REFERENCES class_sections(id) ON DELETE SET NULL;
+
 -- Create school_parents table to track school-parent relationships
 CREATE TABLE IF NOT EXISTS school_parents (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -54,6 +66,30 @@ CREATE TABLE IF NOT EXISTS parent_children (
     FOREIGN KEY (child_id) REFERENCES users(id) ON DELETE CASCADE,
     UNIQUE KEY unique_parent_child (parent_id, child_id)
 );
+
+-- Insert a sample school
+INSERT INTO schools (name, email, password_hash, address, phone) VALUES
+('Sample School', 'school@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/HS.i8eO', '123 School Street, City', '555-0123');
+
+-- Insert sample parents linked to the school
+INSERT INTO users (name, email, password_hash, is_18_or_above, user_type, school_id) VALUES
+('John Parent', 'parent1@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/HS.i8eO', TRUE, 'parent', 1),
+('Jane Parent', 'parent2@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/HS.i8eO', TRUE, 'parent', 1);
+
+-- Link parents to school
+INSERT INTO school_parents (school_id, parent_id) VALUES
+(1, 1),
+(1, 2);
+
+-- Insert sample children linked to parents
+INSERT INTO users (name, email, password_hash, is_18_or_above, user_type, parent_id) VALUES
+('Child One', 'child1@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/HS.i8eO', TRUE, 'child', 1),
+('Child Two', 'child2@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/HS.i8eO', TRUE, 'child', 2);
+
+-- Link children to parents
+INSERT INTO parent_children (parent_id, child_id) VALUES
+(1, 3),
+(2, 4);
 
 -- Create consent table to store consent data
 CREATE TABLE IF NOT EXISTS consent_data (
@@ -80,9 +116,6 @@ CREATE TABLE IF NOT EXISTS demographics (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-SELECT * FROM users;
-SELECT * FROM demographics;
-
 -- Create user_tasks table to track each user's task status (Not Started, In Progress, Completed) for each task
 CREATE TABLE IF NOT EXISTS user_tasks (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -92,16 +125,6 @@ CREATE TABLE IF NOT EXISTS user_tasks (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     UNIQUE KEY unique_user_task (user_id, task_name)
-);
-
--- Create audio_recordings table to store uploaded audio files
-CREATE TABLE IF NOT EXISTS audio_recordings (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    filename VARCHAR(255) NOT NULL,
-    task_name VARCHAR(100) DEFAULT 'Reading Aloud Task 1',
-    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Trigger to auto-calculate age from date_of_birth
@@ -127,22 +150,67 @@ BEGIN
 END$$
 DELIMITER ;
 
-CREATE TABLE typing_progress (
-    user_id INT NOT NULL,
+CREATE TABLE IF NOT EXISTS audio_recordings (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    attempt_id INT NOT NULL,
+    filename VARCHAR(255) NOT NULL,
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (attempt_id) REFERENCES user_task_attempts(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS typing_progress (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    attempt_id INT NOT NULL,
     text TEXT,
     keystrokes LONGTEXT,
     timer INT,
     updated_at DATETIME,
-    PRIMARY KEY (user_id)
+    FOREIGN KEY (attempt_id) REFERENCES user_task_attempts(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS comprehension_progress (
-    user_id INT PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    attempt_id INT NOT NULL,
     q1 TEXT,
     q2 VARCHAR(255),
     q3 TEXT,
     status ENUM('In Progress', 'Completed') DEFAULT 'In Progress',
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (attempt_id) REFERENCES user_task_attempts(id) ON DELETE CASCADE
+);
+
+-- Create aptitude_progress table for storing aptitude task data
+CREATE TABLE IF NOT EXISTS aptitude_progress (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    attempt_id INT NOT NULL,
+    logical_reasoning_score INT DEFAULT 0,
+    numerical_ability_score INT DEFAULT 0,
+    verbal_ability_score INT DEFAULT 0,
+    spatial_reasoning_score INT DEFAULT 0,
+    total_score INT DEFAULT 0,
+    status ENUM('In Progress', 'Completed') DEFAULT 'In Progress',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (attempt_id) REFERENCES user_task_attempts(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS writing_samples (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    attempt_id INT NOT NULL,
+    filename VARCHAR(255) NOT NULL,
+    status ENUM('In Progress', 'Completed') DEFAULT 'In Progress',
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (attempt_id) REFERENCES user_task_attempts(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS mathematical_comprehension_progress (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    attempt_id INT NOT NULL,
+    q1 TEXT,
+    q2 TEXT,
+    q3 TEXT,
+    status ENUM('In Progress', 'Completed') DEFAULT 'In Progress',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (attempt_id) REFERENCES user_task_attempts(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS tasks (
@@ -157,179 +225,6 @@ ADD COLUMN IF NOT EXISTS instructions TEXT,
 ADD COLUMN IF NOT EXISTS estimated_time VARCHAR(50),
 ADD COLUMN IF NOT EXISTS devices_required VARCHAR(255),
 ADD COLUMN IF NOT EXISTS example TEXT;
-
--- Sample data for testing
--- Insert a sample school
-INSERT INTO schools (name, email, password_hash, address, phone) VALUES
-('Sample School', 'school@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/HS.i8eO', '123 School Street, City', '555-0123');
-
--- Insert sample parents linked to the school
-INSERT INTO users (name, email, password_hash, is_18_or_above, user_type, school_id) VALUES
-('John Parent', 'parent1@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/HS.i8eO', TRUE, 'parent', 1),
-('Jane Parent', 'parent2@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/HS.i8eO', TRUE, 'parent', 1);
-
--- Link parents to school
-INSERT INTO school_parents (school_id, parent_id) VALUES
-(1, 1),
-(1, 2);
-
--- Insert sample children linked to parents
-INSERT INTO users (name, email, password_hash, is_18_or_above, user_type, parent_id) VALUES
-('Child One', 'child1@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/HS.i8eO', TRUE, 'child', 1),
-('Child Two', 'child2@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/HS.i8eO', TRUE, 'child', 2);
-
--- Link children to parents
-INSERT INTO parent_children (parent_id, child_id) VALUES
-(1, 3),
-(2, 4);
-
-
-
-
-CREATE TABLE IF NOT EXISTS reading_tasks (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    task_name VARCHAR(255) NOT NULL,
-    age_min INT NOT NULL,
-    age_max INT NOT NULL,
-    difficulty_level ENUM('Easy', 'Medium', 'Hard') NOT NULL,
-    content TEXT NOT NULL,
-    instructions TEXT,
-    estimated_time INT DEFAULT 5,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Insert sample reading tasks for different age groups
-INSERT INTO reading_tasks (task_name, age_min, age_max, difficulty_level, content, instructions, estimated_time) VALUES
-('Simple Words (Ages 6-8)', 6, 8, 'Easy', 'cat, dog, run, jump, play, book, tree, house, ball, sun, moon, star, fish, bird, car, bus', 'Read each word clearly and slowly. Take your time with each word.',5),
-('Short Sentences (Ages 9-11)', 9, 11, 'Medium', 'The cat runs fast. Dogs like to play. Birds fly high in the sky. The sun is bright today. We read books together. The tree has green leaves.', 'Read each sentence with proper expression and clear pronunciation.',7),
-('Paragraph Reading (Ages 12-14)', 12, 14, 'Hard', 'The little bird sat on the branch of the old oak tree. It sang a beautiful song that echoed through the quiet forest. Other animals stopped to listen to the sweet melody. The bird\'s voice was like music to their ears.', 'Read the entire paragraph fluently with good pacing and expression.',10),
-('Complex Passage (Ages 15+)', 15, 99, 'Hard', 'The ancient library stood majestically at the heart of the university campus, its towering columns and intricate stone carvings telling stories of centuries past. Scholars from around the world would gather within its hallowed halls to study rare manuscripts and conduct research that would shape the future of human knowledge.', 'Read this passage with proper pacing, clear articulation, and expressive delivery.',12);
-
-
--- Create reading_comprehension_tasks table for age-based reading comprehension tasks
--- USE aviendbnew;
-
-CREATE TABLE IF NOT EXISTS reading_comprehension_tasks (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    task_name VARCHAR(255) NOT NULL,
-    age_min INT NOT NULL,
-    age_max INT NOT NULL,
-    difficulty_level ENUM('Easy', 'Medium', 'Hard') NOT NULL,
-    passage TEXT NOT NULL,
-    question1 TEXT NOT NULL,
-    question2 TEXT NOT NULL,
-    question3 TEXT NOT NULL,
-    answer1_options JSON,
-    answer2_options JSON,
-    answer3_type ENUM('text', 'multiple_choice') DEFAULT 'text',
-    instructions TEXT,
-    estimated_time INT DEFAULT 5,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Insert sample reading comprehension tasks for different age groups
-INSERT INTO reading_comprehension_tasks (task_name, age_min, age_max, difficulty_level, passage, question1, question2, question3, answer1_options, answer2_options, answer3_type, instructions, estimated_time) VALUES
-('Simple Story (Ages 6-8)', 6, 8, 'Easy', 
-'The little cat sat on the mat. The cat was orange and fluffy. It liked to play with a red ball. The cat would chase the ball around the house. Sometimes the ball would roll under the table. The cat would wait patiently for the ball to come back out.', 
-'What color was the cat?', 
-'What did the cat like to play with?', 
-'Where would the ball sometimes roll?', 
-'["orange", "black", "white", "brown"]', 
-'["red ball", "blue toy", "green stick", "yellow rope"]', 
-'text', 
-'Read the story carefully and answer the questions about what happened.', 4),
-
-('Short Story (Ages 9-11)', 9, 11, 'Medium', 
-'Sarah woke up early one Saturday morning. She looked out her window and saw that it was raining. Sarah was sad because she had planned to go to the park with her friends. Her mother told her not to worry - they could play board games inside instead. Sarah and her friends had a wonderful time playing together, and Sarah learned that rainy days could be fun too.', 
-'What day of the week was it?', 
-'Why was Sarah sad at first?', 
-'What did Sarah learn about rainy days?', 
-'["Saturday", "Sunday", "Monday", "Friday"]', 
-'["It was raining", "She was sick", "Her friends were busy", "She had homework"]', 
-'text', 
-'Read the story and answer the questions about the characters and events.', 5),
-
-('Adventure Story (Ages 12-14)', 12, 14, 'Hard', 
-'Tom and his sister Emma decided to explore the old forest behind their house. They had heard stories about a hidden cave that contained ancient treasures. Armed with a flashlight and a map they found in their grandfather\'s attic, they set off early one morning. The forest was dense and the path was overgrown, but they followed the map carefully. After hours of searching, they discovered the cave entrance hidden behind a waterfall. Inside, they found not gold or jewels, but beautiful crystals that sparkled like diamonds in the light.', 
-'What did Tom and Emma want to find in the forest?', 
-'How did they know where to look?', 
-'What did they actually discover in the cave?', 
-'["hidden cave with treasures", "wild animals", "a new path", "a river"]', 
-'["map from grandfather", "GPS device", "local guide", "signs in forest"]', 
-'text', 
-'Read this adventure story and answer questions about the characters\' journey and discoveries.', 6),
-
-('Complex Narrative (Ages 15+)', 15, 99, 'Hard', 
-'The ancient library stood majestically at the heart of the university campus, its towering columns and intricate stone carvings telling stories of centuries past. Scholars from around the world would gather within its hallowed halls to study rare manuscripts and conduct research that would shape the future of human knowledge. Dr. Elena Rodriguez, a renowned archaeologist, had spent years searching for a particular text that was said to contain the secrets of an ancient civilization. When she finally discovered the manuscript hidden in a forgotten corner of the library\'s basement, she realized that the knowledge it contained could revolutionize our understanding of human history.', 
-'What type of building is described in the passage?', 
-'What was Dr. Rodriguez\'s profession?', 
-'What did Dr. Rodriguez discover and what was its significance?', 
-'["ancient library", "modern museum", "old church", "university building"]', 
-'["archaeologist", "librarian", "historian", "professor"]', 
-'text', 
-'Read this complex narrative and answer questions about the setting, characters, and significance of the events described.', 7);
-
-
--- Create aptitude_tasks table for age-based aptitude tasks
-CREATE TABLE IF NOT EXISTS aptitude_tasks (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    task_name VARCHAR(255) NOT NULL,
-    age_min INT NOT NULL,
-    age_max INT NOT NULL,
-    difficulty_level ENUM('Easy', 'Medium', 'Hard') NOT NULL,
-    logical_reasoning_questions JSON,
-    numerical_ability_questions JSON,
-    verbal_ability_questions JSON,
-    spatial_reasoning_questions JSON,
-    instructions TEXT,
-    estimated_time INT DEFAULT 15,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Insert sample aptitude tasks for different age groups
-INSERT INTO aptitude_tasks (task_name, age_min, age_max, difficulty_level, logical_reasoning_questions, numerical_ability_questions, verbal_ability_questions, spatial_reasoning_questions, instructions, estimated_time) VALUES
-('Basic Aptitude (Ages 6-8)', 6, 8, 'Easy', 
-'[{"question": "If all cats are animals and Fluffy is a cat, then Fluffy is...", "options": ["an animal", "a dog", "a bird", "a fish"], "correct": 0}, {"question": "Which shape comes next: circle, square, circle, square, ?", "options": ["triangle", "circle", "square", "rectangle"], "correct": 1}]',
-'[{"question": "What comes next: 2, 4, 6, 8, ?", "options": ["9", "10", "11", "12"], "correct": 1}, {"question": "If you have 3 apples and get 2 more, how many do you have?", "options": ["4", "5", "6", "7"], "correct": 1}]',
-'[{"question": "Which word means the same as 'big'?", "options": ["small", "large", "tiny", "short"], "correct": 1}, {"question": "Complete: The sun is ___ in the sky", "options": ["down", "bright", "dark", "cold"], "correct": 1}]',
-'[{"question": "Which shape has 3 sides?", "options": ["circle", "square", "triangle", "rectangle"], "correct": 2}, {"question": "If you fold a square in half, what shape do you get?", "options": ["circle", "triangle", "rectangle", "square"], "correct": 2}]',
-'Complete each section by selecting the best answer. Take your time and think carefully about each question.', 10),
-
-('Elementary Aptitude (Ages 9-11)', 9, 11, 'Medium',
-'[{"question": "If Monday is the first day of the week and today is Wednesday, how many days until the weekend?", "options": ["2", "3", "4", "5"], "correct": 1}, {"question": "Which pattern continues: A, B, C, A, B, C, ?", "options": ["A", "B", "C", "D"], "correct": 0}]',
-'[{"question": "What is 15 + 27?", "options": ["40", "42", "43", "44"], "correct": 1}, {"question": "If a book costs $8 and you have $20, how much change will you get?", "options": ["$10", "$11", "$12", "$13"], "correct": 2}]',
-'[{"question": "What is the opposite of 'happy'?", "options": ["sad", "excited", "calm", "angry"], "correct": 0}, {"question": "Which word fits: The weather is ___ today", "options": ["quickly", "beautiful", "run", "happy"], "correct": 1}]',
-'[{"question": "How many faces does a cube have?", "options": ["4", "6", "8", "12"], "correct": 1}, {"question": "If you rotate a triangle 180 degrees, what happens?", "options": ["It gets bigger", "It flips upside down", "It disappears", "Nothing"], "correct": 1}]',
-'Work through each section systematically. Read each question carefully and choose the most logical answer.', 15),
-
-('Intermediate Aptitude (Ages 12-14)', 12, 14, 'Hard',
-'[{"question": "If all roses are flowers and some flowers are red, then:", "options": ["All roses are red", "Some roses might be red", "No roses are red", "All red things are roses"], "correct": 1}, {"question": "Complete the sequence: 2, 6, 12, 20, ?", "options": ["28", "30", "32", "34"], "correct": 1}]',
-'[{"question": "What is 3/4 of 80?", "options": ["50", "60", "70", "80"], "correct": 1}, {"question": "If a train travels 120 km in 2 hours, what is its speed?", "options": ["40 km/h", "60 km/h", "80 km/h", "120 km/h"], "correct": 1}]',
-'[{"question": "What is a synonym for 'enormous'?", "options": ["tiny", "huge", "small", "medium"], "correct": 1}, {"question": "Which sentence is grammatically correct?", "options": ["Me and him went to the store", "Him and I went to the store", "He and I went to the store", "I and he went to the store"], "correct": 2}]',
-'[{"question": "How many edges does a triangular prism have?", "options": ["6", "9", "12", "15"], "correct": 1}, {"question": "If you fold a piece of paper in half 3 times, how many layers will you have?", "options": ["6", "8", "9", "12"], "correct": 1}]',
-'This is a comprehensive aptitude assessment. Take your time with each question and use logical reasoning.', 20),
-
-('Advanced Aptitude (Ages 15+)', 15, 99, 'Hard',
-'[{"question": "If no artists are engineers and some engineers are scientists, then:", "options": ["Some artists are scientists", "No artists are scientists", "All scientists are artists", "Cannot be determined"], "correct": 3}, {"question": "Find the next number: 1, 3, 7, 15, 31, ?", "options": ["47", "63", "65", "67"], "correct": 1}]',
-'[{"question": "What is 25% of 3/5?", "options": ["3/20", "3/25", "15/100", "3/4"], "correct": 0}, {"question": "If x + y = 10 and xy = 24, what is x² + y²?", "options": ["52", "76", "100", "124"], "correct": 0}]',
-'[{"question": "What is the meaning of 'ubiquitous'?", "options": ["rare", "everywhere", "expensive", "beautiful"], "correct": 1}, {"question": "Which word is an antonym of 'benevolent'?", "options": ["kind", "generous", "malevolent", "charitable"], "correct": 2}]',
-'[{"question": "How many different ways can you arrange 4 books on a shelf?", "options": ["12", "16", "24", "32"], "correct": 2}, {"question": "If you have a 3x3x3 cube and paint all faces, how many small cubes have exactly 2 painted faces?", "options": ["6", "12", "18", "24"], "correct": 1}]',
-'This advanced aptitude test requires careful analysis and logical thinking. Consider all options before answering.', 25);
-
--- Create aptitude_progress table for storing aptitude task data
-USE dyslexia_study;
-
-CREATE TABLE IF NOT EXISTS aptitude_progress (
-    user_id INT PRIMARY KEY,
-    logical_reasoning_score INT DEFAULT 0,
-    numerical_ability_score INT DEFAULT 0,
-    verbal_ability_score INT DEFAULT 0,
-    spatial_reasoning_score INT DEFAULT 0,
-    total_score INT DEFAULT 0,
-    status ENUM('In Progress', 'Completed') DEFAULT 'In Progress',
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
 
 -- Clean up any old incomplete task records first
 DELETE FROM tasks WHERE task_name IN ('Reading Aloud Task 1', 'Typing Task', 'Reading Comprehension') AND (instructions IS NULL OR estimated_time IS NULL);
@@ -349,12 +244,95 @@ ON DUPLICATE KEY UPDATE
     devices_required = VALUES(devices_required),
     example = VALUES(example);
 
+CREATE TABLE IF NOT EXISTS reading_tasks (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    task_name VARCHAR(255) NOT NULL,
+	class_level INT NOT NULL CHECK (class_level BETWEEN 1 AND 12),
+    difficulty_level ENUM('Easy', 'Medium', 'Hard') NOT NULL,
+    content TEXT NOT NULL,
+    instructions TEXT,
+    estimated_time INT DEFAULT 5,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO reading_tasks (task_name, class_level, difficulty_level, content, instructions, estimated_time) VALUES
+('Reading Task - Class 1', 1, 'Easy', 'cat, dog, sun, run, ball, book, car', 'Read each word clearly and repeat it aloud.', 4),
+('Reading Task - Class 2', 2, 'Easy', 'The cat jumps. The sun is bright. We play outside.', 'Read each sentence with expression.', 5),
+('Reading Task - Class 3', 3, 'Medium', 'Tom likes to read books. He has a red ball and a brown dog.', 'Read slowly and clearly.', 6),
+('Reading Task - Class 4', 4, 'Medium', 'The little bird sings on the tree. It is a sunny morning.', 'Read the paragraph with correct pauses.', 6),
+('Reading Task - Class 5', 5, 'Medium', 'A farmer works hard in the field every day. He grows food for everyone.', 'Read fluently and emphasize important words.', 7),
+('Reading Task - Class 6', 6, 'Medium', 'The river flowed quietly through the village as children played on its banks.', 'Read naturally, maintaining flow and tone.', 8),
+('Reading Task - Class 7', 7, 'Hard', 'The mountains were covered with snow, and the wind howled through the valley.', 'Read with confidence and emotion.', 9),
+('Reading Task - Class 8', 8, 'Hard', 'In ancient times, people built magnificent temples and monuments using simple tools.', 'Read the passage with clarity and pacing.', 10),
+('Reading Task - Class 9', 9, 'Hard', 'The invention of the printing press revolutionized human communication.', 'Focus on pronunciation and fluency.', 10),
+('Reading Task - Class 10', 10, 'Hard', 'The discovery of gravity changed the way we understand the universe.', 'Read with proper tone and phrasing.', 11),
+('Reading Task - Class 11', 11, 'Hard', 'The global economy thrives on innovation, creativity, and sustainable practices.', 'Maintain clear pronunciation and confidence.', 12),
+('Reading Task - Class 12', 12, 'Hard', 'The rise of artificial intelligence has reshaped industries and human lifestyles.', 'Read in an academic and expressive tone.', 12);
+
+CREATE TABLE IF NOT EXISTS reading_comprehension_tasks (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    task_name VARCHAR(255) NOT NULL,
+    class_level INT NOT NULL CHECK (class_level BETWEEN 1 AND 12),
+    difficulty_level ENUM('Easy', 'Medium', 'Hard') NOT NULL,
+    passage TEXT NOT NULL,
+    question1 TEXT NOT NULL,
+    question2 TEXT NOT NULL,
+    question3 TEXT NOT NULL,
+    answer1_options JSON,
+    answer2_options JSON,
+    answer3_type ENUM('text', 'multiple_choice') DEFAULT 'text',
+    instructions TEXT,
+    estimated_time INT DEFAULT 5,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO reading_comprehension_tasks (task_name, class_level, difficulty_level, passage, question1, question2, question3, answer1_options, answer2_options, answer3_type, instructions, estimated_time) VALUES
+('Comprehension - Class 1', 1, 'Easy', 'The cat sat on the mat.', 'Who sat on the mat?', 'What animal is in the story?', 'Where was the cat?', '["cat","dog","bird","fish"]', '["mat","tree","chair","car"]', 'text', 'Read the short story and answer simple questions.', 4),
+('Comprehension - Class 2', 2, 'Easy', 'A boy has a red kite. He flies it in the park.', 'What color is the kite?', 'Where does he fly it?', 'Who has the kite?', '["red","blue","green","yellow"]', '["school","home","park","beach"]', 'text', 'Read and answer the questions.', 4),
+('Comprehension - Class 3', 3, 'Medium', 'Lina likes to draw. She paints flowers and animals.', 'What does Lina like to do?', 'What does she paint?', 'Is she good at it?', '["draw","dance","read","cook"]', '["flowers","cars","houses","toys"]', 'text', 'Read carefully and answer the questions.', 5),
+('Comprehension - Class 4', 4, 'Medium', 'Ravi planted a tree. It grew tall and gave shade.', 'Who planted the tree?', 'What did the tree give?', 'Was Ravi happy?', '["Ravi","Mina","Amit","Sara"]', '["shade","fruit","wood","flowers"]', 'text', 'Read the passage and answer logically.', 5),
+('Comprehension - Class 5', 5, 'Medium', 'The river near the village helps farmers grow crops.', 'Where is the river?', 'Who uses the river?', 'What do they grow?', '["near village","mountain","forest","city"]', '["farmers","teachers","doctors","students"]', 'text', 'Read and answer based on context.', 6),
+('Comprehension - Class 6', 6, 'Medium', 'The Sun gives us light and warmth, helping plants grow.', 'What does the Sun give?', 'How does it help plants?', 'Why is it important?', '["light","food","rain","wind"]', '["helps grow","stops growth","hurts","freezes"]', 'text', 'Understand and explain clearly.', 6),
+('Comprehension - Class 7', 7, 'Hard', 'Electricity changed how people lived and worked.', 'What changed people\'s lives?', 'How did it help?', 'When did it happen?', '["electricity","internet","fire","radio"]', '["made life easy","made life hard","no change","none"]', 'text', 'Focus on meaning and main idea.', 7),
+('Comprehension - Class 8', 8, 'Hard', 'The Wright brothers built the first successful airplane in 1903.', 'Who built it?', 'When was it built?', 'What did they build?', '["Wright brothers","Newton","Edison","Tesla"]', '["1900","1903","1910","1920"]', 'text', 'Identify details and key facts.', 8),
+('Comprehension - Class 9', 9, 'Hard', 'Mahatma Gandhi led India to freedom through non-violence.', 'Who led India to freedom?', 'What method did he use?', 'What did it achieve?', '["Gandhi","Nehru","Bose","Patel"]', '["non-violence","war","rebellion","law"]', 'text', 'Comprehend and interpret ideas.', 9),
+('Comprehension - Class 10', 10, 'Hard', 'The Industrial Revolution transformed global economies and societies.', 'What was transformed?', 'What caused it?', 'How did it change society?', '["economies","nature","religion","art"]', '["industrial revolution","internet","trade","wars"]', 'text', 'Focus on cause and effect.', 10),
+('Comprehension - Class 11', 11, 'Hard', 'Climate change is a major challenge caused by human activity.', 'What is the challenge?', 'Who causes it?', 'How can we fix it?', '["climate change","pollution","traffic","drought"]', '["humans","animals","plants","machines"]', 'text', 'Analyze and explain critically.', 10),
+('Comprehension - Class 12', 12, 'Hard', 'Artificial intelligence impacts industries, education, and society.', 'What impacts industries?', 'Where else is it used?', 'What are its effects?', '["AI","ML","robots","data"]', '["education","sports","music","space"]', 'text', 'Interpret complex text meaningfully.', 12);
+
+-- Create aptitude_tasks table for age-based aptitude tasks
+CREATE TABLE IF NOT EXISTS aptitude_tasks (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    task_name VARCHAR(255) NOT NULL,
+	class_level INT NOT NULL CHECK (class_level BETWEEN 1 AND 12),
+    difficulty_level ENUM('Easy', 'Medium', 'Hard') NOT NULL,
+    logical_reasoning_questions JSON,
+    numerical_ability_questions JSON,
+    verbal_ability_questions JSON,
+    spatial_reasoning_questions JSON,
+    instructions TEXT,
+    estimated_time INT DEFAULT 15,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO aptitude_tasks (task_name, class_level, difficulty_level, logical_reasoning_questions, numerical_ability_questions, verbal_ability_questions, spatial_reasoning_questions, instructions, estimated_time) VALUES
+('Aptitude - Class 1', 1, 'Easy', '[{"q":"If sun is day, moon is ___","a":"night"}]', '[{"q":"2+2=?","a":"4"}]', '[{"q":"Opposite of hot?","a":"cold"}]', '[{"q":"Which shape has 3 sides?","a":"triangle"}]', 'Answer simple reasoning questions.', 5),
+('Aptitude - Class 2', 2, 'Easy', '[{"q":"If all cats are animals, Fluffy is a cat. Fluffy is?","a":"animal"}]', '[{"q":"3+5=?","a":"8"}]', '[{"q":"Synonym of big?","a":"large"}]', '[{"q":"Square has how many corners?","a":"4"}]', 'Think and choose the correct answer.', 6),
+('Aptitude - Class 3', 3, 'Medium', '[{"q":"Find odd one: cat, dog, fish, tree","a":"tree"}]', '[{"q":"10-6=?","a":"4"}]', '[{"q":"Opposite of fast?","a":"slow"}]', '[{"q":"Triangle has how many angles?","a":"3"}]', 'Solve basic logic and math problems.', 7),
+('Aptitude - Class 4', 4, 'Medium', '[{"q":"If A=1, B=2, then C+E=?","a":"8"}]', '[{"q":"12×3=?","a":"36"}]', '[{"q":"Synonym of happy?","a":"joyful"}]', '[{"q":"Which is different: cube, square, sphere, rectangle","a":"sphere"}]', 'Solve step by step.', 8),
+('Aptitude - Class 5', 5, 'Medium', '[{"q":"Complete pattern: 2,4,6,8,?","a":"10"}]', '[{"q":"50% of 40=?","a":"20"}]', '[{"q":"Choose correct spelling: recieve/receive","a":"receive"}]', '[{"q":"Folded cube shows which face?","a":"B"}]', 'Answer carefully.', 10),
+('Aptitude - Class 6', 6, 'Medium', '[{"q":"If all roses are flowers, some flowers red, then some roses might be ___","a":"red"}]', '[{"q":"7×8=?","a":"56"}]', '[{"q":"Antonym of ancient?","a":"modern"}]', '[{"q":"Visualize 3D shape","a":"pyramid"}]', 'Use logic and observation.', 12),
+('Aptitude - Class 7', 7, 'Hard', '[{"q":"If no fruits are cars, apples are fruits, then apples are not ___","a":"cars"}]', '[{"q":"3/4 of 80=?","a":"60"}]', '[{"q":"Synonym of bright?","a":"brilliant"}]', '[{"q":"Count faces of cube","a":"6"}]', 'Think critically.', 14),
+('Aptitude - Class 8', 8, 'Hard', '[{"q":"If A>B and B>C then?","a":"A>C"}]', '[{"q":"Square root of 144=?","a":"12"}]', '[{"q":"Antonym of polite?","a":"rude"}]', '[{"q":"Visual rotation of square","a":"same"}]', 'Apply reasoning.', 15),
+('Aptitude - Class 9', 9, 'Hard', '[{"q":"Odd one: apple, orange, carrot, banana","a":"carrot"}]', '[{"q":"12²=?","a":"144"}]', '[{"q":"Choose synonym: rapid","a":"fast"}]', '[{"q":"Which net forms cube?","a":"B"}]', 'Choose logically.', 15),
+('Aptitude - Class 10', 10, 'Hard', '[{"q":"If no engineers are doctors, some doctors teachers, then?","a":"Cannot determine"}]', '[{"q":"(15×4)+20=?","a":"80"}]', '[{"q":"Antonym of complex?","a":"simple"}]', '[{"q":"Visualize 2D projection","a":"rectangle"}]', 'Reason through problems.', 18),
+('Aptitude - Class 11', 11, 'Hard', '[{"q":"If p→q, q→r, then p→?","a":"r"}]', '[{"q":"log10(100)=?","a":"2"}]', '[{"q":"Synonym of obscure?","a":"unclear"}]', '[{"q":"3D symmetry","a":"mirror"}]', 'Answer analytically.', 20),
+('Aptitude - Class 12', 12, 'Hard', '[{"q":"All A are B. Some B are C. Can we say some A are C?","a":"not certain"}]', '[{"q":"If x+y=10, xy=21, find x²+y²","a":"58"}]', '[{"q":"Meaning of ephemeral?","a":"short-lived"}]', '[{"q":"Rotate object in 3D","a":"same"}]', 'Solve critically.', 22);
 
 CREATE TABLE IF NOT EXISTS typing_tasks (
     id INT AUTO_INCREMENT PRIMARY KEY,
     task_name VARCHAR(255) NOT NULL,
-    age_min INT NOT NULL,
-    age_max INT NOT NULL,
+    class_level INT NOT NULL CHECK (class_level BETWEEN 1 AND 12),
     difficulty_level ENUM('Easy', 'Medium', 'Hard') NOT NULL,
     prompt TEXT NOT NULL,
     instructions TEXT,
@@ -364,33 +342,26 @@ CREATE TABLE IF NOT EXISTS typing_tasks (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Insert sample typing tasks for different age groups
-INSERT INTO typing_tasks (task_name, age_min, age_max, difficulty_level, prompt, instructions, word_limit_min, word_limit_max, estimated_time) VALUES
-('Simple Sentences (Ages 6-8)', 6, 8, 'Easy', 
-'Write about your favorite animal. Tell us what it looks like and why you like it.', 
-'Type simple sentences about your favorite animal. Use words you know how to spell. Try to write at least 3-4 sentences.', 
-30, 80, 8),
-
-('Short Story (Ages 9-11)', 9, 11, 'Medium', 
-'Write a short story about a magical day. What would happen if you woke up one morning and found you had a special power?', 
-'Write a short story with a beginning, middle, and end. Include characters and describe what happens. Try to make it interesting!', 
-80, 150, 12),
-
-('Personal Essay (Ages 12-14)', 12, 14, 'Hard', 
-'Write an essay about a challenge you faced and how you overcame it. What did you learn from this experience?', 
-'Write a well-structured essay with an introduction, body paragraphs, and conclusion. Use descriptive language and explain your thoughts clearly.', 
-150, 300, 15),
-
-('Analytical Writing (Ages 15+)', 15, 99, 'Hard', 
-'Write an essay discussing the impact of technology on modern education. Consider both positive and negative effects, and provide examples to support your arguments.', 
-'Write a formal essay with a clear thesis statement, well-developed arguments, and supporting evidence. Use academic language and proper essay structure.', 
-250, 500, 20);
+INSERT INTO typing_tasks
+(task_name,class_level,difficulty_level,prompt,instructions,word_limit_min,word_limit_max,estimated_time)
+VALUES
+('Type Simple Words',1,'Easy','I like my school and my friends.','Type exactly as shown.',10,30,5),
+('Short Sentences',2,'Easy','The sun rises in the east every morning.','Copy text carefully.',10,30,5),
+('Daily Routine',3,'Medium','Write what you do after waking up.','Compose short passage.',20,50,7),
+('Favorite Toy',4,'Medium','Describe your favorite toy and why.','Focus on grammar.',20,50,8),
+('Weekend Story',5,'Medium','Write about your last weekend.','Use sentences properly.',30,80,9),
+('My Hobby',6,'Medium','Describe your favorite hobby.','Be creative.',30,100,9),
+('Technology Today',7,'Hard','How technology helps in studies.','Avoid mistakes.',40,120,10),
+('Healthy Living',8,'Hard','Importance of exercise and good food.','Keep grammar correct.',50,120,10),
+('Career Goals',9,'Hard','Essay about your dream career.','Plan structure.',60,150,12),
+('Online Learning',10,'Hard','Advantages and challenges of online education.','Stay focused.',70,160,12),
+('Social Media Impact',11,'Hard','How social media affects youth.','Use balanced points.',80,180,12),
+('Future of AI',12,'Hard','How AI will change our world.','Type fluently.',100,200,15);
 
 CREATE TABLE IF NOT EXISTS mathematical_comprehension_tasks (
     id INT AUTO_INCREMENT PRIMARY KEY,
     task_name VARCHAR(255) NOT NULL,
-    age_min INT NOT NULL,
-    age_max INT NOT NULL,
+    class_level INT NOT NULL CHECK (class_level BETWEEN 1 AND 12),
     difficulty_level ENUM('Easy', 'Medium', 'Hard') NOT NULL,
     problem_text TEXT NOT NULL,
     question1 TEXT NOT NULL,
@@ -404,53 +375,134 @@ CREATE TABLE IF NOT EXISTS mathematical_comprehension_tasks (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Insert sample mathematical comprehension tasks for different age groups
-INSERT INTO mathematical_comprehension_tasks (task_name, age_min, age_max, difficulty_level, problem_text, question1, question2, question3, answer1_options, answer2_options, answer3_type, instructions, estimated_time) VALUES
-('Simple Counting (Ages 6-8)', 6, 8, 'Easy', 
-'Tom has 5 red apples and 3 green apples. His friend Sarah gives him 2 more red apples. Tom wants to share all his apples equally with his sister Emma.', 
-'How many red apples does Tom have now?', 
-'How many total apples does Tom have?', 
-'How many apples will Tom and Emma each get if they share equally?', 
-'["5", "6", "7", "8"]', 
-'["8", "9", "10", "11"]', 
-'number', 
-'Read the problem carefully and solve the math questions. Use counting and simple addition.', 4),
+INSERT INTO mathematical_comprehension_tasks
+(task_name, class_level, difficulty_level, problem_text, question1, question2, question3, answer1_options, answer2_options, answer3_type, instructions, estimated_time)
+VALUES
+('Counting Basics', 1, 'Easy',
+ 'Tom has 3 apples and 2 oranges. He gets 1 more apple from his friend.',
+ 'How many apples does Tom have now?',
+ 'How many fruits does Tom have in total?',
+ 'If Tom shares equally with a friend, how many each?',
+ '["3","4","5","6"]',
+ '["5","6","7","8"]',
+ 'number',
+ 'Read carefully and solve using simple counting.', 5),
 
-('Money Problems (Ages 9-11)', 9, 11, 'Medium', 
-'A toy store sells action figures for $8 each and board games for $15 each. On Saturday, they sold 6 action figures and 3 board games. The store also had a sale where customers got $2 off each item if they bought 3 or more things.', 
-'How much money did the store make from action figures?', 
-'How much money did the store make from board games?', 
-'How much total money did the store make on Saturday?', 
-'["$40", "$42", "$48", "$50"]', 
-'["$40", "$42", "$45", "$48"]', 
-'number', 
-'Read the problem carefully and solve the money questions. Remember to calculate discounts.', 5),
+('Simple Addition', 2, 'Easy',
+ 'Lily has 5 pencils and buys 3 more pencils.',
+ 'How many pencils does Lily have now?',
+ 'If she gives 2 pencils to her friend, how many remain?',
+ 'Solve the total number of pencils.',
+ '["8","7","6","9"]',
+ '["6","5","7","8"]',
+ 'number',
+ 'Use addition and subtraction to solve the questions.', 5),
 
-('Fraction Story (Ages 12-14)', 12, 14, 'Hard', 
-'A pizza restaurant makes large pizzas that are cut into 12 slices. On Friday night, they sold 8 whole pizzas and 3/4 of another pizza. Each slice costs $2.50. The restaurant also had a special: buy 2 whole pizzas and get 1/2 pizza free.', 
-'How many slices were sold in total?', 
-'How much money did the restaurant make from the slices sold?', 
-'If a customer bought 2 whole pizzas and got the special deal, how many slices would they have?', 
-'["96", "99", "102", "105"]', 
-'["$240", "$247.50", "$255", "$262.50"]', 
-'number', 
-'Read the problem carefully and solve the fraction and money questions. Pay attention to the special deal.', 6),
+('Basic Subtraction', 3, 'Easy',
+ 'John has 10 candies. He eats 4 candies.',
+ 'How many candies are left?',
+ 'If he finds 3 more candies, how many now?',
+ 'Calculate the total candies after finding more.',
+ '["6","5","7","8"]',
+ '["9","8","10","11"]',
+ 'number',
+ 'Perform subtraction and addition carefully.', 5),
 
-('Complex Business Math (Ages 15+)', 15, 99, 'Hard', 
-'A coffee shop has fixed costs of $2,000 per month (rent, utilities, etc.) and variable costs of $1.50 per coffee sold. They sell coffee for $4.50 each. Last month, they sold 800 coffees. The shop also offers a loyalty program where customers get 1 free coffee for every 10 purchased.', 
-'What were the total costs for the shop last month?', 
-'How much profit did the shop make last month?', 
-'If the shop wants to make $3,000 profit next month, how many coffees do they need to sell?', 
-'["$3,200", "$3,400", "$3,600", "$3,800"]', 
-'["$400", "$600", "$800", "$1,000"]', 
-'number', 
-'Read the problem carefully and solve the business math questions. Consider fixed costs, variable costs, and revenue.', 7);
+('Simple Multiplication', 4, 'Medium',
+ 'A box contains 4 rows of 3 chocolates each.',
+ 'How many chocolates in total?',
+ 'If 2 boxes are combined, how many chocolates altogether?',
+ 'Solve the multiplication problems.',
+ '["12","10","9","15"]',
+ '["24","20","18","22"]',
+ 'number',
+ 'Use multiplication to calculate totals.', 6),
+
+('Division Basics', 5, 'Medium',
+ 'There are 20 candies divided equally among 4 children.',
+ 'How many candies does each child get?',
+ 'If 5 more candies are added, how many per child?',
+ 'Solve the division problems.',
+ '["5","4","6","7"]',
+ '["6","5","7","8"]',
+ 'number',
+ 'Apply division to distribute equally.', 6),
+
+('Fractions Introduction', 6, 'Medium',
+ 'A pizza is cut into 8 slices. John eats 3 slices.',
+ 'What fraction of the pizza did John eat?',
+ 'How many slices remain?',
+ 'Solve the fraction and subtraction questions.',
+ '["3/8","1/2","2/8","1/4"]',
+ '["5","4","6","3"]',
+ 'number',
+ 'Read the problem and solve fractions step by step.', 7),
+
+('Decimals Basics', 7, 'Medium',
+ 'A bottle contains 1.5 liters of juice. John drinks 0.4 liters.',
+ 'How much juice remains?',
+ 'If he drinks another 0.3 liters, how much is left?',
+ 'Solve the decimal subtraction problems.',
+ '["1.1","1.0","1.2","1.3"]',
+ '["0.8","0.7","0.9","1.0"]',
+ 'number',
+ 'Use decimal subtraction carefully to get answers.', 7),
+
+('Percentage Problems', 8, 'Medium',
+ 'A shop has 200 candies. 25% are sold on Monday.',
+ 'How many candies were sold?',
+ 'How many remain?',
+ 'Calculate percentages correctly.',
+ '["50","40","60","45"]',
+ '["150","160","140","155"]',
+ 'number',
+ 'Use percentage calculations for solving.', 8),
+
+('Simple Algebra', 9, 'Hard',
+ 'If x + 5 = 12, find x.',
+ 'What is x?',
+ 'What is x + 3?',
+ 'If x is doubled, what is 2x?',
+ '["7","6","5","8"]',
+ '["10","9","8","11"]',
+ 'number',
+ 'Solve the algebra equation step by step.', 9),
+
+('Geometry Basics', 10, 'Hard',
+ 'A rectangle has length 8 and width 5.', 
+ 'Calculate area?', 
+ 'Calculate perimeter?', 
+ 'Length of rectangle?', 
+ '["40","35","45","50"]', 
+ '["26","25","28","30"]', 
+ 'number', 
+ 'Apply formulas for area and perimeter.', 12),
+
+('Intermediate Algebra', 11, 'Hard',
+ 'Solve for y: 2y + 3 = 11.', 
+ 'Value of y?', 
+ 'Double y?', 
+ 'y minus 1?', 
+ '["4","5","3","6"]', 
+ '["8","10","6","12"]', 
+ 'number', 
+ 'Solve carefully using algebra.', 12),
+
+('Advanced Problem Solving', 12, 'Hard',
+ 'A shop sells 12 pens for $24. How much for 18 pens?', 
+ 'Cost of 12 pens?', 
+ 'Cost of 18 pens?', 
+ 'Cost of 1 pen?', 
+ '["24","20","30","22"]', 
+ '["36","32","40","38"]', 
+ 'number', 
+ 'Use ratio and proportion to solve.', 15);
+
 
 CREATE TABLE IF NOT EXISTS writing_tasks (
     id INT AUTO_INCREMENT PRIMARY KEY,
     task_name VARCHAR(255) NOT NULL,
-    age_min INT NOT NULL,
-    age_max INT NOT NULL,
+    class_level INT NOT NULL CHECK (class_level BETWEEN 1 AND 12),
     difficulty_level ENUM('Easy', 'Medium', 'Hard') NOT NULL,
     prompt TEXT NOT NULL,
     instructions TEXT,
@@ -460,48 +512,33 @@ CREATE TABLE IF NOT EXISTS writing_tasks (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Insert sample writing tasks for different age groups
-INSERT INTO writing_tasks (task_name, age_min, age_max, difficulty_level, prompt, instructions, word_limit_min, word_limit_max, estimated_time) VALUES
-('Simple Words (Ages 6-8)', 6, 8, 'Easy', 
-'Write these words neatly: cat, dog, run, jump, play, book, tree, house, ball, sun', 
-'Write each word clearly and carefully. Take your time to form each letter properly. Make sure your writing is easy to read.', 
-10, 20, 8),
+INSERT INTO writing_tasks
+(task_name,class_level,difficulty_level,prompt,instructions,word_limit_min,word_limit_max,estimated_time)
+VALUES
+('My Family',1,'Easy','Write about your family.','Use simple sentences.',20,50,5),
+('My Best Friend',2,'Easy','Describe your best friend.','Write neatly.',20,60,5),
+('A Fun Day',3,'Medium','Narrate a fun day at school.','Use past tense.',30,80,6),
+('My Pet',4,'Medium','Write about your pet.','Add feelings.',40,100,7),
+('The Rainy Day',5,'Medium','Describe a rainy day.','Be descriptive.',50,100,8),
+('My Ambition',6,'Medium','Write what you want to be.','Stay focused.',50,120,8),
+('Importance of Books',7,'Hard','Explain why books are important.','Organize paragraphs.',70,150,9),
+('Save Environment',8,'Hard','Write how to protect environment.','Give examples.',80,160,10),
+('Discipline in Life',9,'Hard','Discuss importance of discipline.','Use formal tone.',90,180,10),
+('Digital Learning',10,'Hard','Benefits of digital education.','Be analytical.',100,180,12),
+('Women Empowerment',11,'Hard','Role of women in society.','Be thoughtful.',120,200,12),
+('Future World',12,'Hard','Imagine life100years from now.','Be imaginative.',150,250,15);
 
-('Short Sentences (Ages 9-11)', 9, 11, 'Medium', 
-'Write these sentences: "The cat runs fast." "Dogs like to play." "Birds fly high." "The sun is bright." "We read books."', 
-'Write each sentence with proper spacing between words. Use capital letters at the beginning and periods at the end. Make your handwriting clear and neat.', 
-20, 40, 10),
-
-('Paragraph Writing (Ages 12-14)', 12, 14, 'Hard', 
-'Write a short paragraph about your favorite hobby. Include at least 3-4 sentences explaining what you like to do and why you enjoy it.', 
-'Write a complete paragraph with proper sentence structure. Use descriptive words and make sure your handwriting is legible. Include a topic sentence and supporting details.', 
-40, 80, 12),
-
-('Essay Writing (Ages 15+)', 15, 99, 'Hard', 
-'Write a short essay about the importance of reading. Include an introduction, 2-3 body paragraphs with supporting points, and a conclusion.', 
-'Write a well-structured essay with clear paragraphs. Use proper grammar and punctuation. Make your handwriting neat and professional. Include a thesis statement and supporting arguments.', 
-80, 150, 15);
-
--- Create writing_samples table to store uploaded writing images
-CREATE TABLE IF NOT EXISTS writing_samples (
+CREATE TABLE IF NOT EXISTS user_task_attempts (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     task_id INT NOT NULL,
-    filename VARCHAR(255) NOT NULL,
-    status ENUM('In Progress', 'Completed') DEFAULT 'In Progress',
-    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    attempt_number INT NOT NULL,
+    status ENUM('In Progress', 'Completed', 'Abandoned') DEFAULT 'In Progress',
+    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (task_id) REFERENCES writing_tasks(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS mathematical_comprehension_progress (
-    user_id INT PRIMARY KEY,
-    q1 TEXT,
-    q2 VARCHAR(255),
-    q3 TEXT,
-    status ENUM('In Progress', 'Completed') DEFAULT 'In Progress',
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_attempt (user_id, task_id, attempt_number)
 );
 
 CREATE TABLE IF NOT EXISTS suggested_tasks (
@@ -518,55 +555,12 @@ CREATE TABLE IF NOT EXISTS suggested_tasks (
                 FOREIGN KEY (school_id) REFERENCES schools(id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-SELECT * FROM mathematical_comprehension_progress;
-USE dyslexia_study;
-SELECT * from tasks;
-SELECT * FROM user_tasks;
-SELECT * FROM users;
-SELECT * FROM schools;
-SELECT * FROM school_parents;
-SELECT * FROM parent_children;
-SELECT * FROM consent_data;
-SELECT * FROM demographics;
-
-TRUNCATE TABLE users;
-TRUNCATE TABLE schools;
-TRUNCATE TABLE school_parents;
-TRUNCATE TABLE parent_children;
-
-delete from users where email='tchild112';
-
- SELECT * FROM SCHOOL_PARENTS;
--- SELECT * from tasks;
--- SELECT * FROM user_tasks WHERE user_id = 5;
--- Show table structure
--- DESCRIBE users;
--- DESCRIBE consent_data;
--- DESCRIBE demographics;
-
--- DELETE FROM AUDIO_RECORDINGS WHERE user_id = 2;
--- SELECT * FROM user_tasks;
--- SELECT * FROM AUDIO_RECORDINGS;
--- SELECT * FROM TYPING_PROGRESS;
-SELECT * FROM users;
--- SELECT * FROM consent_data;
--- SELECT * FROM demographics;
-
--- DROP DATABASE IF EXISTS dyslexia_study;
--- select * from  parent_children ;
-
 SELECT id, name, class FROM users 
 WHERE name IN ('Testing Parent 11', 'Testing Child 111', 'Testing Child 112', 'Testing Parent 2');
-
 UPDATE users SET class = 'Class 6' WHERE id = 18;
 UPDATE users SET class = 'Class 6' WHERE id = 19;
 UPDATE users SET class = 'Class 7' WHERE id = 21;
 UPDATE users SET class = 'Class 5' WHERE id = 22;
-
--- Add academic year and class tracking
-ALTER TABLE users 
-ADD COLUMN academic_year INT DEFAULT NULL,
-ADD INDEX idx_class_year (class, academic_year);
 
 -- Create a table to track class history
 CREATE TABLE class_records (
@@ -614,10 +608,3 @@ CREATE TABLE IF NOT EXISTS section_assessments (
     FOREIGN KEY (task_name) REFERENCES tasks(task_name) ON DELETE CASCADE,
     UNIQUE KEY unique_section_task (section_id, task_name)
 );
-
--- Extend users to support section membership and activation state
-ALTER TABLE users 
-ADD COLUMN IF NOT EXISTS section_id INT NULL,
-ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT FALSE,
-ADD COLUMN IF NOT EXISTS pending_parent_email VARCHAR(255) NULL,
-ADD FOREIGN KEY (section_id) REFERENCES class_sections(id) ON DELETE SET NULL;

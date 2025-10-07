@@ -782,39 +782,64 @@
     }
 
 
-        // Add this after your existing DOMContentLoaded event listener
-        function loadClassStats() {
-            fetch('/api/school/class-stats')
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        displayClassStats(data.stats);
-                    }
-                })
-                .catch(err => console.error('Error loading class stats:', err));
-        }
+       function loadClassStats() {
+    const statsContainer = document.getElementById('classStats');
+    statsContainer.innerHTML = '<div class="p-4 bg-gray-50 rounded-lg border border-gray-200"><h4 class="font-medium text-gray-700">Loading statistics...</h4></div>';
 
-        function displayClassStats(stats) {
-            const statsContainer = document.getElementById('classStats');
-            statsContainer.innerHTML = '';
+    fetch('/api/school/class-stats')
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                displayClassStats(data.stats);
+            } else {
+                statsContainer.innerHTML = '<div class="p-4 bg-gray-50 rounded-lg border border-gray-200"><h4 class="font-medium text-text-red-600">Failed to load statistics</h4></div>';
+            }
+        })
+        .catch(err => {
+            console.error('Error loading class stats:', err);
+            statsContainer.innerHTML = '<div class="p-4 bg-gray-50 rounded-lg border border-gray-200"><h4 class="font-medium text-red-600">Error loading statistics</h4></div>';
+        });
+}
 
-            Object.entries(stats).forEach(([className, counts]) => {
-                const card = document.createElement('div');
-                card.className = 'p-4 bg-gray-50 rounded-lg border border-gray-200 hover:shadow-md transition';
-                card.innerHTML = `
-                    <h4 class="font-medium text-gray-700 mb-2">${className}</h4>
-                    <div class="space-y-1">
-                        <p class="text-sm text-gray-600">
-                            <span class="font-semibold">${counts.parents}</span> Parents
-                        </p>
-                        <p class="text-sm text-gray-600">
-                            <span class="font-semibold">${counts.students}</span> Students
-                        </p>
-                    </div>
-                `;
-                statsContainer.appendChild(card);
-            });
-        }
+function displayClassStats(stats) {
+    const statsContainer = document.getElementById('classStats');
+    statsContainer.innerHTML = '';
+
+    // Sort classes numerically
+    const sortedClasses = Object.entries(stats).sort((a, b) => {
+        const classA = parseInt(a[0].replace('Class ', ''));
+        const classB = parseInt(b[0].replace('Class ', ''));
+        return classA - classB;
+    });
+
+    if (sortedClasses.length === 0) {
+        statsContainer.innerHTML = '<div class="p-4 bg-gray-50 rounded-lg border border-gray-200"><h4 class="font-medium text-gray-700">No class statistics available</h4></div>';
+        return;
+    }
+
+    sortedClasses.forEach(([className, counts]) => {
+        const card = document.createElement('div');
+        card.className = 'p-4 bg-gray-50 rounded-lg border border-gray-200 hover:shadow-md transition';
+        card.innerHTML = `
+            <h4 class="font-medium text-gray-700 mb-2">${className}</h4>
+            <div class="space-y-1">
+                <p class="text-sm text-gray-600">
+                    <span class="font-semibold">${counts.parents}</span> Parents
+                </p>
+                <p class="text-sm text-gray-600">
+                    <span class="font-semibold">${counts.students}</span> Students
+                </p>
+            </div>
+        `;
+        statsContainer.appendChild(card);
+    });
+}
+
+// Make sure this is being called when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadParents();
+    loadClassStats(); // Ensure this line is present
+});
 
         // Add this to your existing document.addEventListener('DOMContentLoaded', ...)
         document.addEventListener('DOMContentLoaded', function() {
