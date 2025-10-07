@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Participant Dashboard - Dyslexia Research Study</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='landing_style.css') }}">
 </head>
 <body>
@@ -121,6 +122,78 @@
                         </svg>
                         Refresh
                     </button>
+                </div>
+            </div>
+
+            <!-- Children Performance Overview -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">Children Performance Overview</h3>
+                
+                <!-- Performance Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6" id="performanceOverviewCards">
+                    <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <div class="flex items-center">
+                            <div class="p-2 bg-blue-100 rounded-lg">
+                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-600">Total Children</p>
+                                <p class="text-2xl font-semibold text-gray-900" id="totalChildren">-</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 bg-green-50 rounded-lg border border-green-200">
+                        <div class="flex items-center">
+                            <div class="p-2 bg-green-100 rounded-lg">
+                                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-600">Active Children</p>
+                                <p class="text-2xl font-semibold text-gray-900" id="activeChildren">-</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                        <div class="flex items-center">
+                            <div class="p-2 bg-yellow-100 rounded-lg">
+                                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-600">Avg. Progress</p>
+                                <p class="text-2xl font-semibold text-gray-900" id="avgProgress">-</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                        <div class="flex items-center">
+                            <div class="p-2 bg-purple-100 rounded-lg">
+                                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-600">Tasks Completed</p>
+                                <p class="text-2xl font-semibold text-gray-900" id="tasksCompleted">-</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Children Progress Chart -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-3">Children Progress Overview</h4>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <canvas id="childrenProgressChart" width="400" height="200"></canvas>
+                    </div>
                 </div>
             </div>
 
@@ -389,6 +462,7 @@
                 showBackToParentButton();
             } else {
                 loadChildren();
+                loadParentStatistics(); // Load comprehensive parent statistics
             }
         });
 
@@ -489,14 +563,43 @@ function displayChildren(children) {
         const childCard = document.createElement('div');
         childCard.className = 'bg-gray-50 rounded-lg p-4 border border-gray-200';
         const createdDate = new Date(child.created_at).toLocaleDateString();
+        
+        // Get progress percentage for this child
+        const progressPercentage = child.progress_percentage || 0;
+        const progressColor = progressPercentage >= 80 ? 'bg-green-500' : 
+                             progressPercentage >= 50 ? 'bg-yellow-500' : 'bg-red-500';
+        
         childCard.innerHTML = `
             <div class="flex justify-between items-start">
-                <div>
-                    <h4 class="text-lg font-semibold text-gray-800">${child.name}</h4>
-                    <p class="text-gray-600">${child.email}</p>
-                    <p class="text-sm text-gray-500">Added: ${createdDate}</p>
+                <div class="flex-1">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="text-lg font-semibold text-gray-800">${child.name}</h4>
+                        <span class="px-2 py-1 text-xs rounded-full ${child.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                            ${child.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                    </div>
+                    <p class="text-gray-600 mb-1">${child.email}</p>
+                    <p class="text-sm text-gray-500 mb-2">Added: ${createdDate}</p>
+                    
+                    <!-- Progress Bar -->
+                    <div class="mb-2">
+                        <div class="flex justify-between text-sm text-gray-600 mb-1">
+                            <span>Progress</span>
+                            <span>${progressPercentage}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="${progressColor} h-2 rounded-full transition-all duration-300" style="width: ${progressPercentage}%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Stats -->
+                    <div class="flex space-x-4 text-sm text-gray-600">
+                        <span>Class: ${child.class || 'N/A'}</span>
+                        <span>Age: ${child.age || 'N/A'}</span>
+                        <span>School: ${child.school_name || 'N/A'}</span>
+                    </div>
                 </div>
-                <div class="flex space-x-2">
+                <div class="flex flex-col space-y-2 ml-4">
                     <button onclick="viewChildDetails(${child.id})"
                             class="px-3 py-1 bg-indigo-500 text-white text-sm rounded hover:bg-indigo-600 transition">
                         View Details
@@ -515,6 +618,93 @@ function displayChildren(children) {
         childrenList.appendChild(childCard);
     });
     childrenList.classList.remove('hidden');
+}
+
+// Load comprehensive parent statistics
+async function loadParentStatistics() {
+    try {
+        const response = await fetch('/api/parent/statistics');
+        const data = await response.json();
+        
+        if (data.success) {
+            displayParentOverview(data.data);
+            displayChildrenProgressChart(data.data.children_stats);
+        } else {
+            console.error('Failed to load parent statistics:', data.message);
+        }
+    } catch (error) {
+        console.error('Error loading parent statistics:', error);
+    }
+}
+
+function displayParentOverview(data) {
+    const childrenStats = data.children_stats || [];
+    
+    // Update overview cards
+    document.getElementById('totalChildren').textContent = data.children_count || 0;
+    
+    const activeChildren = childrenStats.filter(child => child.child_info.is_active).length;
+    document.getElementById('activeChildren').textContent = activeChildren;
+    
+    // Calculate average progress
+    const avgProgress = childrenStats.length > 0 
+        ? (childrenStats.reduce((sum, child) => sum + child.overall_progress, 0) / childrenStats.length).toFixed(1)
+        : 0;
+    document.getElementById('avgProgress').textContent = avgProgress + '%';
+    
+    // Calculate total tasks completed
+    const totalTasksCompleted = childrenStats.reduce((sum, child) => {
+        return sum + child.task_progress.filter(task => task.status === 'Completed').length;
+    }, 0);
+    document.getElementById('tasksCompleted').textContent = totalTasksCompleted;
+}
+
+function displayChildrenProgressChart(childrenStats) {
+    const ctx = document.getElementById('childrenProgressChart').getContext('2d');
+    
+    const labels = childrenStats.map(child => child.child_info.name);
+    const progressData = childrenStats.map(child => child.overall_progress);
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Progress (%)',
+                data: progressData,
+                backgroundColor: progressData.map(progress => {
+                    if (progress >= 80) return 'rgba(16, 185, 129, 0.8)';
+                    if (progress >= 50) return 'rgba(245, 158, 11, 0.8)';
+                    return 'rgba(239, 68, 68, 0.8)';
+                }),
+                borderColor: progressData.map(progress => {
+                    if (progress >= 80) return 'rgba(16, 185, 129, 1)';
+                    if (progress >= 50) return 'rgba(245, 158, 11, 1)';
+                    return 'rgba(239, 68, 68, 1)';
+                }),
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
 }
 
 async function viewChildDetails(childId){

@@ -4971,8 +4971,20 @@ def admin_dashboard_stats():
         cursor.execute('SELECT COUNT(*) AS numTasks FROM tasks')
         stats['activeStudies'] = cursor.fetchone()['numTasks']
 
-        # Data quality placeholder (set to 85 for now)
-        stats['dataQuality'] = 85
+        # Data quality calculation based on demographics completion
+        cursor.execute('''
+            SELECT 
+                COUNT(DISTINCT u.id) as total_students,
+                COUNT(DISTINCT d.user_id) as students_with_demographics
+            FROM users u
+            LEFT JOIN demographics d ON u.id = d.user_id
+            WHERE u.user_type = 'child'
+        ''')
+        data_quality_result = cursor.fetchone()
+        data_quality = 0
+        if data_quality_result['total_students'] > 0:
+            data_quality = round((data_quality_result['students_with_demographics'] / data_quality_result['total_students']) * 100, 1)
+        stats['dataQuality'] = data_quality
 
         return jsonify({'success': True, 'stats': stats})
     except Exception as e:
@@ -5109,6 +5121,520 @@ def contact():
 @app.route('/stats')
 def stats():
     return render_template('stats.html')
+
+@app.route('/api/admin/data-quality-metrics', methods=['GET'])
+def get_data_quality_metrics():
+    """Get detailed data quality metrics for admin dashboard."""
+    if not session.get('is_admin'):
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+
+    try:
+        conn = connect_db()
+        cursor = conn.cursor(dictionary=True)
+
+        # Audio Quality - based on audio recordings completion
+        cursor.execute('''
+            SELECT 
+                COUNT(DISTINCT u.id) as total_students,
+                COUNT(DISTINCT ar.user_id) as students_with_audio
+            FROM users u
+            LEFT JOIN audio_recordings ar ON u.id = ar.user_id
+            WHERE u.user_type = 'child'
+        ''')
+        audio_quality_result = cursor.fetchone()
+        audio_quality = 0
+        if audio_quality_result['total_students'] > 0:
+            audio_quality = round((audio_quality_result['students_with_audio'] / audio_quality_result['total_students']) * 100, 1)
+
+        # Response Completeness - based on task completion rates
+        cursor.execute('''
+            SELECT 
+                COUNT(DISTINCT u.id) as total_students,
+                COUNT(DISTINCT CASE WHEN ut.status = 'Completed' THEN u.id END) as students_with_completed_tasks
+            FROM users u
+            LEFT JOIN user_tasks ut ON u.id = ut.user_id
+            WHERE u.user_type = 'child'
+        ''')
+        response_completeness_result = cursor.fetchone()
+        response_completeness = 0
+        if response_completeness_result['total_students'] > 0:
+            response_completeness = round((response_completeness_result['students_with_completed_tasks'] / response_completeness_result['total_students']) * 100, 1)
+
+        # Data Consistency - based on demographics completeness
+        cursor.execute('''
+            SELECT 
+                COUNT(DISTINCT u.id) as total_students,
+                COUNT(DISTINCT d.user_id) as students_with_demographics
+            FROM users u
+            LEFT JOIN demographics d ON u.id = d.user_id
+            WHERE u.user_type = 'child'
+        ''')
+        data_consistency_result = cursor.fetchone()
+        data_consistency = 0
+        if data_consistency_result['total_students'] > 0:
+            data_consistency = round((data_consistency_result['students_with_demographics'] / data_consistency_result['total_students']) * 100, 1)
+
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'data': {
+                'audio_quality': audio_quality,
+                'response_completeness': response_completeness,
+                'data_consistency': data_consistency
+            }
+        })
+
+    except Exception as e:
+        print(f"Error getting data quality metrics: {e}")
+        return jsonify({'success': False, 'message': 'Failed to load data quality metrics'}), 500
+
+# ========== COMPREHENSIVE STATISTICS API ENDPOINTS ==========
+
+@app.route('/api/school/statistics', methods=['GET'])
+def get_school_statistics():
+    """Get comprehensive statistics for the current school."""
+    if 'school_id' not in session:
+        return jsonify({'success': False, 'message': 'Not logged in'}), 401
+
+    try:
+        conn = connect_db()
+        cursor = conn.cursor(dictionary=True)
+        school_id = session['school_id']
+
+        # Get school basic info
+        cursor.execute('SELECT name, email, phone FROM schools WHERE id = %s', (school_id,))
+        school_info = cursor.fetchone()
+
+        # Get total counts
+        cursor.execute('''
+            SELECT 
+                COUNT(DISTINCT CASE WHEN u.user_type = 'parent' THEN u.id END) as total_parents,
+                COUNT(DISTINCT CASE WHEN u.user_type = 'child' THEN u.id END) as total_students,
+                COUNT(DISTINCT CASE WHEN u.user_type = 'child' AND u.is_active = 1 THEN u.id END) as active_students
+            FROM users u 
+            WHERE u.school_id = %s
+        ''', (school_id,))
+        counts = cursor.fetchone()
+
+        # Get class-wise distribution
+        cursor.execute('''
+            SELECT 
+                u.class,
+                COUNT(DISTINCT CASE WHEN u.user_type = 'parent' THEN u.id END) as parents,
+                COUNT(DISTINCT CASE WHEN u.user_type = 'child' THEN u.id END) as students,
+                COUNT(DISTINCT CASE WHEN u.user_type = 'child' AND u.is_active = 1 THEN u.id END) as active_students
+            FROM users u 
+            WHERE u.school_id = %s AND u.class IS NOT NULL
+            GROUP BY u.class
+            ORDER BY u.class
+        ''', (school_id,))
+        class_stats = cursor.fetchall()
+
+        # Get task completion statistics
+        cursor.execute('''
+            SELECT 
+                t.task_name,
+                COUNT(DISTINCT ut.user_id) as total_attempts,
+                COUNT(DISTINCT CASE WHEN ut.status = 'Completed' THEN ut.user_id END) as completed_count,
+                ROUND(COUNT(DISTINCT CASE WHEN ut.status = 'Completed' THEN ut.user_id END) * 100.0 / COUNT(DISTINCT ut.user_id), 2) as completion_rate
+            FROM tasks t
+            LEFT JOIN user_tasks ut ON t.task_name = ut.task_name
+            LEFT JOIN users u ON ut.user_id = u.id AND u.school_id = %s AND u.user_type = 'child'
+            GROUP BY t.task_name
+            ORDER BY t.task_name
+        ''', (school_id,))
+        task_stats = cursor.fetchall()
+
+        # Get recent activity (last 7 days)
+        cursor.execute('''
+            SELECT 
+                DATE(ut.updated_at) as date,
+                COUNT(*) as task_updates,
+                COUNT(CASE WHEN ut.status = 'Completed' THEN 1 END) as completions
+            FROM user_tasks ut
+            JOIN users u ON ut.user_id = u.id
+            WHERE u.school_id = %s 
+            AND ut.updated_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            GROUP BY DATE(ut.updated_at)
+            ORDER BY date DESC
+        ''', (school_id,))
+        recent_activity = cursor.fetchall()
+
+        # Get demographics breakdown
+        cursor.execute('''
+            SELECT 
+                d.gender,
+                d.dyslexia_status,
+                COUNT(*) as count
+            FROM demographics d
+            JOIN users u ON d.user_id = u.id
+            WHERE u.school_id = %s AND u.user_type = 'child'
+            GROUP BY d.gender, d.dyslexia_status
+        ''', (school_id,))
+        demographics = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'data': {
+                'school_info': school_info,
+                'counts': counts,
+                'class_stats': class_stats,
+                'task_stats': task_stats,
+                'recent_activity': recent_activity,
+                'demographics': demographics
+            }
+        })
+
+    except Exception as e:
+        print(f"Error getting school statistics: {e}")
+        return jsonify({'success': False, 'message': 'Failed to load statistics'}), 500
+
+@app.route('/api/parent/statistics', methods=['GET'])
+def get_parent_statistics():
+    """Get comprehensive statistics for the current parent's children."""
+    if 'user_id' not in session or session.get('user_type') != 'parent':
+        return jsonify({'success': False, 'message': 'Not logged in as parent'}), 401
+
+    try:
+        conn = connect_db()
+        cursor = conn.cursor(dictionary=True)
+        parent_id = session['user_id']
+
+        # Get parent's children
+        cursor.execute('''
+            SELECT 
+                u.id, u.name, u.email, u.class, u.is_active,
+                d.age, d.gender, d.dyslexia_status, d.education_level,
+                s.name as school_name
+            FROM users u
+            LEFT JOIN demographics d ON u.id = d.user_id
+            LEFT JOIN schools s ON u.school_id = s.id
+            WHERE u.parent_id = %s AND u.user_type = 'child'
+            ORDER BY u.name
+        ''', (parent_id,))
+        children = cursor.fetchall()
+
+        # Get detailed statistics for each child
+        children_stats = []
+        for child in children:
+            child_id = child['id']
+            
+            # Get task progress for this child
+            cursor.execute('''
+                SELECT 
+                    ut.task_name,
+                    ut.status,
+                    ut.updated_at,
+                    CASE 
+                        WHEN ut.status = 'Completed' THEN 100
+                        WHEN ut.status = 'In Progress' THEN 50
+                        ELSE 0
+                    END as progress_percentage
+                FROM user_tasks ut
+                WHERE ut.user_id = %s
+                ORDER BY ut.task_name
+            ''', (child_id,))
+            task_progress = cursor.fetchall()
+
+            # Calculate overall progress
+            total_tasks = len(task_progress)
+            completed_tasks = len([t for t in task_progress if t['status'] == 'Completed'])
+            overall_progress = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
+
+            # Get recent activity for this child
+            cursor.execute('''
+                SELECT 
+                    ut.task_name,
+                    ut.status,
+                    ut.updated_at
+                FROM user_tasks ut
+                WHERE ut.user_id = %s
+                ORDER BY ut.updated_at DESC
+                LIMIT 5
+            ''', (child_id,))
+            recent_activity = cursor.fetchall()
+
+            children_stats.append({
+                'child_info': child,
+                'task_progress': task_progress,
+                'overall_progress': round(overall_progress, 1),
+                'recent_activity': recent_activity
+            })
+
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'data': {
+                'children_count': len(children),
+                'children_stats': children_stats
+            }
+        })
+
+    except Exception as e:
+        print(f"Error getting parent statistics: {e}")
+        return jsonify({'success': False, 'message': 'Failed to load statistics'}), 500
+
+@app.route('/api/admin/comprehensive-stats', methods=['GET'])
+def get_admin_comprehensive_stats():
+    """Get comprehensive system-wide statistics for admin."""
+    if not session.get('is_admin'):
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+
+    try:
+        conn = connect_db()
+        cursor = conn.cursor(dictionary=True)
+
+        # System overview
+        cursor.execute('''
+            SELECT 
+                COUNT(DISTINCT s.id) as total_schools,
+                COUNT(DISTINCT CASE WHEN u.user_type = 'parent' THEN u.id END) as total_parents,
+                COUNT(DISTINCT CASE WHEN u.user_type = 'child' THEN u.id END) as total_students,
+                COUNT(DISTINCT CASE WHEN u.user_type = 'child' AND u.is_active = 1 THEN u.id END) as active_students,
+                COUNT(DISTINCT CASE WHEN u.user_type = 'child' AND u.is_active = 0 THEN u.id END) as inactive_students
+            FROM schools s
+            LEFT JOIN users u ON s.id = u.school_id
+        ''')
+        system_overview = cursor.fetchone()
+
+        # School-wise statistics
+        cursor.execute('''
+            SELECT 
+                s.id, s.name, s.email,
+                COUNT(DISTINCT CASE WHEN u.user_type = 'parent' THEN u.id END) as parents_count,
+                COUNT(DISTINCT CASE WHEN u.user_type = 'child' THEN u.id END) as students_count,
+                COUNT(DISTINCT CASE WHEN u.user_type = 'child' AND u.is_active = 1 THEN u.id END) as active_students_count
+            FROM schools s
+            LEFT JOIN users u ON s.id = u.school_id
+            GROUP BY s.id, s.name, s.email
+            ORDER BY students_count DESC
+        ''')
+        school_stats = cursor.fetchall()
+
+        # Task completion statistics
+        cursor.execute('''
+            SELECT 
+                t.task_name,
+                COUNT(DISTINCT ut.user_id) as total_attempts,
+                COUNT(DISTINCT CASE WHEN ut.status = 'Completed' THEN ut.user_id END) as completed_count,
+                COUNT(DISTINCT CASE WHEN ut.status = 'In Progress' THEN ut.user_id END) as in_progress_count,
+                COUNT(DISTINCT CASE WHEN ut.status = 'Not Started' THEN ut.user_id END) as not_started_count,
+                ROUND(COUNT(DISTINCT CASE WHEN ut.status = 'Completed' THEN ut.user_id END) * 100.0 / COUNT(DISTINCT ut.user_id), 2) as completion_rate
+            FROM tasks t
+            LEFT JOIN user_tasks ut ON t.task_name = ut.task_name
+            LEFT JOIN users u ON ut.user_id = u.id AND u.user_type = 'child'
+            GROUP BY t.task_name
+            ORDER BY completion_rate DESC
+        ''')
+        task_completion_stats = cursor.fetchall()
+
+        # Demographics breakdown
+        cursor.execute('''
+            SELECT 
+                d.gender,
+                d.dyslexia_status,
+                d.education_level,
+                COUNT(*) as count
+            FROM demographics d
+            JOIN users u ON d.user_id = u.id
+            WHERE u.user_type = 'child'
+            GROUP BY d.gender, d.dyslexia_status, d.education_level
+        ''')
+        demographics_stats = cursor.fetchall()
+
+        # Recent activity (last 30 days)
+        cursor.execute('''
+            SELECT 
+                DATE(ut.updated_at) as date,
+                COUNT(*) as total_updates,
+                COUNT(CASE WHEN ut.status = 'Completed' THEN 1 END) as completions,
+                COUNT(CASE WHEN ut.status = 'In Progress' THEN 1 END) as progress_updates
+            FROM user_tasks ut
+            JOIN users u ON ut.user_id = u.id
+            WHERE u.user_type = 'child' 
+            AND ut.updated_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            GROUP BY DATE(ut.updated_at)
+            ORDER BY date DESC
+        ''')
+        recent_activity = cursor.fetchall()
+
+        # Class-wise distribution
+        cursor.execute('''
+            SELECT 
+                u.class,
+                COUNT(DISTINCT CASE WHEN u.user_type = 'child' THEN u.id END) as students_count,
+                COUNT(DISTINCT CASE WHEN u.user_type = 'parent' THEN u.id END) as parents_count,
+                COUNT(DISTINCT CASE WHEN u.user_type = 'child' AND u.is_active = 1 THEN u.id END) as active_students_count
+            FROM users u
+            WHERE u.class IS NOT NULL
+            GROUP BY u.class
+            ORDER BY u.class
+        ''')
+        class_distribution = cursor.fetchall()
+
+        # Data quality metrics
+        cursor.execute('''
+            SELECT 
+                COUNT(DISTINCT u.id) as total_students,
+                COUNT(DISTINCT d.user_id) as students_with_demographics,
+                COUNT(DISTINCT CASE WHEN ut.user_id IS NOT NULL THEN u.id END) as students_with_tasks,
+                ROUND(COUNT(DISTINCT d.user_id) * 100.0 / COUNT(DISTINCT u.id), 2) as demographics_completion_rate,
+                ROUND(COUNT(DISTINCT CASE WHEN ut.user_id IS NOT NULL THEN u.id END) * 100.0 / COUNT(DISTINCT u.id), 2) as task_participation_rate
+            FROM users u
+            LEFT JOIN demographics d ON u.id = d.user_id
+            LEFT JOIN user_tasks ut ON u.id = ut.user_id
+            WHERE u.user_type = 'child'
+        ''')
+        data_quality = cursor.fetchone()
+
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'data': {
+                'system_overview': system_overview,
+                'school_stats': school_stats,
+                'task_completion_stats': task_completion_stats,
+                'demographics_stats': demographics_stats,
+                'recent_activity': recent_activity,
+                'class_distribution': class_distribution,
+                'data_quality': data_quality
+            }
+        })
+
+    except Exception as e:
+        print(f"Error getting admin comprehensive stats: {e}")
+        return jsonify({'success': False, 'message': 'Failed to load statistics'}), 500
+
+@app.route('/api/statistics/child/<int:child_id>', methods=['GET'])
+def get_child_detailed_stats(child_id):
+    """Get detailed statistics for a specific child."""
+    # Check if user has permission to view this child's stats
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Not logged in'}), 401
+
+    try:
+        conn = connect_db()
+        cursor = conn.cursor(dictionary=True)
+        user_id = session['user_id']
+        user_type = session.get('user_type')
+
+        # Check permissions
+        if user_type == 'parent':
+            # Parent can only view their own children
+            cursor.execute('SELECT id FROM users WHERE id = %s AND parent_id = %s', (child_id, user_id))
+            if not cursor.fetchone():
+                return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+        elif user_type == 'child':
+            # Child can only view their own stats
+            if child_id != user_id:
+                return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+        elif not session.get('is_admin'):
+            return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+
+        # Get child basic info
+        cursor.execute('''
+            SELECT 
+                u.id, u.name, u.email, u.class, u.is_active, u.created_at,
+                d.age, d.gender, d.dyslexia_status, d.education_level, d.native_language,
+                s.name as school_name
+            FROM users u
+            LEFT JOIN demographics d ON u.id = d.user_id
+            LEFT JOIN schools s ON u.school_id = s.id
+            WHERE u.id = %s AND u.user_type = 'child'
+        ''', (child_id,))
+        child_info = cursor.fetchone()
+
+        if not child_info:
+            return jsonify({'success': False, 'message': 'Child not found'}), 404
+
+        # Get detailed task progress
+        cursor.execute('''
+            SELECT 
+                ut.task_name,
+                ut.status,
+                ut.updated_at,
+                CASE 
+                    WHEN ut.status = 'Completed' THEN 100
+                    WHEN ut.status = 'In Progress' THEN 50
+                    ELSE 0
+                END as progress_percentage
+            FROM user_tasks ut
+            WHERE ut.user_id = %s
+            ORDER BY ut.task_name
+        ''', (child_id,))
+        task_progress = cursor.fetchall()
+
+        # Calculate overall progress
+        total_tasks = len(task_progress)
+        completed_tasks = len([t for t in task_progress if t['status'] == 'Completed'])
+        overall_progress = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
+
+        # Get task attempt details
+        cursor.execute('''
+            SELECT 
+                uta.task_id,
+                t.task_name,
+                uta.attempt_number,
+                uta.status,
+                uta.started_at,
+                uta.completed_at,
+                TIMESTAMPDIFF(MINUTE, uta.started_at, uta.completed_at) as duration_minutes
+            FROM user_task_attempts uta
+            JOIN tasks t ON uta.task_id = t.id
+            WHERE uta.user_id = %s
+            ORDER BY uta.started_at DESC
+        ''', (child_id,))
+        task_attempts = cursor.fetchall()
+
+        # Get recent activity
+        cursor.execute('''
+            SELECT 
+                ut.task_name,
+                ut.status,
+                ut.updated_at,
+                'task_update' as activity_type
+            FROM user_tasks ut
+            WHERE ut.user_id = %s
+            UNION ALL
+            SELECT 
+                t.task_name,
+                uta.status,
+                uta.started_at as updated_at,
+                'task_attempt' as activity_type
+            FROM user_task_attempts uta
+            JOIN tasks t ON uta.task_id = t.id
+            WHERE uta.user_id = %s
+            ORDER BY updated_at DESC
+            LIMIT 10
+        ''', (child_id, child_id))
+        recent_activity = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'data': {
+                'child_info': child_info,
+                'task_progress': task_progress,
+                'overall_progress': round(overall_progress, 1),
+                'task_attempts': task_attempts,
+                'recent_activity': recent_activity
+            }
+        })
+
+    except Exception as e:
+        print(f"Error getting child detailed stats: {e}")
+        return jsonify({'success': False, 'message': 'Failed to load statistics'}), 500
 
 @app.route('/admin/logout')
 def admin_logout_page():

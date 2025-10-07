@@ -28,22 +28,138 @@
     <!-- Main Content -->
     <main class="content-wrapper py-8">
         <!-- Dashboard Overview -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500">
-                <h3 class="text-lg font-semibold text-gray-700">Total Participants</h3>
-                <p class="text-3xl font-bold text-blue-600" id="totalParticipants">0</p>
+                <div class="flex items-center">
+                    <div class="p-2 bg-blue-100 rounded-lg mr-3">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-700">Total Schools</h3>
+                        <p class="text-3xl font-bold text-blue-600" id="totalSchools">0</p>
+                    </div>
+                </div>
             </div>
             <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-green-500">
-                <h3 class="text-lg font-semibold text-gray-700">Active Studies</h3>
-                <p class="text-3xl font-bold text-green-600" id="activeStudies">0</p>
+                <div class="flex items-center">
+                    <div class="p-2 bg-green-100 rounded-lg mr-3">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-700">Total Students</h3>
+                        <p class="text-3xl font-bold text-green-600" id="totalStudents">0</p>
+                    </div>
+                </div>
             </div>
             <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-yellow-500">
-                <h3 class="text-lg font-semibold text-gray-700">Data Quality Score</h3>
-                <p class="text-3xl font-bold text-yellow-600" id="dataQuality">85%</p>
+                <div class="flex items-center">
+                    <div class="p-2 bg-yellow-100 rounded-lg mr-3">
+                        <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-700">Active Students</h3>
+                        <p class="text-3xl font-bold text-yellow-600" id="activeStudents">0</p>
+                    </div>
+                </div>
             </div>
             <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-purple-500">
-                <h3 class="text-lg font-semibold text-gray-700">Completion Rate</h3>
-                <p class="text-3xl font-bold text-purple-600" id="completionRate">0%</p>
+                <div class="flex items-center">
+                    <div class="p-2 bg-purple-100 rounded-lg mr-3">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-700">Avg. Completion</h3>
+                        <p class="text-3xl font-bold text-purple-600" id="avgCompletion">0%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-indigo-500">
+                <div class="flex items-center">
+                    <div class="p-2 bg-indigo-100 rounded-lg mr-3">
+                        <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-700">Total Parents</h3>
+                        <p class="text-3xl font-bold text-indigo-600" id="totalParents">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-red-500">
+                <div class="flex items-center">
+                    <div class="p-2 bg-red-100 rounded-lg mr-3">
+                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-700">Data Quality</h3>
+                        <p class="text-3xl font-bold text-red-600" id="dataQuality">0%</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-teal-500">
+                <div class="flex items-center">
+                    <div class="p-2 bg-teal-100 rounded-lg mr-3">
+                        <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-700">Tasks Completed</h3>
+                        <p class="text-3xl font-bold text-teal-600" id="tasksCompleted">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-pink-500">
+                <div class="flex items-center">
+                    <div class="p-2 bg-pink-100 rounded-lg mr-3">
+                        <svg class="w-6 h-6 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-700">Recent Activity</h3>
+                        <p class="text-3xl font-bold text-pink-600" id="recentActivity">0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Overview Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h3 class="text-lg font-semibold text-gray-700 mb-4">School Performance</h3>
+                <canvas id="schoolPerformanceChart" width="400" height="200"></canvas>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h3 class="text-lg font-semibold text-gray-700 mb-4">Task Completion Rates</h3>
+                <canvas id="taskCompletionChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+
+        <!-- Demographics and Class Distribution -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h3 class="text-lg font-semibold text-gray-700 mb-4">Class Distribution</h3>
+                <canvas id="classDistributionChart" width="400" height="200"></canvas>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h3 class="text-lg font-semibold text-gray-700 mb-4">Recent Activity (30 Days)</h3>
+                <canvas id="recentActivityChart" width="400" height="200"></canvas>
             </div>
         </div>
 
@@ -188,27 +304,27 @@
                             <h4 class="font-semibold text-gray-700 mb-2">Audio Quality</h4>
                             <div class="flex items-center">
                                 <div class="flex-1 bg-gray-200 rounded-full h-2 mr-3">
-                                    <div class="bg-green-500 h-2 rounded-full" style="width: 92%"></div>
+                                    <div class="bg-green-500 h-2 rounded-full" id="audioQualityBar" style="width: 0%"></div>
                                 </div>
-                                <span class="text-sm font-medium text-gray-600">92%</span>
+                                <span class="text-sm font-medium text-gray-600" id="audioQualityText">0%</span>
                             </div>
                         </div>
                         <div class="bg-white p-6 rounded-lg shadow-md">
                             <h4 class="font-semibold text-gray-700 mb-2">Response Completeness</h4>
                             <div class="flex items-center">
                                 <div class="flex-1 bg-gray-200 rounded-full h-2 mr-3">
-                                    <div class="bg-blue-500 h-2 rounded-full" style="width: 88%"></div>
+                                    <div class="bg-blue-500 h-2 rounded-full" id="responseCompletenessBar" style="width: 0%"></div>
                                 </div>
-                                <span class="text-sm font-medium text-gray-600">88%</span>
+                                <span class="text-sm font-medium text-gray-600" id="responseCompletenessText">0%</span>
                             </div>
                         </div>
                         <div class="bg-white p-6 rounded-lg shadow-md">
                             <h4 class="font-semibold text-gray-700 mb-2">Data Consistency</h4>
                             <div class="flex items-center">
                                 <div class="flex-1 bg-gray-200 rounded-full h-2 mr-3">
-                                    <div class="bg-yellow-500 h-2 rounded-full" style="width: 85%"></div>
+                                    <div class="bg-yellow-500 h-2 rounded-full" id="dataConsistencyBar" style="width: 0%"></div>
                                 </div>
-                                <span class="text-sm font-medium text-gray-600">85%</span>
+                                <span class="text-sm font-medium text-gray-600" id="dataConsistencyText">0%</span>
                             </div>
                         </div>
                     </div>
@@ -521,6 +637,8 @@
         // Load initial data
         document.addEventListener('DOMContentLoaded', function() {
             loadDashboardData();
+            loadComprehensiveAdminStats(); // Load comprehensive admin statistics
+            loadDataQualityMetrics(); // Load data quality metrics
             loadTabData('users');
             // Attach search/filter event listeners here
             document.getElementById('searchBtn').addEventListener('click', filterAndDisplayUsers);
@@ -544,6 +662,265 @@
             } catch (error) {
                 console.error('Error loading dashboard data:', error);
             }
+        }
+
+        // Load comprehensive admin statistics
+        async function loadComprehensiveAdminStats() {
+            try {
+                const response = await fetch('/api/admin/comprehensive-stats');
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayAdminOverview(data.data);
+                    displaySchoolPerformanceChart(data.data.school_stats);
+                    displayTaskCompletionChart(data.data.task_completion_stats);
+                    displayClassDistributionChart(data.data.class_distribution);
+                    displayRecentActivityChart(data.data.recent_activity);
+                } else {
+                    console.error('Failed to load comprehensive admin stats:', data.message);
+                }
+            } catch (error) {
+                console.error('Error loading comprehensive admin stats:', error);
+            }
+        }
+
+        // Load data quality metrics
+        async function loadDataQualityMetrics() {
+            try {
+                const response = await fetch('/api/admin/data-quality-metrics');
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayDataQualityMetrics(data.data);
+                } else {
+                    console.error('Failed to load data quality metrics:', data.message);
+                }
+            } catch (error) {
+                console.error('Error loading data quality metrics:', error);
+            }
+        }
+
+        function displayDataQualityMetrics(metrics) {
+            // Update audio quality
+            const audioQuality = metrics.audio_quality || 0;
+            document.getElementById('audioQualityBar').style.width = audioQuality + '%';
+            document.getElementById('audioQualityText').textContent = audioQuality + '%';
+
+            // Update response completeness
+            const responseCompleteness = metrics.response_completeness || 0;
+            document.getElementById('responseCompletenessBar').style.width = responseCompleteness + '%';
+            document.getElementById('responseCompletenessText').textContent = responseCompleteness + '%';
+
+            // Update data consistency
+            const dataConsistency = metrics.data_consistency || 0;
+            document.getElementById('dataConsistencyBar').style.width = dataConsistency + '%';
+            document.getElementById('dataConsistencyText').textContent = dataConsistency + '%';
+        }
+
+        function displayAdminOverview(data) {
+            const overview = data.system_overview;
+            
+            // Update overview cards
+            document.getElementById('totalSchools').textContent = overview.total_schools || 0;
+            document.getElementById('totalStudents').textContent = overview.total_students || 0;
+            document.getElementById('activeStudents').textContent = overview.active_students || 0;
+            document.getElementById('totalParents').textContent = overview.total_parents || 0;
+            
+            // Calculate average completion rate
+            const taskStats = data.task_completion_stats || [];
+            const avgCompletion = taskStats.length > 0 
+                ? (taskStats.reduce((sum, task) => sum + (task.completion_rate || 0), 0) / taskStats.length).toFixed(1)
+                : 0;
+            document.getElementById('avgCompletion').textContent = avgCompletion + '%';
+            
+            // Update data quality
+            const dataQuality = data.data_quality;
+            document.getElementById('dataQuality').textContent = dataQuality.demographics_completion_rate + '%';
+            
+            // Calculate total tasks completed
+            const totalTasksCompleted = taskStats.reduce((sum, task) => sum + (task.completed_count || 0), 0);
+            document.getElementById('tasksCompleted').textContent = totalTasksCompleted;
+            
+            // Calculate recent activity (last 7 days)
+            const recentActivity = data.recent_activity.slice(0, 7);
+            const totalRecentActivity = recentActivity.reduce((sum, activity) => sum + (activity.total_updates || 0), 0);
+            document.getElementById('recentActivity').textContent = totalRecentActivity;
+        }
+
+        function displaySchoolPerformanceChart(schoolStats) {
+            const ctx = document.getElementById('schoolPerformanceChart').getContext('2d');
+            
+            const labels = schoolStats.map(school => school.name);
+            const studentsData = schoolStats.map(school => school.students_count || 0);
+            const activeStudentsData = schoolStats.map(school => school.active_students_count || 0);
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Total Students',
+                        data: studentsData,
+                        backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1
+                    }, {
+                        label: 'Active Students',
+                        data: activeStudentsData,
+                        backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                        borderColor: 'rgba(16, 185, 129, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        }
+
+        function displayTaskCompletionChart(taskStats) {
+            const ctx = document.getElementById('taskCompletionChart').getContext('2d');
+            
+            const labels = taskStats.map(task => task.task_name);
+            const completionRates = taskStats.map(task => task.completion_rate || 0);
+            
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: completionRates,
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(16, 185, 129, 0.8)',
+                            'rgba(245, 158, 11, 0.8)',
+                            'rgba(139, 92, 246, 0.8)',
+                            'rgba(239, 68, 68, 0.8)',
+                            'rgba(20, 184, 166, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(59, 130, 246, 1)',
+                            'rgba(16, 185, 129, 1)',
+                            'rgba(245, 158, 11, 1)',
+                            'rgba(139, 92, 246, 1)',
+                            'rgba(239, 68, 68, 1)',
+                            'rgba(20, 184, 166, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function displayClassDistributionChart(classDistribution) {
+            const ctx = document.getElementById('classDistributionChart').getContext('2d');
+            
+            const labels = classDistribution.map(cls => cls.class);
+            const studentsData = classDistribution.map(cls => cls.students_count || 0);
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Students',
+                        data: studentsData,
+                        backgroundColor: 'rgba(139, 92, 246, 0.8)',
+                        borderColor: 'rgba(139, 92, 246, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        function displayRecentActivityChart(recentActivity) {
+            const ctx = document.getElementById('recentActivityChart').getContext('2d');
+            
+            // Sort by date and get last 30 days
+            const sortedActivity = recentActivity.sort((a, b) => new Date(a.date) - new Date(b.date));
+            const labels = sortedActivity.map(activity => {
+                const date = new Date(activity.date);
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            });
+            const totalUpdates = sortedActivity.map(activity => activity.total_updates || 0);
+            const completions = sortedActivity.map(activity => activity.completions || 0);
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Total Updates',
+                        data: totalUpdates,
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: 'Completions',
+                        data: completions,
+                        borderColor: 'rgba(16, 185, 129, 1)',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    }
+                }
+            });
         }
 
         // Tab-specific data loading

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Participant Dashboard - Dyslexia Research Study</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='landing_style.css') }}">
 </head>
 <body>
@@ -254,15 +255,93 @@
                 </div>
             </div>
 
-            <!-- Class Statistics Section -->
+            <!-- School Performance Overview -->
             <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-                <h3 class="text-xl font-semibold text-gray-800 mb-4">Class Statistics</h3>
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">School Performance Overview</h3>
                 
-                <!-- Grid for class stats -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="classStats">
-                    <!-- Stats cards will be populated here -->
-                    <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                        <h4 class="font-medium text-gray-700">Loading statistics...</h4>
+                <!-- Key Metrics Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6" id="schoolOverviewCards">
+                    <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <div class="flex items-center">
+                            <div class="p-2 bg-blue-100 rounded-lg">
+                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-600">Total Parents</p>
+                                <p class="text-2xl font-semibold text-gray-900" id="totalParents">-</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 bg-green-50 rounded-lg border border-green-200">
+                        <div class="flex items-center">
+                            <div class="p-2 bg-green-100 rounded-lg">
+                                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-600">Total Students</p>
+                                <p class="text-2xl font-semibold text-gray-900" id="totalStudents">-</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                        <div class="flex items-center">
+                            <div class="p-2 bg-yellow-100 rounded-lg">
+                                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-600">Active Students</p>
+                                <p class="text-2xl font-semibold text-gray-900" id="activeStudents">-</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                        <div class="flex items-center">
+                            <div class="p-2 bg-purple-100 rounded-lg">
+                                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-600">Avg. Completion</p>
+                                <p class="text-2xl font-semibold text-gray-900" id="avgCompletion">-</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Task Completion Chart -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-3">Task Completion Rates</h4>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <canvas id="taskCompletionChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+
+                <!-- Class-wise Distribution -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-3">Class-wise Distribution</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="classStats">
+                        <!-- Class stats cards will be populated here -->
+                        <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                            <h4 class="font-medium text-gray-700">Loading statistics...</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div>
+                    <h4 class="text-lg font-semibold text-gray-800 mb-3">Recent Activity (Last 7 Days)</h4>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <canvas id="recentActivityChart" width="400" height="200"></canvas>
                     </div>
                 </div>
             </div>
@@ -835,10 +914,180 @@ function displayClassStats(stats) {
     });
 }
 
-// Make sure this is being called when the page loads
+// Load comprehensive school statistics
+async function loadSchoolStatistics() {
+    try {
+        const response = await fetch('/api/school/statistics');
+        const data = await response.json();
+        
+        if (data.success) {
+            displaySchoolOverview(data.data);
+            displayTaskCompletionChart(data.data.task_stats);
+            displayClassStats(data.data.class_stats);
+            displayRecentActivityChart(data.data.recent_activity);
+        } else {
+            console.error('Failed to load school statistics:', data.message);
+        }
+    } catch (error) {
+        console.error('Error loading school statistics:', error);
+    }
+}
+
+function displaySchoolOverview(data) {
+    // Update overview cards
+    document.getElementById('totalParents').textContent = data.counts.total_parents || 0;
+    document.getElementById('totalStudents').textContent = data.counts.total_students || 0;
+    document.getElementById('activeStudents').textContent = data.counts.active_students || 0;
+    
+    // Calculate average completion rate
+    const taskStats = data.task_stats || [];
+    const avgCompletion = taskStats.length > 0 
+        ? (taskStats.reduce((sum, task) => sum + (task.completion_rate || 0), 0) / taskStats.length).toFixed(1)
+        : 0;
+    document.getElementById('avgCompletion').textContent = avgCompletion + '%';
+}
+
+function displayTaskCompletionChart(taskStats) {
+    const ctx = document.getElementById('taskCompletionChart').getContext('2d');
+    
+    const labels = taskStats.map(task => task.task_name);
+    const completionRates = taskStats.map(task => task.completion_rate || 0);
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Completion Rate (%)',
+                data: completionRates,
+                backgroundColor: [
+                    'rgba(59, 130, 246, 0.8)',
+                    'rgba(16, 185, 129, 0.8)',
+                    'rgba(245, 158, 11, 0.8)',
+                    'rgba(139, 92, 246, 0.8)',
+                    'rgba(239, 68, 68, 0.8)',
+                    'rgba(20, 184, 166, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(59, 130, 246, 1)',
+                    'rgba(16, 185, 129, 1)',
+                    'rgba(245, 158, 11, 1)',
+                    'rgba(139, 92, 246, 1)',
+                    'rgba(239, 68, 68, 1)',
+                    'rgba(20, 184, 166, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+function displayClassStats(classStats) {
+    const container = document.getElementById('classStats');
+    container.innerHTML = '';
+
+    if (classStats.length === 0) {
+        container.innerHTML = '<div class="p-4 bg-gray-50 rounded-lg border border-gray-200"><h4 class="font-medium text-gray-700">No class statistics available</h4></div>';
+        return;
+    }
+
+    classStats.forEach(classData => {
+        const card = document.createElement('div');
+        card.className = 'p-4 bg-gray-50 rounded-lg border border-gray-200 hover:shadow-md transition';
+        card.innerHTML = `
+            <h4 class="font-medium text-gray-700 mb-2">${classData.class}</h4>
+            <div class="space-y-1">
+                <p class="text-sm text-gray-600">
+                    <span class="font-semibold">${classData.parents}</span> Parents
+                </p>
+                <p class="text-sm text-gray-600">
+                    <span class="font-semibold">${classData.students}</span> Students
+                </p>
+                <p class="text-sm text-gray-600">
+                    <span class="font-semibold">${classData.active_students}</span> Active
+                </p>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+function displayRecentActivityChart(recentActivity) {
+    const ctx = document.getElementById('recentActivityChart').getContext('2d');
+    
+    // Sort by date and get last 7 days
+    const sortedActivity = recentActivity.sort((a, b) => new Date(a.date) - new Date(b.date));
+    const labels = sortedActivity.map(activity => {
+        const date = new Date(activity.date);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    });
+    const taskUpdates = sortedActivity.map(activity => activity.task_updates || 0);
+    const completions = sortedActivity.map(activity => activity.completions || 0);
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Task Updates',
+                data: taskUpdates,
+                borderColor: 'rgba(59, 130, 246, 1)',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                tension: 0.4,
+                fill: true
+            }, {
+                label: 'Completions',
+                data: completions,
+                borderColor: 'rgba(16, 185, 129, 1)',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            }
+        }
+    });
+}
+
+        // Make sure this is being called when the page loads
 document.addEventListener('DOMContentLoaded', function() {
     loadParents();
     loadClassStats(); // Ensure this line is present
+    loadSchoolStatistics(); // Load comprehensive school statistics
 });
 
         // Add this to your existing document.addEventListener('DOMContentLoaded', ...)
