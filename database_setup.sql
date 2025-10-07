@@ -482,6 +482,22 @@ INSERT INTO writing_tasks (task_name, age_min, age_max, difficulty_level, prompt
 'Write a well-structured essay with clear paragraphs. Use proper grammar and punctuation. Make your handwriting neat and professional. Include a thesis statement and supporting arguments.', 
 80, 150, 15);
 
+CREATE TABLE IF NOT EXISTS user_task_attempts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    task_id INT NOT NULL,
+    attempt_number INT NOT NULL,
+    status ENUM('In Progress', 'Completed', 'Abandoned') DEFAULT 'In Progress',
+    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_attempt (user_id, task_id, attempt_number)
+);
+
+
+
+
 -- Create writing_samples table to store uploaded writing images
 CREATE TABLE IF NOT EXISTS writing_samples (
     id INT AUTO_INCREMENT PRIMARY KEY,
