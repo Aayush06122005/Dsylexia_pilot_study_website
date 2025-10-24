@@ -160,7 +160,7 @@ CREATE TABLE IF NOT EXISTS audio_recordings (
 
 CREATE TABLE IF NOT EXISTS typing_progress (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    attempt_id INT NOT NULL,
+    attempt_id INT NOT NULL UNIQUE,
     text TEXT,
     keystrokes LONGTEXT,
     timer INT,
@@ -182,13 +182,17 @@ CREATE TABLE IF NOT EXISTS comprehension_progress (
 -- Create aptitude_progress table for storing aptitude task data
 CREATE TABLE IF NOT EXISTS aptitude_progress (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    attempt_id INT NOT NULL,
+    attempt_id INT NOT NULL UNIQUE,
     logical_reasoning_score INT DEFAULT 0,
     numerical_ability_score INT DEFAULT 0,
     verbal_ability_score INT DEFAULT 0,
     spatial_reasoning_score INT DEFAULT 0,
     total_score INT DEFAULT 0,
     status ENUM('In Progress', 'Completed') DEFAULT 'In Progress',
+    answers JSON NULL,
+    current_section VARCHAR(50) NULL,
+    answered_count INT DEFAULT 0,
+    progress_percent INT DEFAULT 0,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (attempt_id) REFERENCES user_task_attempts(id) ON DELETE CASCADE
 );

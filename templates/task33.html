@@ -305,7 +305,7 @@
                     select.id = `q${questionNum}`;
                     select.name = `q${questionNum}`;
                     select.className = 'w-full border border-gray-300 rounded p-2 text-lg';
-                    select.required = true;
+                    select.required = false;
                     
                     // Add default option
                     const defaultOption = document.createElement('option');
@@ -333,10 +333,15 @@
                     input.id = `q${questionNum}`;
                     input.name = `q${questionNum}`;
                     input.className = 'w-full border border-gray-300 rounded p-2 text-lg';
-                    input.required = true;
+                    input.required = false;
                     container.appendChild(input);
                 }
             });
+            
+            // Load saved progress after all questions are created
+            setTimeout(() => {
+                loadSavedProgress();
+            }, 100);
         }
 
         function showError(message) {
@@ -455,33 +460,55 @@
         // Prefill answers and handle completed state
         document.addEventListener('DOMContentLoaded', function() {
             loadReadingComprehensionTask();
-            
-            // Check for saved progress after task loads
-            setTimeout(() => {
-                if (currentTask) {
-                    fetch('/api/get-comprehension-progress')
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.success && data.progress) {
-                                document.getElementById('q1').value = data.progress.q1 || '';
-                                document.getElementById('q2').value = data.progress.q2 || '';
-                                document.getElementById('q3').value = data.progress.q3 || '';
-                                if (data.progress.status === 'Completed') {
-                                    taskCompleted = true;
-                                    document.getElementById('saveProgressBtn').disabled = true;
-                                    document.getElementById('submitBtn').disabled = true;
-                                    document.getElementById('formMsg').textContent = 'This task has already been submitted.';
-                                    document.getElementById('formMsg').classList.remove('hidden', 'text-red-600');
-                                    document.getElementById('formMsg').classList.add('text-green-700');
-                                }
-                            }
-                        })
-                        .catch(() => {
-                            console.log('Could not check for saved comprehension progress');
-                        });
-                }
-            }, 1000);
         });
+
+        // Function to load saved progress
+        function loadSavedProgress() {
+            fetch('/api/get-comprehension-progress?task_name=Reading Comprehension')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.progress) {
+                        console.log('Loading saved progress:', data.progress);
+                        
+                        // Load each question with proper handling for dropdowns
+                        if (data.progress.q1) {
+                            const q1Element = document.getElementById('q1');
+                            if (q1Element) {
+                                q1Element.value = data.progress.q1;
+                                console.log('Loaded q1:', data.progress.q1);
+                            }
+                        }
+                        
+                        if (data.progress.q2) {
+                            const q2Element = document.getElementById('q2');
+                            if (q2Element) {
+                                q2Element.value = data.progress.q2;
+                                console.log('Loaded q2:', data.progress.q2);
+                            }
+                        }
+                        
+                        if (data.progress.q3) {
+                            const q3Element = document.getElementById('q3');
+                            if (q3Element) {
+                                q3Element.value = data.progress.q3;
+                                console.log('Loaded q3:', data.progress.q3);
+                            }
+                        }
+                        
+                        if (data.progress.status === 'Completed') {
+                            taskCompleted = true;
+                            document.getElementById('saveProgressBtn').disabled = true;
+                            document.getElementById('submitBtn').disabled = true;
+                            document.getElementById('formMsg').textContent = 'This task has already been submitted.';
+                            document.getElementById('formMsg').classList.remove('hidden', 'text-red-600');
+                            document.getElementById('formMsg').classList.add('text-green-700');
+                        }
+                    }
+                })
+                .catch(() => {
+                    console.log('Could not check for saved comprehension progress');
+                });
+        }
 
         // Save Progress
         const saveBtn = document.getElementById('saveProgressBtn');
@@ -493,7 +520,7 @@
             fetch('/api/save-comprehension-progress', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({q1, q2, q3})
+                body: JSON.stringify({q1, q2, q3, task_name: 'Reading Comprehension'})
             })
             .then(res => res.json())
             .then(resp => {
@@ -530,7 +557,7 @@
             fetch('/api/submit-comprehension', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({q1, q2, q3})
+                body: JSON.stringify({q1, q2, q3, task_name: 'Reading Comprehension'})
             })
             .then(res => res.json())
             .then(resp => {

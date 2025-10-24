@@ -439,7 +439,7 @@
                 }
 
                 // Load saved typing progress (always check, even in retake mode)
-                fetch('/api/get-typing-progress')
+                fetch('/api/get-typing-progress?task_name=Typing Task')
                 .then(res => res.json())
                 .then(data => {
                     if (data.success && data.progress) {
@@ -598,7 +598,7 @@
                     keystrokes, 
                     timer,
                     task_id: currentTaskId,
-                    task_name: currentTask ? currentTask.task_name : 'Typing Task'
+                    task_name: 'Typing Task'
                 };
                 
                 fetch('/api/save-typing-progress', {
@@ -640,7 +640,7 @@
                     keystrokes, 
                     timer,
                     task_id: currentTaskId,
-                    task_name: currentTask ? currentTask.task_name : 'Typing Task'
+                    task_name: 'Typing Task'
                 };
                 
                 fetch('/api/submit-typing-task', {

@@ -412,33 +412,108 @@
             }
 
             // Load saved writing progress (always check, even in retake mode)
-            const taskId = new URLSearchParams(window.location.search).get('task_id');
-            if (taskId) {
-                fetch(`/api/get-writing-progress?task_id=${taskId}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success && data.progress) {
-                        // Show notification that progress was loaded
-                        const notificationDiv = document.createElement('div');
-                        notificationDiv.className = 'bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4';
-                        notificationDiv.innerHTML = `
-                            <p class="font-bold">Progress Loaded</p>
-                            <p>Your previous writing sample has been preserved.</p>
-                        `;
-                        
-                        const contentWrapper = document.querySelector('.content-wrapper');
-                        if (contentWrapper) {
-                            contentWrapper.insertBefore(notificationDiv, contentWrapper.firstChild);
-                            setTimeout(() => {
-                                notificationDiv.remove();
-                            }, 3000);
-                        }
+            setTimeout(() => {
+                loadSavedProgress();
+            }, 100);
+        }
+
+        function loadSavedProgress() {
+            // Load saved writing progress
+            fetch('/api/get-writing-progress?task_name=Writing Task')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.progress && data.progress.filename) {
+                    // Show notification that progress was loaded
+                    const notificationDiv = document.createElement('div');
+                    notificationDiv.className = 'bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4';
+                    notificationDiv.innerHTML = `
+                        <p class="font-bold">Progress Loaded</p>
+                        <p>Your previous writing sample has been preserved. You can continue or submit.</p>
+                    `;
+                    
+                    const contentWrapper = document.querySelector('.content-wrapper');
+                    if (contentWrapper) {
+                        contentWrapper.insertBefore(notificationDiv, contentWrapper.firstChild);
+                        setTimeout(() => {
+                            notificationDiv.remove();
+                        }, 3000);
                     }
+                    
+                    // Enable buttons so user can continue or submit
+                    document.getElementById('saveProgressBtn').disabled = false;
+                    document.getElementById('submitBtn').disabled = false;
+                }
+            })
+            .catch(() => {
+                console.log('Could not load saved progress');
+            });
+        }
+
+        function submitSavedProgress() {
+            // Submit the saved progress without requiring a new file
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('saveProgressBtn').disabled = true;
+            showSuccess('Submitting your saved writing...');
+
+            fetch('/api/submit-saved-writing', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    task_name: 'Writing Task'
                 })
-                .catch(() => {
-                    console.log('Could not load saved progress');
-                });
-            }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showSuccess('Writing submitted successfully! Task completed.');
+                    document.getElementById('completionButtons').classList.remove('hidden');
+                } else {
+                    showError('Failed to submit writing: ' + (data.message || 'Unknown error'));
+                    document.getElementById('submitBtn').disabled = false;
+                    document.getElementById('saveProgressBtn').disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error submitting writing:', error);
+                showError('Failed to submit writing. Please try again.');
+                document.getElementById('submitBtn').disabled = false;
+                document.getElementById('saveProgressBtn').disabled = false;
+            });
+        }
+
+        function saveExistingProgress() {
+            // Save the existing progress without requiring a new file
+            this.disabled = true;
+            showSuccess('Saving progress...');
+
+            fetch('/api/save-existing-writing-progress', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    task_name: 'Writing Task'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showSuccess('Progress saved successfully! Redirecting to dashboard...');
+                    setTimeout(() => {
+                        window.location.href = '/participant-dashboard';
+                    }, 2000);
+                } else {
+                    showError('Failed to save progress: ' + (data.message || 'Unknown error'));
+                    this.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error saving progress:', error);
+                showError('Failed to save progress. Please try again.');
+                this.disabled = false;
+            });
         }
 
         function loadTaskContent() {
@@ -577,11 +652,31 @@
 
         // Save progress functionality
         document.getElementById('saveProgressBtn').addEventListener('click', function() {
-            if (!selectedFile || !currentTask) return;
+            if (!currentTask) return;
+
+            // Check if there's a new file selected or if we should save existing progress
+            if (!selectedFile) {
+                // No new file selected, check if there's saved progress to save again
+                fetch('/api/get-writing-progress?task_name=Writing Task')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.progress && data.progress.filename) {
+                        // Save the existing progress again (no-op but allows user to return to dashboard)
+                        saveExistingProgress();
+                    } else {
+                        showError('Please select an image to save progress.');
+                    }
+                })
+                .catch(() => {
+                    showError('Please select an image to save progress.');
+                });
+                return;
+            }
 
             const formData = new FormData();
             formData.append('writing_image', selectedFile);
             formData.append('task_id', currentTask.id);
+            formData.append('task_name', 'Writing Task'); // Always pass 'Writing Task'
 
             this.disabled = true;
             showSuccess('Saving progress...');
@@ -631,11 +726,32 @@
 
         // Submit functionality
         document.getElementById('submitBtn').addEventListener('click', function() {
-            if (!selectedFile || !currentTask) return;
+            if (!currentTask) return;
 
+            // Check if there's a new file selected or if we should submit saved progress
+            if (!selectedFile) {
+                // No new file selected, check if there's saved progress to submit
+                fetch('/api/get-writing-progress?task_name=Writing Task')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.progress && data.progress.filename) {
+                        // Submit the saved progress
+                        submitSavedProgress();
+                    } else {
+                        showError('Please select an image to submit.');
+                    }
+                })
+                .catch(() => {
+                    showError('Please select an image to submit.');
+                });
+                return;
+            }
+
+            // New file selected, submit it
             const formData = new FormData();
             formData.append('writing_image', selectedFile);
             formData.append('task_id', currentTask.id);
+            formData.append('task_name', 'Writing Task'); // Always pass 'Writing Task'
 
             this.disabled = true;
             document.getElementById('saveProgressBtn').disabled = true;

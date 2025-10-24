@@ -332,37 +332,11 @@
         
         // Load mathematical comprehension task content first
         loadMathematicalContent();
-        
-        // Check task status and load progress
-        checkTaskStatusAndLoadProgress();
     });
 
-    function checkTaskStatusAndLoadProgress() {
-        // First check if task is already completed (but allow retakes)
-        const urlParams = new URLSearchParams(window.location.search);
-        const isRetake = urlParams.get('retake') === 'true';
-        
-        if (!isRetake) {
-            // Only check completion status if not in retake mode
-            fetch('/api/user-tasks')
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    const task = data.tasks.find(t => t.task_name === 'Mathematical Comprehension');
-                    if (task && task.status === 'Completed') {
-                        alert('This task has already been completed. Redirecting to dashboard.');
-                        window.location.href = '/participant-dashboard';
-                        return;
-                    }
-                }
-            })
-            .catch(() => {
-                console.log('Could not check task status');
-            });
-        }
-
-        // Load saved mathematical comprehension progress (always check, even in retake mode)
-        fetch('/api/get-mathematical-comprehension-progress')
+    function loadSavedProgress() {
+        // Load saved mathematical comprehension progress
+        fetch('/api/get-mathematical-comprehension-progress?task_name=Mathematical Comprehension')
         .then(res => res.json())
         .then(data => {
             if (data.success && data.progress) {
@@ -423,6 +397,11 @@
                 if (data.success) {
                     currentTask = data.task;
                     displayMathematicalContent(data.task);
+                    
+                    // Load saved progress after form elements are created
+                    setTimeout(() => {
+                        loadSavedProgress();
+                    }, 100);
                 } else {
                     showError('Failed to load mathematical comprehension task: ' + data.message);
                 }
@@ -576,7 +555,7 @@ function displayMathematicalContent(task) {
             q2, 
             q3,
             task_id: currentTaskId,
-            task_name: currentTask ? currentTask.task_name : 'Mathematical Comprehension'
+            task_name: 'Mathematical Comprehension' // Always pass 'Mathematical Comprehension'
         };
         fetch('/api/save-mathematical-comprehension-progress', {
                     method: 'POST',
@@ -620,7 +599,7 @@ function displayMathematicalContent(task) {
             q2, 
             q3,
             task_id: currentTaskId,
-            task_name: currentTask ? currentTask.task_name : 'Mathematical Comprehension'
+            task_name: 'Mathematical Comprehension' // Always pass 'Mathematical Comprehension'
         };
         fetch('/api/submit-mathematical-comprehension', {
                     method: 'POST',

@@ -276,9 +276,14 @@
                     <button id="saveProgress" class="bg-yellow-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-yellow-600 transition">
                         Save Progress
                     </button>
-                    <button id="submitTest" class="primary-bg text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
-                        Submit Test
-                    </button>
+                    <div class="flex space-x-4">
+                        <button id="retakeTest" class="bg-orange-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-600 transition">
+                            Retake Test
+                        </button>
+                        <button id="submitTest" class="primary-bg text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
+                            Submit Test
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -493,6 +498,7 @@
         const progressText = document.getElementById('progressText');
         const saveProgressBtn = document.getElementById('saveProgress');
         const submitTestBtn = document.getElementById('submitTest');
+        const retakeTestBtn = document.getElementById('retakeTest');
 
         // Start test
         startTestBtn.addEventListener('click', () => {
@@ -501,7 +507,7 @@
         });
 
         function loadSavedProgress() {
-            fetch('/api/get-aptitude-progress')
+            fetch('/api/get-aptitude-progress?task_name=Aptitude Test')
             .then(res => res.json())
             .then(data => {
                 if (data.success && data.progress) {
@@ -689,21 +695,23 @@
 
 // ...existing code...
 
-function saveProgress(scores) {
-    const payload = {
-        ...scores,
-        answers,
-        current_section: currentSection,
-        answered_count: answeredQuestions,
-        progress_percent: Math.round((answeredQuestions / totalQuestions) * 100)
-    };
-    fetch('/api/save-aptitude-progress', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-    })
+        function saveProgress(scores) {
+            const payload = {
+                ...scores,
+                answers,
+                current_section: currentSection,
+                answered_count: answeredQuestions,
+                progress_percent: Math.round((answeredQuestions / totalQuestions) * 100),
+                task_name: 'Aptitude Test'
+            };
+            console.log('Sending aptitude save payload:', payload);  // Debug logging
+            fetch('/api/save-aptitude-progress', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
     .then(response => response.json())
     .then(data => {
         // Show message in a box below the action buttons (not a ribbon)
@@ -760,13 +768,24 @@ function saveProgress(scores) {
             submitTest(scores);
         });
 
+        // Retake test
+        retakeTestBtn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to retake this test? This will create a new attempt and you will lose your current progress.')) {
+                retakeTest();
+            }
+        });
+
         function submitTest(scores) {
+            const payload = {
+                ...scores,
+                task_name: 'Aptitude Test'
+            };
             fetch('/api/submit-aptitude', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(scores)
+                body: JSON.stringify(payload)
             })
             .then(response => response.json())
             .then(data => {
@@ -783,9 +802,70 @@ function saveProgress(scores) {
             });
         }
 
+        function retakeTest() {
+            fetch('/api/retake-aptitude', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    task_name: 'Aptitude Test'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Reset the test state
+                    answers = {
+                        logical: {},
+                        numerical: {},
+                        verbal: {},
+                        spatial: {}
+                    };
+                    answeredQuestions = 0;
+                    currentSection = 'logical';
+                    
+                    // Clear all selected options
+                    document.querySelectorAll('.option-btn').forEach(btn => {
+                        btn.classList.remove('selected');
+                    });
+                    
+                    // Reset progress bar
+                    progressBar.style.width = '0%';
+                    progressText.textContent = '0%';
+                    
+                    // Show first section
+                    showSection('logical');
+                    updateNavigation();
+                    
+                    // Show notification
+                    const notificationDiv = document.createElement('div');
+                    notificationDiv.className = 'bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4';
+                    notificationDiv.innerHTML = `
+                        <p class="font-bold">New Attempt Started</p>
+                        <p>You can now retake the test. Your previous attempt has been preserved.</p>
+                    `;
+                    
+                    const contentWrapper = document.querySelector('.content-wrapper');
+                    if (contentWrapper) {
+                        contentWrapper.insertBefore(notificationDiv, contentWrapper.firstChild);
+                        setTimeout(() => {
+                            notificationDiv.remove();
+                        }, 3000);
+                    }
+                } else {
+                    alert('Failed to start retake: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error starting retake:', error);
+                alert('Error starting retake. Please try again.');
+            });
+        }
+
         // Load saved progress
         function loadSavedProgress() {
-            fetch('/api/get-aptitude-progress')
+            fetch('/api/get-aptitude-progress?task_name=Aptitude Test')
             .then(response => response.json())
             .then(data => {
                 if (data.success && data.progress) {

@@ -6,6 +6,34 @@
     <title>Participant Dashboard - Dyslexia Research Study</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='landing_style.css') }}">
+    <style>
+        /* Prevent flickering during task loading */
+        #taskGrid {
+            min-height: 400px;
+        }
+        
+        .task-card {
+            transition: opacity 0.3s ease;
+        }
+        
+        .loading-spinner {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Smooth transitions for status changes */
+        .status-badge {
+            transition: all 0.3s ease;
+        }
+        
+        .task-btn {
+            transition: all 0.3s ease;
+        }
+    </style>
 </head>
 <body>
     <!-- Header -->
@@ -381,27 +409,77 @@
             grid.innerHTML = '';
             (tasks || []).forEach(task => {
                 const card = document.createElement('div');
-                card.className = 'card bg-white rounded-xl shadow-md p-6 flex flex-col items-center text-center';
+                card.className = 'card task-card bg-white rounded-xl shadow-md p-6 flex flex-col items-center text-center';
+                
+                // Get task description
+                const description = getTaskDescription(task.task_name);
+                
+                // Create status badge
+                const statusBadge = task.status === 'Not Started' 
+                    ? '<span class="status-badge inline-block px-3 py-1 rounded-full text-xs font-semibold bg-yellow-200 text-yellow-800 mb-3">Not Started</span>'
+                    : task.status === 'In Progress' 
+                    ? '<span class="status-badge inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-200 text-blue-800 mb-3">In Progress</span>'
+                    : '<span class="status-badge inline-block px-3 py-1 rounded-full text-xs font-semibold bg-green-200 text-green-800 mb-3">Completed</span>';
+                
+                // Create button based on status
+                let buttonHtml = '';
+                if (task.status === 'Completed') {
+                    buttonHtml = `
+                        <div class="flex flex-col gap-2 mt-auto w-full">
+                            <button class="task-btn bg-gray-200 text-gray-800 hover:bg-gray-300 px-4 py-2 rounded-md font-semibold transition" data-task="${task.task_name}" data-status="${task.status}">Retake</button>
+                            <button class="task-btn primary-bg opacity-60 text-white px-4 py-2 rounded-md font-semibold transition cursor-not-allowed" disabled>Completed</button>
+                        </div>
+                    `;
+                } else {
+                    const buttonText = task.status === 'Not Started' ? 'Start Task' : 'Continue';
+                    buttonHtml = `<button class="task-btn primary-bg text-white px-4 py-2 rounded-md font-semibold mt-auto w-full transition" data-task="${task.task_name}" data-status="${task.status}">${buttonText}</button>`;
+                }
+                
                 card.innerHTML = `
                     <img src="${iconFor(task.task_name)}" alt="${task.task_name}" class="h-20 w-20 mb-4 rounded-full shadow">
                     <h3 class="text-lg font-bold mb-2">${task.task_name}</h3>
-                    <p class="mb-4 text-gray-600"></p>
-                    ${task.status === 'Not Started' ? '<span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-yellow-200 text-yellow-800 mb-3">Not Started</span>' : (task.status === 'In Progress' ? '<span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-200 text-blue-800 mb-3">In Progress</span>' : '<span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-green-200 text-green-800 mb-3">Completed</span>')}
-                    <button class="primary-bg text-white px-4 py-2 rounded-md font-semibold mt-auto w-full transition task-btn" data-task="${task.task_name}" data-status="${task.status}">${task.status === 'Not Started' ? 'Start Task' : (task.status === 'In Progress' ? 'Continue' : 'Retake')}</button>
+                    <p class="mb-4 text-gray-600">${description}</p>
+                    ${statusBadge}
+                    ${buttonHtml}
                 `;
                 grid.appendChild(card);
             });
             updateProgressBar(tasks || []);
         }
+        
+        function getTaskDescription(taskName) {
+            if (taskName === 'Reading Aloud Task 1') return 'Read a short story out loud. Click to begin!';
+            if (taskName === 'Typing Task') return 'Type a short essay on the mentioned topic.';
+            if (taskName === 'Reading Comprehension') return 'Read a passage and answer questions.';
+            if (taskName === 'Mathematical Comprehension') return 'Solve math-based comprehension questions.';
+            if (taskName === 'Writing Task') return 'Write a creative story or essay as instructed.';
+            if (taskName === 'Aptitude Test') return 'Test your logical, numerical, verbal, and spatial reasoning abilities.';
+            return 'Complete this task to progress.';
+        }
 
         // Load allowed tasks on page load
         document.addEventListener('DOMContentLoaded', function(){
+            // Show loading state initially
+            const taskGrid = document.getElementById('taskGrid');
+            if (taskGrid) {
+                taskGrid.innerHTML = '<div class="col-span-full text-center py-8"><div class="inline-block loading-spinner rounded-full h-8 w-8 border-b-2 border-blue-600"></div><p class="mt-2 text-gray-600">Loading tasks...</p></div>';
+            }
+            
             fetch('/api/allowed-tasks')
                 .then(r => r.json())
                 .then(data => {
-                    if (data.success) renderAllowedTasks(data.tasks);
+                    if (data.success) {
+                        renderAllowedTasks(data.tasks);
+                        // After rendering, check for any saved progress
+                        checkSavedProgress();
+                    }
                 })
-                .catch(() => {});
+                .catch(() => {
+                    // Show error state if API fails
+                    if (taskGrid) {
+                        taskGrid.innerHTML = '<div class="col-span-full text-center py-8"><p class="text-red-600">Failed to load tasks. Please refresh the page.</p></div>';
+                    }
+                });
         });
         
         // Add event listeners to task buttons
@@ -482,29 +560,53 @@
                 
         // Check for saved progress and update button text accordingly
         function checkSavedProgress() {
-            fetch('/api/get-saved-progress')
-            .then(res => res.json())
-            .then(data => {
-                if (data.success && data.saved_audio) {
-                    // Find the Reading Aloud Task 1 button and update it
-                    const taskBtns = document.querySelectorAll('.task-btn');
-                    taskBtns.forEach(btn => {
-                        if (btn.getAttribute('data-task') === 'Reading Aloud Task 1') {
-                            const status = btn.getAttribute('data-status');
-                            if (status === 'In Progress') {
-                                btn.textContent = 'Continue';
-                            }
-                        }
-                    });
-                }
-            })
-            .catch(() => {
-                console.log('Could not check saved progress');
+            // Only check for specific tasks that might have saved progress
+            const tasksToCheck = [
+                'Reading Aloud Task 1',
+                'Typing Task', 
+                'Reading Comprehension',
+                'Mathematical Comprehension',
+                'Writing Task',
+                'Aptitude Test'
+            ];
+            
+            // Check each task for saved progress
+            tasksToCheck.forEach(taskName => {
+                checkTaskProgress(taskName);
             });
         }
         
-        // Call this function when page loads
-        checkSavedProgress();
+        function checkTaskProgress(taskName) {
+            // Map task names to their respective API endpoints
+            const apiEndpoints = {
+                'Reading Aloud Task 1': '/api/get-saved-progress',
+                'Typing Task': '/api/get-typing-progress',
+                'Reading Comprehension': '/api/get-comprehension-progress',
+                'Mathematical Comprehension': '/api/get-mathematical-comprehension-progress',
+                'Writing Task': '/api/get-writing-progress',
+                'Aptitude Test': '/api/get-aptitude-progress'
+            };
+            
+            const endpoint = apiEndpoints[taskName];
+            if (!endpoint) return;
+            
+            fetch(endpoint + (taskName === 'Aptitude Test' ? '?task_name=Aptitude Test' : ''))
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.progress) {
+                    // Update the specific task button if it exists and is in progress
+                    const taskBtn = document.querySelector(`[data-task="${taskName}"][data-status="In Progress"]`);
+                    if (taskBtn) {
+                        taskBtn.textContent = 'Continue';
+                        // Add a small indicator that there's saved progress
+                        taskBtn.classList.add('border-2', 'border-blue-400');
+                    }
+                }
+            })
+            .catch(() => {
+                // Silently fail - this is not critical functionality
+            });
+        }
         
         // Check if viewing as child and show back to parent button
         document.addEventListener('DOMContentLoaded', function() {

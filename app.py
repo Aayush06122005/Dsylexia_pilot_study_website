@@ -1941,27 +1941,37 @@ def participant_dashboard():
                 'Aptitude Test'
             ]
             
-            # Determine allowed tasks based on section assignments.
-            # If the user belongs to a section (school-going), use section_assessments.
-            # Otherwise, show all tasks by default.
-            cursor.execute("SELECT section_id, school_id FROM users WHERE id = %s", (user_id,))
-            user_row = cursor.fetchone()
-            section_id = user_row['section_id'] if user_row else None
-            school_id = user_row['school_id'] if user_row else None
-
-            if school_id:
-                # Logged-in child belongs to a school: show only tasks assigned to their current section
-                cursor.execute("""
-                    SELECT t.task_name
-                    FROM users u
-                    JOIN section_assessments sa ON sa.section_id = u.section_id
-                    JOIN tasks t ON t.task_name = sa.task_name
-                    WHERE u.id = %s
-                    ORDER BY t.id
-                """, (user_id,))
-                db_tasks = [row['task_name'] for row in cursor.fetchall()]
+            # Determine allowed tasks based on class level from demographics
+            # Get user's class level from demographics
+            class_level = _get_user_class_level(conn, user_id)
+            
+            if class_level:
+                # Show class-appropriate tasks based on class level
+                # Get tasks that have class-specific content for this user's class
+                db_tasks = []
+                
+                # Check each task category for class-appropriate content
+                task_categories = [
+                    ('Reading Aloud Task 1', 'reading_tasks'),
+                    ('Typing Task', 'typing_tasks'), 
+                    ('Reading Comprehension', 'reading_comprehension_tasks'),
+                    ('Mathematical Comprehension', 'mathematical_comprehension_tasks'),
+                    ('Writing Task', 'writing_tasks'),
+                    ('Aptitude Test', 'aptitude_tasks')
+                ]
+                
+                for task_name, table_name in task_categories:
+                    # Check if there are class-appropriate tasks for this category
+                    cursor.execute(f"SELECT COUNT(*) as count FROM {table_name} WHERE class_level = %s", (class_level,))
+                    count_result = cursor.fetchone()
+                    if count_result and count_result['count'] > 0:
+                        db_tasks.append(task_name)
+                
+                # If no class-specific tasks found, show all core tasks as fallback
+                if not db_tasks:
+                    db_tasks = core_tasks
             else:
-                # Non-school-going: show all tasks
+                # No class level found: show all tasks as fallback
                 cursor.execute("SELECT task_name FROM tasks")
                 db_tasks = [row['task_name'] for row in cursor.fetchall()]
             
@@ -2223,13 +2233,26 @@ def _category_config(category_slug: str):
 
 
 def _get_user_class_level(conn, user_id: int):
-    """Determine numeric class_level (1-12) for a user based on `users.class` or their section's class name."""
+    """Determine numeric class_level (1-12) for a user based on demographics.education_level, users.class, or their section's class name."""
     try:
         cur = conn.cursor(dictionary=True)
-        # First try direct users.class (e.g., "Class 6" or "6")
+        class_level = None
+        
+        # First try demographics.education_level (stores class numbers 1-12)
+        cur.execute("SELECT education_level FROM demographics WHERE user_id=%s", (user_id,))
+        demo_row = cur.fetchone()
+        if demo_row and demo_row.get('education_level'):
+            try:
+                class_level = int(demo_row['education_level'])
+                if 1 <= class_level <= 12:
+                    cur.close()
+                    return class_level
+            except (ValueError, TypeError):
+                pass
+        
+        # Fallback to users.class (e.g., "Class 6" or "6")
         cur.execute("SELECT class, section_id FROM users WHERE id=%s", (user_id,))
         row = cur.fetchone()
-        class_level = None
         if row:
             user_class = row.get('class')
             if user_class:
@@ -2730,21 +2753,37 @@ def api_allowed_tasks():
         school_id = row['school_id'] if row else None
 
         tasks = []
-        if school_id:
-            # Only tasks assigned to this student's section
-            cursor.execute(
-                """
-                SELECT t.task_name
-                FROM users u
-                JOIN section_assessments sa ON sa.section_id = u.section_id
-                JOIN tasks t ON t.task_name = sa.task_name
-                WHERE u.id = %s
-                ORDER BY t.id
-                """,
-                (user_id,)
-            )
-            allowed = [r['task_name'] for r in cursor.fetchall()]
+        
+        # Get user's class level from demographics
+        class_level = _get_user_class_level(conn, user_id)
+        
+        if class_level:
+            # Show class-appropriate tasks based on class level
+            allowed = []
+            
+            # Check each task category for class-appropriate content
+            task_categories = [
+                ('Reading Aloud Task 1', 'reading_tasks'),
+                ('Typing Task', 'typing_tasks'), 
+                ('Reading Comprehension', 'reading_comprehension_tasks'),
+                ('Mathematical Comprehension', 'mathematical_comprehension_tasks'),
+                ('Writing Task', 'writing_tasks'),
+                ('Aptitude Test', 'aptitude_tasks')
+            ]
+            
+            for task_name, table_name in task_categories:
+                # Check if there are class-appropriate tasks for this category
+                cursor.execute(f"SELECT COUNT(*) as count FROM {table_name} WHERE class_level = %s", (class_level,))
+                count_result = cursor.fetchone()
+                if count_result and count_result['count'] > 0:
+                    allowed.append(task_name)
+            
+            # If no class-specific tasks found, show all core tasks as fallback
+            if not allowed:
+                cursor.execute("SELECT task_name FROM tasks ORDER BY id")
+                allowed = [r['task_name'] for r in cursor.fetchall()]
         else:
+            # No class level found: show all tasks as fallback
             cursor.execute("SELECT task_name FROM tasks ORDER BY id")
             allowed = [r['task_name'] for r in cursor.fetchall()]
 
@@ -2951,31 +2990,71 @@ def save_progress():
     file = request.files['audio']
     if file.filename == '':
         return jsonify({'success': False, 'message': 'No selected file'}), 400
+    
+    task_name = request.form.get('task_name', 'Reading Aloud Task 1')
+    
     if file and allowed_file(file.filename):
         filename = secure_filename(f"user{session['user_id']}_" + datetime.now().strftime('%Y%m%d%H%M%S') + '_' + file.filename)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
-        # Save metadata to DB but don't mark task as completed
+        
         try:
             conn = connect_db()
             cursor = conn.cursor()
-            # Insert audio recording with progress status
+            
+            # Get or create task attempt
+            cursor.execute("SELECT id FROM tasks WHERE task_name = %s", (task_name,))
+            task_row = cursor.fetchone()
+            if not task_row:
+                return jsonify({'success': False, 'message': 'Task not found'}), 404
+            
+            task_id = task_row[0]
+            
+            # Get current attempt or create new one
             cursor.execute("""
-                INSERT INTO audio_recordings (user_id, filename, task_name, uploaded_at)
-                VALUES (%s, %s, %s, NOW())
-            """, (session['user_id'], filename, 'Reading Aloud Task 1'))
+                SELECT id, attempt_number FROM user_task_attempts 
+                WHERE user_id = %s AND task_id = %s AND status = 'In Progress'
+                ORDER BY attempt_number DESC LIMIT 1
+            """, (session['user_id'], task_id))
+            
+            attempt_row = cursor.fetchone()
+            if attempt_row:
+                attempt_id = attempt_row[0]
+                attempt_number = attempt_row[1]
+            else:
+                # Create new attempt
+                cursor.execute("""
+                    SELECT COALESCE(MAX(attempt_number), 0) + 1 FROM user_task_attempts 
+                    WHERE user_id = %s AND task_id = %s
+                """, (session['user_id'], task_id))
+                attempt_number = cursor.fetchone()[0]
+                
+                cursor.execute("""
+                    INSERT INTO user_task_attempts (user_id, task_id, attempt_number, status, started_at)
+                    VALUES (%s, %s, %s, %s, NOW())
+                """, (session['user_id'], task_id, attempt_number, 'In Progress'))
+                attempt_id = cursor.lastrowid
+            
+            # Save audio recording with attempt_id
+            cursor.execute("""
+                INSERT INTO audio_recordings (attempt_id, filename, uploaded_at)
+                VALUES (%s, %s, NOW())
+            """, (attempt_id, filename))
+            
             # Mark task as In Progress
             cursor.execute("""
                 INSERT INTO user_tasks (user_id, task_name, status)
                 VALUES (%s, %s, %s)
                 ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
-            """, (session['user_id'], 'Reading Aloud Task 1', 'In Progress'))
+            """, (session['user_id'], task_name, 'In Progress'))
+            
             conn.commit()
             cursor.close()
             conn.close()
+            return jsonify({'success': True, 'message': 'Progress saved successfully', 'filename': filename, 'attempt_id': attempt_id, 'attempt_number': attempt_number})
         except Exception as e:
             print(f"Save progress DB error: {e}")
-        return jsonify({'success': True, 'message': 'Progress saved successfully', 'filename': filename})
+            return jsonify({'success': False, 'message': 'Failed to save progress'}), 500
     else:
         return jsonify({'success': False, 'message': 'Invalid file type'}), 400
 
@@ -3041,23 +3120,62 @@ def upload_audio():
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
         
-        # Save metadata to DB and mark task as completed
         try:
             conn = connect_db()
             cursor = conn.cursor()
             
-            # Save audio recording entry (preserving the previous one)
-            cursor.execute("""
-                INSERT INTO audio_recordings (user_id, filename, task_name, uploaded_at)
-                VALUES (%s, %s, %s, NOW())
-            """, (session['user_id'], filename, task_name))
+            # Get or create task attempt
+            cursor.execute("SELECT id FROM tasks WHERE task_name = %s", (task_name,))
+            task_row = cursor.fetchone()
+            if not task_row:
+                return jsonify({'success': False, 'message': 'Task not found'}), 404
             
-            # Update task status
+            task_id = task_row[0]
+            
+            # Get current attempt or create new one
+            cursor.execute("""
+                SELECT id, attempt_number FROM user_task_attempts 
+                WHERE user_id = %s AND task_id = %s AND status = 'In Progress'
+                ORDER BY attempt_number DESC LIMIT 1
+            """, (session['user_id'], task_id))
+            
+            attempt_row = cursor.fetchone()
+            if attempt_row:
+                attempt_id = attempt_row[0]
+                attempt_number = attempt_row[1]
+            else:
+                # Create new attempt
+                cursor.execute("""
+                    SELECT COALESCE(MAX(attempt_number), 0) + 1 FROM user_task_attempts 
+                    WHERE user_id = %s AND task_id = %s
+                """, (session['user_id'], task_id))
+                attempt_number = cursor.fetchone()[0]
+                
+                cursor.execute("""
+                    INSERT INTO user_task_attempts (user_id, task_id, attempt_number, status, started_at)
+                    VALUES (%s, %s, %s, %s, NOW())
+                """, (session['user_id'], task_id, attempt_number, 'In Progress'))
+                attempt_id = cursor.lastrowid
+            
+            # Save audio recording with attempt_id
+            cursor.execute("""
+                INSERT INTO audio_recordings (attempt_id, filename, uploaded_at)
+                VALUES (%s, %s, NOW())
+            """, (attempt_id, filename))
+            
+            # Mark attempt as completed
+            cursor.execute("""
+                UPDATE user_task_attempts 
+                SET status = 'Completed', completed_at = NOW()
+                WHERE id = %s
+            """, (attempt_id,))
+            
+            # Mark user_tasks as Completed
             cursor.execute("""
                 INSERT INTO user_tasks (user_id, task_name, status)
-                VALUES (%s, %s, 'Completed')
-                ON DUPLICATE KEY UPDATE status = 'Completed', updated_at = CURRENT_TIMESTAMP
-            """, (session['user_id'], task_name))
+                VALUES (%s, %s, %s)
+                ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
+            """, (session['user_id'], task_name, 'Completed'))
             
             conn.commit()
             cursor.close()
@@ -3066,7 +3184,9 @@ def upload_audio():
             return jsonify({
                 'success': True, 
                 'message': 'Audio uploaded successfully and task marked as completed',
-                'filename': filename
+                'filename': filename,
+                'attempt_id': attempt_id,
+                'attempt_number': attempt_number
             })
         except Exception as e:
             print(f"Upload audio error: {e}")
@@ -3077,26 +3197,45 @@ def upload_audio():
     
 @app.route('/api/retake-task', methods=['POST'])
 def retake_task():
-    """Mark a task as In Progress for retaking while preserving previous submissions"""
+    """Create a new attempt for retaking while preserving previous submissions"""
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 401
     
     data = request.get_json()
-    task_name = data.get('task_name')
-    
-    if not task_name:
-        return jsonify({'success': False, 'message': 'Task name is required'}), 400
+    task_name = data.get('task_name', 'Reading Aloud Task 1')
     
     try:
         conn = connect_db()
         cursor = conn.cursor()
         
-        # Update task status to In Progress while preserving previous submissions
+        # Get task_id
+        cursor.execute("SELECT id FROM tasks WHERE task_name = %s", (task_name,))
+        task_row = cursor.fetchone()
+        if not task_row:
+            return jsonify({'success': False, 'message': 'Task not found'}), 404
+        
+        task_id = task_row[0]
+        
+        # Get next attempt number
         cursor.execute("""
-            UPDATE user_tasks 
-            SET status = 'In Progress', updated_at = CURRENT_TIMESTAMP
-            WHERE user_id = %s AND task_name = %s
-        """, (session['user_id'], task_name))
+            SELECT COALESCE(MAX(attempt_number), 0) + 1 FROM user_task_attempts 
+            WHERE user_id = %s AND task_id = %s
+        """, (session['user_id'], task_id))
+        attempt_number = cursor.fetchone()[0]
+        
+        # Create new attempt
+        cursor.execute("""
+            INSERT INTO user_task_attempts (user_id, task_id, attempt_number, status, started_at)
+            VALUES (%s, %s, %s, %s, NOW())
+        """, (session['user_id'], task_id, attempt_number, 'In Progress'))
+        attempt_id = cursor.lastrowid
+        
+        # Mark user_tasks as In Progress
+        cursor.execute("""
+            INSERT INTO user_tasks (user_id, task_name, status)
+            VALUES (%s, %s, %s)
+            ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
+        """, (session['user_id'], task_name, 'In Progress'))
         
         conn.commit()
         cursor.close()
@@ -3104,34 +3243,66 @@ def retake_task():
         
         return jsonify({
             'success': True, 
-            'message': 'Task reset for retake. Previous submissions preserved.',
+            'message': 'New attempt created for retake. Previous submissions preserved.',
+            'attempt_id': attempt_id,
+            'attempt_number': attempt_number,
             'task_name': task_name
         })
     except Exception as e:
-        print(f"Error resetting task for retake: {e}")
+        print(f"Error creating retake attempt: {e}")
         return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
 
 @app.route('/api/get-saved-progress', methods=['GET'])
 def get_saved_progress():
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    
+    task_name = request.args.get('task_name', 'Reading Aloud Task 1')
+    
     try:
         conn = connect_db()
         cursor = conn.cursor(dictionary=True)
-        # Get the most recent saved audio for this user and task
+        
+        # Get task_id
+        cursor.execute("SELECT id FROM tasks WHERE task_name = %s", (task_name,))
+        task_row = cursor.fetchone()
+        if not task_row:
+            return jsonify({'success': False, 'message': 'Task not found'}), 404
+        
+        task_id = task_row['id']
+        
+        # Get the latest IN PROGRESS attempt and its audio recording (not completed ones)
+        # Order by audio uploaded_at to get the most recent saved audio
         cursor.execute("""
-            SELECT filename FROM audio_recordings 
-            WHERE user_id = %s AND task_name = %s 
-            ORDER BY uploaded_at DESC 
+            SELECT 
+                uta.id as attempt_id,
+                uta.attempt_number,
+                uta.status as attempt_status,
+                uta.started_at,
+                uta.completed_at,
+                ar.filename, ar.uploaded_at
+            FROM user_task_attempts uta
+            LEFT JOIN audio_recordings ar ON ar.attempt_id = uta.id
+            WHERE uta.user_id = %s AND uta.task_id = %s AND uta.status = 'In Progress'
+            ORDER BY ar.uploaded_at DESC
             LIMIT 1
-        """, (session['user_id'], 'Reading Aloud Task 1'))
+        """, (session['user_id'], task_id))
+        
         result = cursor.fetchone()
         cursor.close()
         conn.close()
         
-        if result:
+        if result and result.get('filename'):
             audio_url = f"/uploads/{result['filename']}"
-            return jsonify({'success': True, 'saved_audio': audio_url})
+            return jsonify({
+                'success': True, 
+                'saved_audio': audio_url,
+                'attempt_id': result.get('attempt_id'),
+                'attempt_number': result.get('attempt_number'),
+                'attempt_status': result.get('attempt_status'),
+                'started_at': result.get('started_at'),
+                'completed_at': result.get('completed_at')
+            })
         else:
             return jsonify({'success': True, 'saved_audio': None})
     except Exception as e:
@@ -3152,22 +3323,71 @@ def save_typing_progress():
     try:
         conn = connect_db()
         cursor = conn.cursor()
-        # Insert or update typing progress
+        
+        # Get or create task attempt - handle both main tasks and typing tasks
+        cursor.execute("SELECT id FROM tasks WHERE task_name = %s", (task_name,))
+        task_row = cursor.fetchone()
+        
+        if not task_row:
+            # If not found in main tasks table, try typing_tasks table
+            cursor.execute("SELECT id FROM typing_tasks WHERE task_name = %s", (task_name,))
+            typing_task_row = cursor.fetchone()
+            if typing_task_row:
+                # For typing tasks, we need to use the main "Typing Task" as the parent task
+                cursor.execute("SELECT id FROM tasks WHERE task_name = 'Typing Task'")
+                main_task_row = cursor.fetchone()
+                if main_task_row:
+                    task_id = main_task_row[0]
+                else:
+                    return jsonify({'success': False, 'message': 'Typing Task not found in main tasks'}), 404
+            else:
+                return jsonify({'success': False, 'message': 'Task not found'}), 404
+        else:
+            task_id = task_row[0]
+        
+        # Get current attempt or create new one
+        cursor.execute("""
+            SELECT id, attempt_number FROM user_task_attempts 
+            WHERE user_id = %s AND task_id = %s AND status = 'In Progress'
+            ORDER BY attempt_number DESC LIMIT 1
+        """, (session['user_id'], task_id))
+        
+        attempt_row = cursor.fetchone()
+        if attempt_row:
+            attempt_id = attempt_row[0]
+            attempt_number = attempt_row[1]
+        else:
+            # Create new attempt
+            cursor.execute("""
+                SELECT COALESCE(MAX(attempt_number), 0) + 1 FROM user_task_attempts 
+                WHERE user_id = %s AND task_id = %s
+            """, (session['user_id'], task_id))
+            attempt_number = cursor.fetchone()[0]
+            
+            cursor.execute("""
+                INSERT INTO user_task_attempts (user_id, task_id, attempt_number, status, started_at)
+                VALUES (%s, %s, %s, %s, NOW())
+            """, (session['user_id'], task_id, attempt_number, 'In Progress'))
+            attempt_id = cursor.lastrowid
+        
+        # Save progress to typing_progress table
         cursor.execute('''
-            INSERT INTO typing_progress (user_id, text, keystrokes, timer, updated_at)
+            INSERT INTO typing_progress (attempt_id, text, keystrokes, timer, updated_at)
             VALUES (%s, %s, %s, %s, NOW())
             ON DUPLICATE KEY UPDATE text=VALUES(text), keystrokes=VALUES(keystrokes), timer=VALUES(timer), updated_at=NOW()
-        ''', (session['user_id'], text, keystrokes, timer))
-        # Mark task as In Progress
+        ''', (attempt_id, text, keystrokes, timer))
+        
+        # Mark user_tasks as In Progress
         cursor.execute('''
             INSERT INTO user_tasks (user_id, task_name, status)
             VALUES (%s, %s, %s)
             ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
-        ''', (session['user_id'], 'Typing Task', 'In Progress'))
+        ''', (session['user_id'], task_name, 'In Progress'))
+        
         conn.commit()
         cursor.close()
         conn.close()
-        return jsonify({'success': True, 'message': 'Progress saved successfully'})
+        return jsonify({'success': True, 'message': 'Progress saved successfully', 'attempt_id': attempt_id, 'attempt_number': attempt_number})
     except Exception as e:
         print(f"Save typing progress DB error: {e}")
         return jsonify({'success': False, 'message': 'Failed to save progress'}), 500
@@ -3186,22 +3406,78 @@ def submit_typing_task():
     try:
         conn = connect_db()
         cursor = conn.cursor()
-        # Insert or update typing progress as completed
+        
+        # Get or create task attempt - handle both main tasks and typing tasks
+        cursor.execute("SELECT id FROM tasks WHERE task_name = %s", (task_name,))
+        task_row = cursor.fetchone()
+        
+        if not task_row:
+            # If not found in main tasks table, try typing_tasks table
+            cursor.execute("SELECT id FROM typing_tasks WHERE task_name = %s", (task_name,))
+            typing_task_row = cursor.fetchone()
+            if typing_task_row:
+                # For typing tasks, we need to use the main "Typing Task" as the parent task
+                cursor.execute("SELECT id FROM tasks WHERE task_name = 'Typing Task'")
+                main_task_row = cursor.fetchone()
+                if main_task_row:
+                    task_id = main_task_row[0]
+                else:
+                    return jsonify({'success': False, 'message': 'Typing Task not found in main tasks'}), 404
+            else:
+                return jsonify({'success': False, 'message': 'Task not found'}), 404
+        else:
+            task_id = task_row[0]
+        
+        # Get current attempt or create new one
+        cursor.execute("""
+            SELECT id, attempt_number FROM user_task_attempts 
+            WHERE user_id = %s AND task_id = %s AND status = 'In Progress'
+            ORDER BY attempt_number DESC LIMIT 1
+        """, (session['user_id'], task_id))
+        
+        attempt_row = cursor.fetchone()
+        if attempt_row:
+            attempt_id = attempt_row[0]
+            attempt_number = attempt_row[1]
+        else:
+            # Create new attempt
+            cursor.execute("""
+                SELECT COALESCE(MAX(attempt_number), 0) + 1 FROM user_task_attempts 
+                WHERE user_id = %s AND task_id = %s
+            """, (session['user_id'], task_id))
+            attempt_number = cursor.fetchone()[0]
+            
+            cursor.execute("""
+                INSERT INTO user_task_attempts (user_id, task_id, attempt_number, status, started_at)
+                VALUES (%s, %s, %s, %s, NOW())
+            """, (session['user_id'], task_id, attempt_number, 'In Progress'))
+            attempt_id = cursor.lastrowid
+        
+        # Save final progress to typing_progress table
         cursor.execute('''
-            INSERT INTO typing_progress (user_id, text, keystrokes, timer, updated_at)
+            INSERT INTO typing_progress (attempt_id, text, keystrokes, timer, updated_at)
             VALUES (%s, %s, %s, %s, NOW())
             ON DUPLICATE KEY UPDATE text=VALUES(text), keystrokes=VALUES(keystrokes), timer=VALUES(timer), updated_at=NOW()
-        ''', (session['user_id'], text, keystrokes, timer))
-        # Mark task as Completed
+        ''', (attempt_id, text, keystrokes, timer))
+        
+        # Mark attempt as completed
+        cursor.execute("""
+            UPDATE user_task_attempts 
+            SET status = 'Completed', completed_at = NOW()
+            WHERE id = %s
+        """, (attempt_id,))
+        
+        # Mark user_tasks as Completed
         cursor.execute('''
             INSERT INTO user_tasks (user_id, task_name, status)
             VALUES (%s, %s, %s)
             ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
         ''', (session['user_id'], task_name, 'Completed'))
+        
         conn.commit()
         cursor.close()
         conn.close()
-        return jsonify({'success': True, 'message': 'Task submitted and marked as completed'})
+        return jsonify({'success': True, 'message': 'Task submitted and marked as completed', 'attempt_id': attempt_id, 'attempt_number': attempt_number})
     except Exception as e:
         print(f"Submit typing task DB error: {e}")
         return jsonify({'success': False, 'message': 'Failed to submit task'}), 500
@@ -3210,22 +3486,112 @@ def submit_typing_task():
 def get_typing_progress():
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    
+    task_name = request.args.get('task_name', 'Typing Task')
+    
     try:
         conn = connect_db()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute('''
-            SELECT text, keystrokes, timer FROM typing_progress WHERE user_id = %s ORDER BY updated_at DESC LIMIT 1
-        ''', (session['user_id'],))
+        
+        # Get task_id
+        cursor.execute("SELECT id FROM tasks WHERE task_name = %s", (task_name,))
+        task_row = cursor.fetchone()
+        if not task_row:
+            return jsonify({'success': False, 'message': 'Task not found'}), 404
+        
+        task_id = task_row['id']
+        
+        # Get the latest IN PROGRESS attempt and its progress (not completed ones)
+        # Order by progress updated_at to get the most recent saved progress
+        cursor.execute("""
+            SELECT 
+                uta.id as attempt_id,
+                uta.attempt_number,
+                uta.status as attempt_status,
+                uta.started_at,
+                uta.completed_at,
+                tp.text, tp.keystrokes, tp.timer, tp.updated_at
+            FROM user_task_attempts uta
+            LEFT JOIN typing_progress tp ON tp.attempt_id = uta.id
+            WHERE uta.user_id = %s AND uta.task_id = %s AND uta.status = 'In Progress'
+            ORDER BY tp.updated_at DESC
+            LIMIT 1
+        """, (session['user_id'], task_id))
+        
         result = cursor.fetchone()
         cursor.close()
         conn.close()
-        if result:
-            return jsonify({'success': True, 'progress': result})
+        
+        if result and result.get('text'):
+            return jsonify({
+                'success': True,
+                'progress': {
+                    'text': result.get('text', ''),
+                    'keystrokes': result.get('keystrokes', ''),
+                    'timer': result.get('timer', 0),
+                    'updated_at': result.get('updated_at'),
+                    'attempt_id': result.get('attempt_id'),
+                    'attempt_number': result.get('attempt_number'),
+                    'attempt_status': result.get('attempt_status'),
+                    'started_at': result.get('started_at'),
+                    'completed_at': result.get('completed_at')
+                }
+            })
         else:
             return jsonify({'success': True, 'progress': None})
     except Exception as e:
         print(f"Get typing progress error: {e}")
         return jsonify({'success': False, 'message': 'Failed to get progress'}), 500
+
+@app.route('/api/retake-typing', methods=['POST'])
+def retake_typing():
+    """Create a new attempt for typing task"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+
+    data = request.get_json()
+    task_name = data.get('task_name', 'Typing Task')
+
+    try:
+        conn = connect_db()
+        cursor = conn.cursor()
+
+        # Get task_id
+        cursor.execute("SELECT id FROM tasks WHERE task_name = %s", (task_name,))
+        task_row = cursor.fetchone()
+        if not task_row:
+            return jsonify({'success': False, 'message': 'Task not found'}), 404
+
+        task_id = task_row[0]
+
+        # Get next attempt number
+        cursor.execute("""
+            SELECT COALESCE(MAX(attempt_number), 0) + 1 FROM user_task_attempts 
+            WHERE user_id = %s AND task_id = %s
+        """, (session['user_id'], task_id))
+        attempt_number = cursor.fetchone()[0]
+
+        # Create new attempt
+        cursor.execute("""
+            INSERT INTO user_task_attempts (user_id, task_id, attempt_number, status, started_at)
+            VALUES (%s, %s, %s, %s, NOW())
+        """, (session['user_id'], task_id, attempt_number, 'In Progress'))
+        attempt_id = cursor.lastrowid
+
+        # Mark user_tasks as In Progress
+        cursor.execute('''
+            INSERT INTO user_tasks (user_id, task_name, status)
+            VALUES (%s, %s, %s)
+            ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
+        ''', (session['user_id'], task_name, 'In Progress'))
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({'success': True, 'message': 'New attempt created', 'attempt_id': attempt_id, 'attempt_number': attempt_number})
+    except Exception as e:
+        print(f"Retake typing DB error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to create new attempt'}), 500
 
 @app.route('/api/save-comprehension-progress', methods=['POST'])
 def save_comprehension_progress():
@@ -3236,24 +3602,62 @@ def save_comprehension_progress():
     q2 = data.get('q2', '')
     q3 = data.get('q3', '')
     task_name = data.get('task_name', 'Reading Comprehension')
+    
     try:
         conn = connect_db()
         cursor = conn.cursor()
+        
+        # Get or create task attempt
+        cursor.execute("SELECT id FROM tasks WHERE task_name = %s", (task_name,))
+        task_row = cursor.fetchone()
+        if not task_row:
+            return jsonify({'success': False, 'message': 'Task not found'}), 404
+        
+        task_id = task_row[0]
+        
+        # Get current attempt or create new one
+        cursor.execute("""
+            SELECT id, attempt_number FROM user_task_attempts 
+            WHERE user_id = %s AND task_id = %s AND status = 'In Progress'
+            ORDER BY attempt_number DESC LIMIT 1
+        """, (session['user_id'], task_id))
+        
+        attempt_row = cursor.fetchone()
+        if attempt_row:
+            attempt_id = attempt_row[0]
+            attempt_number = attempt_row[1]
+        else:
+            # Create new attempt
+            cursor.execute("""
+                SELECT COALESCE(MAX(attempt_number), 0) + 1 FROM user_task_attempts 
+                WHERE user_id = %s AND task_id = %s
+            """, (session['user_id'], task_id))
+            attempt_number = cursor.fetchone()[0]
+            
+            cursor.execute("""
+                INSERT INTO user_task_attempts (user_id, task_id, attempt_number, status, started_at)
+                VALUES (%s, %s, %s, %s, NOW())
+            """, (session['user_id'], task_id, attempt_number, 'In Progress'))
+            attempt_id = cursor.lastrowid
+        
+        # Save progress to comprehension_progress table
         cursor.execute('''
-            INSERT INTO comprehension_progress (user_id, q1, q2, q3, status, updated_at)
+            INSERT INTO comprehension_progress (attempt_id, q1, q2, q3, status, updated_at)
             VALUES (%s, %s, %s, %s, %s, NOW())
             ON DUPLICATE KEY UPDATE q1=VALUES(q1), q2=VALUES(q2), q3=VALUES(q3), status=VALUES(status), updated_at=NOW()
-        ''', (session['user_id'], q1, q2, q3, 'In Progress'))
-        # Mark task as In Progress
+        ''', (attempt_id, q1, q2, q3, 'In Progress'))
+        
+        # Mark user_tasks as In Progress
         cursor.execute('''
             INSERT INTO user_tasks (user_id, task_name, status)
             VALUES (%s, %s, %s)
             ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
         ''', (session['user_id'], task_name, 'In Progress'))
+        
         conn.commit()
         cursor.close()
         conn.close()
-        return jsonify({'success': True, 'message': 'Progress saved successfully'})
+        return jsonify({'success': True, 'message': 'Progress saved successfully', 'attempt_id': attempt_id, 'attempt_number': attempt_number})
     except Exception as e:
         print(f"Save comprehension progress DB error: {e}")
         return jsonify({'success': False, 'message': 'Failed to save progress'}), 500
@@ -3262,17 +3666,57 @@ def save_comprehension_progress():
 def get_comprehension_progress():
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    
+    task_name = request.args.get('task_name', 'Reading Comprehension')
+    
     try:
         conn = connect_db()
         cursor = conn.cursor(dictionary=True)
+        
+        # Get task_id
+        cursor.execute("SELECT id FROM tasks WHERE task_name = %s", (task_name,))
+        task_row = cursor.fetchone()
+        if not task_row:
+            return jsonify({'success': False, 'message': 'Task not found'}), 404
+        
+        task_id = task_row['id']
+        
+        # Get the latest IN PROGRESS attempt and its progress (not completed ones)
+        # Order by progress updated_at to get the most recent saved progress
         cursor.execute('''
-            SELECT q1, q2, q3, status FROM comprehension_progress WHERE user_id = %s
-        ''', (session['user_id'],))
+            SELECT 
+                uta.id as attempt_id,
+                uta.attempt_number,
+                uta.status as attempt_status,
+                uta.started_at,
+                uta.completed_at,
+                cp.q1, cp.q2, cp.q3, cp.status as progress_status, cp.updated_at
+            FROM user_task_attempts uta
+            LEFT JOIN comprehension_progress cp ON cp.attempt_id = uta.id
+            WHERE uta.user_id = %s AND uta.task_id = %s AND uta.status = 'In Progress'
+            ORDER BY cp.updated_at DESC
+            LIMIT 1
+        ''', (session['user_id'], task_id))
+        
         result = cursor.fetchone()
         cursor.close()
         conn.close()
+        
         if result:
-            return jsonify({'success': True, 'progress': result})
+            return jsonify({
+                'success': True, 
+                'progress': {
+                    'q1': result.get('q1', ''),
+                    'q2': result.get('q2', ''),
+                    'q3': result.get('q3', ''),
+                    'status': result.get('progress_status', 'In Progress'),
+                    'attempt_id': result.get('attempt_id'),
+                    'attempt_number': result.get('attempt_number'),
+                    'attempt_status': result.get('attempt_status'),
+                    'started_at': result.get('started_at'),
+                    'completed_at': result.get('completed_at')
+                }
+            })
         else:
             return jsonify({'success': True, 'progress': None})
     except Exception as e:
@@ -3288,232 +3732,485 @@ def submit_comprehension():
     q2 = data.get('q2', '')
     q3 = data.get('q3', '')
     task_name = data.get('task_name', 'Reading Comprehension')
+    
     try:
         conn = connect_db()
         cursor = conn.cursor()
+        
+        # Get or create task attempt
+        cursor.execute("SELECT id FROM tasks WHERE task_name = %s", (task_name,))
+        task_row = cursor.fetchone()
+        if not task_row:
+            return jsonify({'success': False, 'message': 'Task not found'}), 404
+        
+        task_id = task_row[0]
+        
+        # Get current attempt or create new one
+        cursor.execute("""
+            SELECT id, attempt_number FROM user_task_attempts 
+            WHERE user_id = %s AND task_id = %s AND status = 'In Progress'
+            ORDER BY attempt_number DESC LIMIT 1
+        """, (session['user_id'], task_id))
+        
+        attempt_row = cursor.fetchone()
+        if attempt_row:
+            attempt_id = attempt_row[0]
+            attempt_number = attempt_row[1]
+        else:
+            # Create new attempt
+            cursor.execute("""
+                SELECT COALESCE(MAX(attempt_number), 0) + 1 FROM user_task_attempts 
+                WHERE user_id = %s AND task_id = %s
+            """, (session['user_id'], task_id))
+            attempt_number = cursor.fetchone()[0]
+            
+            cursor.execute("""
+                INSERT INTO user_task_attempts (user_id, task_id, attempt_number, status, started_at)
+                VALUES (%s, %s, %s, %s, NOW())
+            """, (session['user_id'], task_id, attempt_number, 'In Progress'))
+            attempt_id = cursor.lastrowid
+        
+        # Save final progress to comprehension_progress table
         cursor.execute('''
-            INSERT INTO comprehension_progress (user_id, q1, q2, q3, status, updated_at)
+            INSERT INTO comprehension_progress (attempt_id, q1, q2, q3, status, updated_at)
             VALUES (%s, %s, %s, %s, %s, NOW())
             ON DUPLICATE KEY UPDATE q1=VALUES(q1), q2=VALUES(q2), q3=VALUES(q3), status=VALUES(status), updated_at=NOW()
-        ''', (session['user_id'], q1, q2, q3, 'Completed'))
-        # Mark task as Completed
+        ''', (attempt_id, q1, q2, q3, 'Completed'))
+        
+        # Mark attempt as completed
+        cursor.execute("""
+            UPDATE user_task_attempts 
+            SET status = 'Completed', completed_at = NOW()
+            WHERE id = %s
+        """, (attempt_id,))
+        
+        # Mark user_tasks as Completed
         cursor.execute('''
             INSERT INTO user_tasks (user_id, task_name, status)
             VALUES (%s, %s, %s)
             ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
         ''', (session['user_id'], task_name, 'Completed'))
+        
         conn.commit()
         cursor.close()
         conn.close()
-        return jsonify({'success': True, 'message': 'Task submitted and marked as completed'})
+        return jsonify({'success': True, 'message': 'Task submitted and marked as completed', 'attempt_id': attempt_id, 'attempt_number': attempt_number})
     except Exception as e:
         print(f"Submit comprehension DB error: {e}")
         return jsonify({'success': False, 'message': 'Failed to submit task'}), 500
 
+@app.route('/api/retake-comprehension', methods=['POST'])
+def retake_comprehension():
+    """Create a new attempt for reading comprehension task"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    
+    data = request.get_json()
+    task_name = data.get('task_name', 'Reading Comprehension')
+    
+    try:
+        conn = connect_db()
+        cursor = conn.cursor()
+        
+        # Get task_id
+        cursor.execute("SELECT id FROM tasks WHERE task_name = %s", (task_name,))
+        task_row = cursor.fetchone()
+        if not task_row:
+            return jsonify({'success': False, 'message': 'Task not found'}), 404
+        
+        task_id = task_row[0]
+        
+        # Get next attempt number
+        cursor.execute("""
+            SELECT COALESCE(MAX(attempt_number), 0) + 1 FROM user_task_attempts 
+            WHERE user_id = %s AND task_id = %s
+        """, (session['user_id'], task_id))
+        attempt_number = cursor.fetchone()[0]
+        
+        # Create new attempt
+        cursor.execute("""
+            INSERT INTO user_task_attempts (user_id, task_id, attempt_number, status, started_at)
+            VALUES (%s, %s, %s, %s, NOW())
+        """, (session['user_id'], task_id, attempt_number, 'In Progress'))
+        attempt_id = cursor.lastrowid
+        
+        # Mark user_tasks as In Progress
+        cursor.execute('''
+            INSERT INTO user_tasks (user_id, task_name, status)
+            VALUES (%s, %s, %s)
+            ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
+        ''', (session['user_id'], task_name, 'In Progress'))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({'success': True, 'message': 'New attempt created', 'attempt_id': attempt_id, 'attempt_number': attempt_number})
+    except Exception as e:
+        print(f"Retake comprehension DB error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to create new attempt'}), 500
+
 
 @app.route('/api/save-aptitude-progress', methods=['POST'])
 def save_aptitude_progress():
+    """Save aptitude test progress using user_task_attempts system"""
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    
     data = request.get_json()
+    print(f"Received aptitude save data: {data}")  # Debug logging
+    
+    task_name = data.get('task_name', 'Aptitude Test')
     logical_reasoning_score = data.get('logical_reasoning_score', 0)
     numerical_ability_score = data.get('numerical_ability_score', 0)
     verbal_ability_score = data.get('verbal_ability_score', 0)
     spatial_reasoning_score = data.get('spatial_reasoning_score', 0)
     total_score = data.get('total_score', 0)
-    # New detailed progress fields
-    answers = data.get('answers')  # expected dict of {section: {questionIndex: value}}
+    answers = data.get('answers')
+    current_section = data.get('current_section')
+    answered_count = data.get('answered_count', 0)
+    progress_percent = data.get('progress_percent', 0)
+    
+    print(f"Parsed values - answers: {answers}, current_section: {current_section}, answered_count: {answered_count}")  # Debug logging
+    
+    try:
+        conn = connect_db()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get task_id
+        cursor.execute("SELECT id FROM tasks WHERE task_name = %s", (task_name,))
+        task_row = cursor.fetchone()
+        if not task_row:
+            return jsonify({'success': False, 'message': 'Task not found'}), 404
+        
+        task_id = task_row['id']
+        
+        # Get or create IN PROGRESS attempt
+        cursor.execute("""
+            SELECT id, attempt_number FROM user_task_attempts 
+            WHERE user_id = %s AND task_id = %s AND status = 'In Progress'
+            ORDER BY attempt_number DESC LIMIT 1
+        """, (session['user_id'], task_id))
+        
+        attempt_row = cursor.fetchone()
+        if attempt_row:
+            attempt_id = attempt_row['id']
+            attempt_number = attempt_row['attempt_number']
+        else:
+            # Create new attempt
+            cursor.execute("""
+                SELECT COALESCE(MAX(attempt_number), 0) + 1 as next_attempt 
+                FROM user_task_attempts 
+                WHERE user_id = %s AND task_id = %s
+            """, (session['user_id'], task_id))
+            next_attempt = cursor.fetchone()['next_attempt']
+            
+            cursor.execute("""
+                INSERT INTO user_task_attempts (user_id, task_id, attempt_number, status, started_at)
+                VALUES (%s, %s, %s, %s, NOW())
+            """, (session['user_id'], task_id, next_attempt, 'In Progress'))
+            
+            attempt_id = cursor.lastrowid
+            attempt_number = next_attempt
+        
+        # Save/update aptitude progress
+        # Handle JSON serialization properly
+        answers_json = None
+        if answers:
+            try:
+                answers_json = json.dumps(answers)
+                print(f"Serialized answers JSON: {answers_json}")  # Debug logging
+            except (TypeError, ValueError) as e:
+                print(f"Error serializing answers: {e}")
+                answers_json = None
+        else:
+            print("No answers to serialize")  # Debug logging
+        
+        # Debug the SQL parameters
+        sql_params = (
+            attempt_id, logical_reasoning_score, numerical_ability_score,
+            verbal_ability_score, spatial_reasoning_score, total_score,
+            'In Progress', answers_json,
+            current_section, answered_count, progress_percent
+        )
+        print(f"SQL parameters: {sql_params}")  # Debug logging
+        
+        cursor.execute("""
+            INSERT INTO aptitude_progress (
+                attempt_id, logical_reasoning_score, numerical_ability_score, 
+                verbal_ability_score, spatial_reasoning_score, total_score, 
+                status, answers, current_section, answered_count, progress_percent, updated_at
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+            ON DUPLICATE KEY UPDATE 
+                logical_reasoning_score=VALUES(logical_reasoning_score),
+                numerical_ability_score=VALUES(numerical_ability_score),
+                verbal_ability_score=VALUES(verbal_ability_score),
+                spatial_reasoning_score=VALUES(spatial_reasoning_score),
+                total_score=VALUES(total_score),
+                status=VALUES(status),
+                answers=VALUES(answers),
+                current_section=VALUES(current_section),
+                answered_count=VALUES(answered_count),
+                progress_percent=VALUES(progress_percent),
+                updated_at=NOW()
+        """, sql_params)
+        
+        # Mark user_tasks as In Progress
+        cursor.execute("""
+            INSERT INTO user_tasks (user_id, task_name, status)
+            VALUES (%s, %s, %s)
+            ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
+        """, (session['user_id'], task_name, 'In Progress'))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Progress saved successfully',
+            'attempt_id': attempt_id,
+            'attempt_number': attempt_number
+        })
+    except Exception as e:
+        print(f"Save aptitude progress error: {e}")
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
+
+
+@app.route('/api/get-aptitude-progress', methods=['GET'])
+def get_aptitude_progress():
+    """Get aptitude test progress using user_task_attempts system"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    
+    task_name = request.args.get('task_name', 'Aptitude Test')
+    
+    try:
+        conn = connect_db()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get task_id
+        cursor.execute("SELECT id FROM tasks WHERE task_name = %s", (task_name,))
+        task_row = cursor.fetchone()
+        if not task_row:
+            return jsonify({'success': False, 'message': 'Task not found'}), 404
+        
+        task_id = task_row['id']
+        
+        # Get the latest IN PROGRESS attempt and its progress
+        cursor.execute('''
+            SELECT 
+                uta.id as attempt_id,
+                uta.attempt_number,
+                uta.status as attempt_status,
+                uta.started_at,
+                uta.completed_at,
+                ap.logical_reasoning_score, ap.numerical_ability_score, 
+                ap.verbal_ability_score, ap.spatial_reasoning_score, 
+                ap.total_score, ap.status as progress_status, 
+                ap.answers, ap.current_section, ap.answered_count, 
+                ap.progress_percent, ap.updated_at
+            FROM user_task_attempts uta
+            LEFT JOIN aptitude_progress ap ON ap.attempt_id = uta.id
+            WHERE uta.user_id = %s AND uta.task_id = %s AND uta.status = 'In Progress'
+            ORDER BY ap.updated_at DESC
+            LIMIT 1
+        ''', (session['user_id'], task_id))
+        
+        result = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        
+        if result and result.get('attempt_id'):
+            return jsonify({
+                'success': True, 
+                'progress': {
+                    'attempt_id': result['attempt_id'],
+                    'attempt_number': result['attempt_number'],
+                    'logical_reasoning_score': result.get('logical_reasoning_score', 0),
+                    'numerical_ability_score': result.get('numerical_ability_score', 0),
+                    'verbal_ability_score': result.get('verbal_ability_score', 0),
+                    'spatial_reasoning_score': result.get('spatial_reasoning_score', 0),
+                    'total_score': result.get('total_score', 0),
+                    'status': result.get('progress_status', 'In Progress'),
+                    'answers': result.get('answers'),
+                    'current_section': result.get('current_section'),
+                    'answered_count': result.get('answered_count', 0),
+                    'progress_percent': result.get('progress_percent', 0),
+                    'updated_at': result.get('updated_at')
+                }
+            })
+        else:
+            return jsonify({'success': True, 'progress': None})
+    except Exception as e:
+        print(f"Get aptitude progress error: {e}")
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
+
+
+@app.route('/api/submit-aptitude', methods=['POST'])
+def submit_aptitude():
+    """Submit aptitude test using user_task_attempts system"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    
+    data = request.get_json()
+    task_name = data.get('task_name', 'Aptitude Test')
+    logical_reasoning_score = data.get('logical_reasoning_score', 0)
+    numerical_ability_score = data.get('numerical_ability_score', 0)
+    verbal_ability_score = data.get('verbal_ability_score', 0)
+    spatial_reasoning_score = data.get('spatial_reasoning_score', 0)
+    total_score = data.get('total_score', 0)
+    answers = data.get('answers')
     current_section = data.get('current_section')
     answered_count = data.get('answered_count', 0)
     progress_percent = data.get('progress_percent', 0)
     
     try:
         conn = connect_db()
-        cursor = conn.cursor()
-
-        # Ensure schema has columns to store detailed progress (idempotent on MySQL 8+)
-        try:
-            cursor.execute(
-                """
-                ALTER TABLE aptitude_progress
-                ADD COLUMN IF NOT EXISTS answers JSON NULL,
-                ADD COLUMN IF NOT EXISTS current_section VARCHAR(50) NULL,
-                ADD COLUMN IF NOT EXISTS answered_count INT DEFAULT 0,
-                ADD COLUMN IF NOT EXISTS progress_percent INT DEFAULT 0
-                """
-            )
-            conn.commit()
-        except Exception as _e:
-            # Ignore if DB doesn't support IF NOT EXISTS or columns already exist
-            pass
-
-        # Insert/Update progress with answers/state
-        cursor.execute('''
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get task_id
+        cursor.execute("SELECT id FROM tasks WHERE task_name = %s", (task_name,))
+        task_row = cursor.fetchone()
+        if not task_row:
+            return jsonify({'success': False, 'message': 'Task not found'}), 404
+        
+        task_id = task_row['id']
+        
+        # Get the latest IN PROGRESS attempt
+        cursor.execute("""
+            SELECT id, attempt_number FROM user_task_attempts 
+            WHERE user_id = %s AND task_id = %s AND status = 'In Progress'
+            ORDER BY attempt_number DESC LIMIT 1
+        """, (session['user_id'], task_id))
+        
+        attempt_row = cursor.fetchone()
+        if not attempt_row:
+            return jsonify({'success': False, 'message': 'No active attempt found'}), 404
+        
+        attempt_id = attempt_row['id']
+        attempt_number = attempt_row['attempt_number']
+        
+        # Update aptitude progress to completed
+        # Handle JSON serialization properly
+        answers_json = None
+        if answers:
+            try:
+                answers_json = json.dumps(answers)
+            except (TypeError, ValueError) as e:
+                print(f"Error serializing answers: {e}")
+                answers_json = None
+        
+        cursor.execute("""
             INSERT INTO aptitude_progress (
-                user_id,
-                logical_reasoning_score,
-                numerical_ability_score,
-                verbal_ability_score,
-                spatial_reasoning_score,
-                total_score,
-                status,
-                answers,
-                current_section,
-                answered_count,
-                progress_percent,
-                updated_at
+                attempt_id, logical_reasoning_score, numerical_ability_score, 
+                verbal_ability_score, spatial_reasoning_score, total_score, 
+                status, answers, current_section, answered_count, progress_percent, updated_at
             )
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
             ON DUPLICATE KEY UPDATE 
-                logical_reasoning_score=VALUES(logical_reasoning_score), 
-                numerical_ability_score=VALUES(numerical_ability_score), 
-                verbal_ability_score=VALUES(verbal_ability_score), 
-                spatial_reasoning_score=VALUES(spatial_reasoning_score), 
-                total_score=VALUES(total_score), 
-                status=VALUES(status), 
+                logical_reasoning_score=VALUES(logical_reasoning_score),
+                numerical_ability_score=VALUES(numerical_ability_score),
+                verbal_ability_score=VALUES(verbal_ability_score),
+                spatial_reasoning_score=VALUES(spatial_reasoning_score),
+                total_score=VALUES(total_score),
+                status='Completed',
                 answers=VALUES(answers),
                 current_section=VALUES(current_section),
                 answered_count=VALUES(answered_count),
                 progress_percent=VALUES(progress_percent),
                 updated_at=NOW()
-        ''', (
-            session['user_id'],
-            logical_reasoning_score,
-            numerical_ability_score,
-            verbal_ability_score,
-            spatial_reasoning_score,
-            total_score,
-            'In Progress',
-            json.dumps(answers) if answers is not None else None,
-            current_section,
-            answered_count,
-            progress_percent
+        """, (
+            attempt_id, logical_reasoning_score, numerical_ability_score,
+            verbal_ability_score, spatial_reasoning_score, total_score,
+            'Completed', answers_json,
+            current_section, answered_count, progress_percent
         ))
-        # Mark task as In Progress
-        cursor.execute('''
+        
+        # Mark attempt as completed
+        cursor.execute("""
+            UPDATE user_task_attempts 
+            SET status = 'Completed', completed_at = NOW()
+            WHERE id = %s
+        """, (attempt_id,))
+        
+        # Mark user_tasks as Completed
+        cursor.execute("""
             INSERT INTO user_tasks (user_id, task_name, status)
             VALUES (%s, %s, %s)
             ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
-        ''', (session['user_id'], 'Aptitude Test', 'In Progress'))
+        """, (session['user_id'], task_name, 'Completed'))
+        
         conn.commit()
         cursor.close()
         conn.close()
-        return jsonify({'success': True, 'message': 'Progress saved successfully'})
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Test submitted successfully',
+            'attempt_id': attempt_id,
+            'attempt_number': attempt_number
+        })
     except Exception as e:
-        print(f"Save aptitude progress DB error: {e}")
-        return jsonify({'success': False, 'message': 'Failed to save progress'}), 500
+        print(f"Submit aptitude error: {e}")
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
 
-
-@app.route('/api/get-aptitude-progress', methods=['GET'])
-def get_aptitude_progress():
+@app.route('/api/retake-aptitude', methods=['POST'])
+def retake_aptitude():
+    """Create a new attempt for aptitude test retake"""
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'User not logged in'}), 401
-    try:
-        conn = connect_db()
-        cursor = conn.cursor(dictionary=True)
-        # Try to ensure extended columns exist; ignore errors on older MySQL
-        try:
-            cursor.execute(
-                """
-                ALTER TABLE aptitude_progress
-                ADD COLUMN IF NOT EXISTS answers JSON NULL,
-                ADD COLUMN IF NOT EXISTS current_section VARCHAR(50) NULL,
-                ADD COLUMN IF NOT EXISTS answered_count INT DEFAULT 0,
-                ADD COLUMN IF NOT EXISTS progress_percent INT DEFAULT 0
-                """
-            )
-            conn.commit()
-        except Exception:
-            pass
-
-        # Attempt full select including extended columns; fall back if unavailable
-        try:
-            cursor.execute('''
-                SELECT 
-                    logical_reasoning_score,
-                    numerical_ability_score,
-                    verbal_ability_score,
-                    spatial_reasoning_score,
-                    total_score,
-                    status,
-                    answers,
-                    current_section,
-                    answered_count,
-                    progress_percent
-                FROM aptitude_progress WHERE user_id = %s
-            ''', (session['user_id'],))
-            result = cursor.fetchone()
-        except Exception:
-            cursor.close()
-            cursor = conn.cursor(dictionary=True)
-            cursor.execute('''
-                SELECT 
-                    logical_reasoning_score,
-                    numerical_ability_score,
-                    verbal_ability_score,
-                    spatial_reasoning_score,
-                    total_score,
-                    status
-                FROM aptitude_progress WHERE user_id = %s
-            ''', (session['user_id'],))
-            base = cursor.fetchone()
-            if base:
-                # Provide default None/0s for missing fields
-                base['answers'] = None
-                base['current_section'] = None
-                base['answered_count'] = 0
-                base['progress_percent'] = 0
-            result = base
-        cursor.close()
-        conn.close()
-        if result:
-            return jsonify({'success': True, 'progress': result})
-        else:
-            return jsonify({'success': True, 'progress': None})
-    except Exception as e:
-        print(f"Get aptitude progress error: {e}")
-        return jsonify({'success': False, 'message': 'Failed to get progress'}), 500
-
-
-@app.route('/api/submit-aptitude', methods=['POST'])
-def submit_aptitude():
-    if 'user_id' not in session:
-        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    
     data = request.get_json()
-    logical_reasoning_score = data.get('logical_reasoning_score', 0)
-    numerical_ability_score = data.get('numerical_ability_score', 0)
-    verbal_ability_score = data.get('verbal_ability_score', 0)
-    spatial_reasoning_score = data.get('spatial_reasoning_score', 0)
-    total_score = data.get('total_score', 0)
+    task_name = data.get('task_name', 'Aptitude Test')
     
     try:
         conn = connect_db()
-        cursor = conn.cursor()
-        cursor.execute('''
-            INSERT INTO aptitude_progress (user_id, logical_reasoning_score, numerical_ability_score, verbal_ability_score, spatial_reasoning_score, total_score, status, updated_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
-            ON DUPLICATE KEY UPDATE 
-                logical_reasoning_score=VALUES(logical_reasoning_score), 
-                numerical_ability_score=VALUES(numerical_ability_score), 
-                verbal_ability_score=VALUES(verbal_ability_score), 
-                spatial_reasoning_score=VALUES(spatial_reasoning_score), 
-                total_score=VALUES(total_score), 
-                status=VALUES(status), 
-                updated_at=NOW()
-        ''', (session['user_id'], logical_reasoning_score, numerical_ability_score, verbal_ability_score, spatial_reasoning_score, total_score, 'Completed'))
-        # Mark task as Completed
-        cursor.execute('''
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get task_id
+        cursor.execute("SELECT id FROM tasks WHERE task_name = %s", (task_name,))
+        task_row = cursor.fetchone()
+        if not task_row:
+            return jsonify({'success': False, 'message': 'Task not found'}), 404
+        
+        task_id = task_row['id']
+        
+        # Create new attempt
+        cursor.execute("""
+            SELECT COALESCE(MAX(attempt_number), 0) + 1 as next_attempt 
+            FROM user_task_attempts 
+            WHERE user_id = %s AND task_id = %s
+        """, (session['user_id'], task_id))
+        next_attempt = cursor.fetchone()['next_attempt']
+        
+        cursor.execute("""
+            INSERT INTO user_task_attempts (user_id, task_id, attempt_number, status, started_at)
+            VALUES (%s, %s, %s, %s, NOW())
+        """, (session['user_id'], task_id, next_attempt, 'In Progress'))
+        
+        attempt_id = cursor.lastrowid
+        
+        # Mark user_tasks as In Progress
+        cursor.execute("""
             INSERT INTO user_tasks (user_id, task_name, status)
             VALUES (%s, %s, %s)
             ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
-        ''', (session['user_id'], 'Aptitude Test', 'Completed'))
+        """, (session['user_id'], task_name, 'In Progress'))
+        
         conn.commit()
         cursor.close()
         conn.close()
-        return jsonify({'success': True, 'message': 'Task submitted and marked as completed'})
+        
+        return jsonify({
+            'success': True, 
+            'message': 'New attempt created successfully',
+            'attempt_id': attempt_id,
+            'attempt_number': next_attempt
+        })
     except Exception as e:
-        print(f"Submit aptitude DB error: {e}")
-        return jsonify({'success': False, 'message': 'Failed to submit task'}), 500
+        print(f"Retake aptitude error: {e}")
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
 
 
 @app.route('/api/reading-tasks/<int:user_id>', methods=['GET'])
@@ -4455,6 +5152,7 @@ def upload_writing():
     
     file = request.files['writing_image']
     task_id = request.form.get('task_id')
+    task_name = request.form.get('task_name', 'Writing Task')
     
     if file.filename == '':
         return jsonify({'success': False, 'message': 'No selected file'}), 400
@@ -4470,27 +5168,61 @@ def upload_writing():
         
         try:
             conn = connect_db()
-            cursor = conn.cursor()
+            cursor = conn.cursor(dictionary=True)
             
-            # Save writing sample to database
+            # Get or create task attempt
             cursor.execute("""
-                INSERT INTO writing_samples (user_id, task_id, filename, status)
-                VALUES (%s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE filename = VALUES(filename), status = VALUES(status), uploaded_at = NOW()
-            """, (session['user_id'], task_id, filename, 'Completed'))
+                SELECT id, attempt_number FROM user_task_attempts 
+                WHERE user_id = %s AND task_id = %s AND status = 'In Progress'
+                ORDER BY attempt_number DESC LIMIT 1
+            """, (session['user_id'], task_id))
             
-            # Mark task as completed
+            attempt_row = cursor.fetchone()
+            if attempt_row:
+                attempt_id = attempt_row['id']
+                attempt_number = attempt_row['attempt_number']
+            else:
+                # Create new attempt
+                cursor.execute("""
+                    SELECT COALESCE(MAX(attempt_number), 0) + 1 as next_attempt
+                    FROM user_task_attempts 
+                    WHERE user_id = %s AND task_id = %s
+                """, (session['user_id'], task_id))
+                next_attempt = cursor.fetchone()['next_attempt']
+                
+                cursor.execute("""
+                    INSERT INTO user_task_attempts (user_id, task_id, attempt_number, status, started_at)
+                    VALUES (%s, %s, %s, 'In Progress', NOW())
+                """, (session['user_id'], task_id, next_attempt))
+                attempt_id = cursor.lastrowid
+                attempt_number = next_attempt
+            
+            # Save writing sample to database as completed
+            cursor.execute("""
+                INSERT INTO writing_samples (attempt_id, filename, status, uploaded_at)
+                VALUES (%s, %s, %s, NOW())
+                ON DUPLICATE KEY UPDATE filename = VALUES(filename), status = VALUES(status), uploaded_at = NOW()
+            """, (attempt_id, filename, 'Completed'))
+            
+            # Mark attempt as completed
+            cursor.execute("""
+                UPDATE user_task_attempts 
+                SET status = 'Completed', completed_at = NOW()
+                WHERE id = %s
+            """, (attempt_id,))
+            
+            # Mark user_tasks as Completed
             cursor.execute("""
                 INSERT INTO user_tasks (user_id, task_name, status)
                 VALUES (%s, %s, %s)
                 ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
-            """, (session['user_id'], 'Writing Task', 'Completed'))
+            """, (session['user_id'], task_name, 'Completed'))
             
             conn.commit()
             cursor.close()
             conn.close()
             
-            return jsonify({'success': True, 'message': 'Writing sample uploaded successfully', 'filename': filename})
+            return jsonify({'success': True, 'message': 'Writing sample uploaded successfully', 'filename': filename, 'attempt_id': attempt_id, 'attempt_number': attempt_number})
             
         except Exception as e:
             print(f"Upload writing DB error: {e}")
@@ -4509,6 +5241,7 @@ def save_writing_progress():
     
     file = request.files['writing_image']
     task_id = request.form.get('task_id')
+    task_name = request.form.get('task_name', 'Writing Task')
     
     if file.filename == '':
         return jsonify({'success': False, 'message': 'No selected file'}), 400
@@ -4524,27 +5257,54 @@ def save_writing_progress():
         
         try:
             conn = connect_db()
-            cursor = conn.cursor()
+            cursor = conn.cursor(dictionary=True)
+            
+            # Get or create task attempt
+            cursor.execute("""
+                SELECT id, attempt_number FROM user_task_attempts 
+                WHERE user_id = %s AND task_id = %s AND status = 'In Progress'
+                ORDER BY attempt_number DESC LIMIT 1
+            """, (session['user_id'], task_id))
+            
+            attempt_row = cursor.fetchone()
+            if attempt_row:
+                attempt_id = attempt_row['id']
+                attempt_number = attempt_row['attempt_number']
+            else:
+                # Create new attempt
+                cursor.execute("""
+                    SELECT COALESCE(MAX(attempt_number), 0) + 1 as next_attempt
+                    FROM user_task_attempts 
+                    WHERE user_id = %s AND task_id = %s
+                """, (session['user_id'], task_id))
+                next_attempt = cursor.fetchone()['next_attempt']
+                
+                cursor.execute("""
+                    INSERT INTO user_task_attempts (user_id, task_id, attempt_number, status, started_at)
+                    VALUES (%s, %s, %s, 'In Progress', NOW())
+                """, (session['user_id'], task_id, next_attempt))
+                attempt_id = cursor.lastrowid
+                attempt_number = next_attempt
             
             # Save writing sample to database with In Progress status
             cursor.execute("""
-                INSERT INTO writing_samples (user_id, task_id, filename, status)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO writing_samples (attempt_id, filename, status, uploaded_at)
+                VALUES (%s, %s, %s, NOW())
                 ON DUPLICATE KEY UPDATE filename = VALUES(filename), uploaded_at = NOW()
-            """, (session['user_id'], task_id, filename, 'In Progress'))
+            """, (attempt_id, filename, 'In Progress'))
             
-            # Mark task as In Progress
+            # Mark user_tasks as In Progress
             cursor.execute("""
                 INSERT INTO user_tasks (user_id, task_name, status)
                 VALUES (%s, %s, %s)
                 ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
-            """, (session['user_id'], 'Writing Task', 'In Progress'))
+            """, (session['user_id'], task_name, 'In Progress'))
             
             conn.commit()
             cursor.close()
             conn.close()
             
-            return jsonify({'success': True, 'message': 'Writing progress saved successfully', 'filename': filename})
+            return jsonify({'success': True, 'message': 'Writing progress saved successfully', 'filename': filename, 'attempt_id': attempt_id, 'attempt_number': attempt_number})
             
         except Exception as e:
             print(f"Save writing progress DB error: {e}")
@@ -5038,22 +5798,56 @@ def admin_get_child_tasks():
 def get_writing_progress():
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'User not logged in'}), 401
-    task_id = request.args.get('task_id')
-    if not task_id:
-        return jsonify({'success': False, 'message': 'No task_id provided'}), 400
+    
+    task_name = request.args.get('task_name', 'Writing Task')
+    
     try:
         conn = connect_db()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute("""
-            SELECT filename, status FROM writing_samples
-            WHERE user_id = %s AND task_id = %s
-            ORDER BY uploaded_at DESC LIMIT 1
-        """, (session['user_id'], task_id))
+        
+        # Get task_id
+        cursor.execute("SELECT id FROM tasks WHERE task_name = %s", (task_name,))
+        task_row = cursor.fetchone()
+        if not task_row:
+            return jsonify({'success': False, 'message': 'Task not found'}), 404
+        
+        task_id = task_row['id']
+        
+        # Get the latest IN PROGRESS attempt and its progress (not completed ones)
+        # Order by progress uploaded_at to get the most recent saved progress
+        cursor.execute('''
+            SELECT 
+                uta.id as attempt_id,
+                uta.attempt_number,
+                uta.status as attempt_status,
+                uta.started_at,
+                uta.completed_at,
+                ws.filename, ws.status as progress_status, ws.uploaded_at
+            FROM user_task_attempts uta
+            LEFT JOIN writing_samples ws ON ws.attempt_id = uta.id
+            WHERE uta.user_id = %s AND uta.task_id = %s AND uta.status = 'In Progress'
+            ORDER BY ws.uploaded_at DESC
+            LIMIT 1
+        ''', (session['user_id'], task_id))
+        
         result = cursor.fetchone()
         cursor.close()
         conn.close()
+        
         if result:
-            return jsonify({'success': True, 'progress': result})
+            return jsonify({
+                'success': True, 
+                'progress': {
+                    'filename': result.get('filename', ''),
+                    'status': result.get('progress_status', 'In Progress'),
+                    'attempt_id': result.get('attempt_id'),
+                    'attempt_number': result.get('attempt_number'),
+                    'attempt_status': result.get('attempt_status'),
+                    'started_at': result.get('started_at'),
+                    'completed_at': result.get('completed_at'),
+                    'uploaded_at': result.get('uploaded_at')
+                }
+            })
         else:
             return jsonify({'success': True, 'progress': None})
     except Exception as e:
@@ -5677,29 +6471,70 @@ def get_task_status():
 def save_mathematical_comprehension_progress():
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    
     data = request.get_json()
     q1 = data.get('q1', '')
     q2 = data.get('q2', '')
     q3 = data.get('q3', '')
     task_name = data.get('task_name', 'Mathematical Comprehension')
+    
     try:
         conn = connect_db()
-        cursor = conn.cursor()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get task_id
+        cursor.execute("SELECT id FROM tasks WHERE task_name = %s", (task_name,))
+        task_row = cursor.fetchone()
+        if not task_row:
+            return jsonify({'success': False, 'message': 'Task not found'}), 404
+        
+        task_id = task_row['id']
+        
+        # Get or create task attempt
+        cursor.execute("""
+            SELECT id, attempt_number FROM user_task_attempts 
+            WHERE user_id = %s AND task_id = %s AND status = 'In Progress'
+            ORDER BY attempt_number DESC LIMIT 1
+        """, (session['user_id'], task_id))
+        
+        attempt_row = cursor.fetchone()
+        if attempt_row:
+            attempt_id = attempt_row['id']
+            attempt_number = attempt_row['attempt_number']
+        else:
+            # Create new attempt
+            cursor.execute("""
+                SELECT COALESCE(MAX(attempt_number), 0) + 1 as next_attempt
+                FROM user_task_attempts 
+                WHERE user_id = %s AND task_id = %s
+            """, (session['user_id'], task_id))
+            next_attempt = cursor.fetchone()['next_attempt']
+            
+            cursor.execute("""
+                INSERT INTO user_task_attempts (user_id, task_id, attempt_number, status, started_at)
+                VALUES (%s, %s, %s, 'In Progress', NOW())
+            """, (session['user_id'], task_id, next_attempt))
+            attempt_id = cursor.lastrowid
+            attempt_number = next_attempt
+        
+        # Save progress
         cursor.execute('''
-            INSERT INTO mathematical_comprehension_progress (user_id, q1, q2, q3, status, updated_at)
+            INSERT INTO mathematical_comprehension_progress (attempt_id, q1, q2, q3, status, updated_at)
             VALUES (%s, %s, %s, %s, %s, NOW())
             ON DUPLICATE KEY UPDATE q1=VALUES(q1), q2=VALUES(q2), q3=VALUES(q3), status=VALUES(status), updated_at=NOW()
-        ''', (session['user_id'], q1, q2, q3, 'In Progress'))
-        # Mark task as In Progress
+        ''', (attempt_id, q1, q2, q3, 'In Progress'))
+        
+        # Mark user_tasks as In Progress
         cursor.execute('''
             INSERT INTO user_tasks (user_id, task_name, status)
             VALUES (%s, %s, %s)
             ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
         ''', (session['user_id'], task_name, 'In Progress'))
+        
         conn.commit()
         cursor.close()
         conn.close()
-        return jsonify({'success': True, 'message': 'Progress saved successfully'})
+        return jsonify({'success': True, 'message': 'Progress saved successfully', 'attempt_id': attempt_id, 'attempt_number': attempt_number})
     except Exception as e:
         print(f"Save mathematical comprehension progress DB error: {e}")
         return jsonify({'success': False, 'message': 'Failed to save progress'}), 500
@@ -5708,17 +6543,57 @@ def save_mathematical_comprehension_progress():
 def get_mathematical_comprehension_progress():
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    
+    task_name = request.args.get('task_name', 'Mathematical Comprehension')
+    
     try:
         conn = connect_db()
         cursor = conn.cursor(dictionary=True)
+        
+        # Get task_id
+        cursor.execute("SELECT id FROM tasks WHERE task_name = %s", (task_name,))
+        task_row = cursor.fetchone()
+        if not task_row:
+            return jsonify({'success': False, 'message': 'Task not found'}), 404
+        
+        task_id = task_row['id']
+        
+        # Get the latest IN PROGRESS attempt and its progress (not completed ones)
+        # Order by progress updated_at to get the most recent saved progress
         cursor.execute('''
-            SELECT q1, q2, q3, status FROM mathematical_comprehension_progress WHERE user_id = %s
-        ''', (session['user_id'],))
+            SELECT 
+                uta.id as attempt_id,
+                uta.attempt_number,
+                uta.status as attempt_status,
+                uta.started_at,
+                uta.completed_at,
+                mcp.q1, mcp.q2, mcp.q3, mcp.status as progress_status, mcp.updated_at
+            FROM user_task_attempts uta
+            LEFT JOIN mathematical_comprehension_progress mcp ON mcp.attempt_id = uta.id
+            WHERE uta.user_id = %s AND uta.task_id = %s AND uta.status = 'In Progress'
+            ORDER BY mcp.updated_at DESC
+            LIMIT 1
+        ''', (session['user_id'], task_id))
+        
         result = cursor.fetchone()
         cursor.close()
         conn.close()
+        
         if result:
-            return jsonify({'success': True, 'progress': result})
+            return jsonify({
+                'success': True, 
+                'progress': {
+                    'q1': result.get('q1', ''),
+                    'q2': result.get('q2', ''),
+                    'q3': result.get('q3', ''),
+                    'status': result.get('progress_status', 'In Progress'),
+                    'attempt_id': result.get('attempt_id'),
+                    'attempt_number': result.get('attempt_number'),
+                    'attempt_status': result.get('attempt_status'),
+                    'started_at': result.get('started_at'),
+                    'completed_at': result.get('completed_at')
+                }
+            })
         else:
             return jsonify({'success': True, 'progress': None})
     except Exception as e:
@@ -5729,32 +6604,327 @@ def get_mathematical_comprehension_progress():
 def submit_mathematical_comprehension():
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    
     data = request.get_json()
     q1 = data.get('q1', '')
     q2 = data.get('q2', '')
     q3 = data.get('q3', '')
     task_name = data.get('task_name', 'Mathematical Comprehension')
+    
     try:
         conn = connect_db()
-        cursor = conn.cursor()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get task_id
+        cursor.execute("SELECT id FROM tasks WHERE task_name = %s", (task_name,))
+        task_row = cursor.fetchone()
+        if not task_row:
+            return jsonify({'success': False, 'message': 'Task not found'}), 404
+        
+        task_id = task_row['id']
+        
+        # Get or create task attempt
+        cursor.execute("""
+            SELECT id, attempt_number FROM user_task_attempts 
+            WHERE user_id = %s AND task_id = %s AND status = 'In Progress'
+            ORDER BY attempt_number DESC LIMIT 1
+        """, (session['user_id'], task_id))
+        
+        attempt_row = cursor.fetchone()
+        if attempt_row:
+            attempt_id = attempt_row['id']
+            attempt_number = attempt_row['attempt_number']
+        else:
+            # Create new attempt
+            cursor.execute("""
+                SELECT COALESCE(MAX(attempt_number), 0) + 1 as next_attempt
+                FROM user_task_attempts 
+                WHERE user_id = %s AND task_id = %s
+            """, (session['user_id'], task_id))
+            next_attempt = cursor.fetchone()['next_attempt']
+            
+            cursor.execute("""
+                INSERT INTO user_task_attempts (user_id, task_id, attempt_number, status, started_at)
+                VALUES (%s, %s, %s, 'In Progress', NOW())
+            """, (session['user_id'], task_id, next_attempt))
+            attempt_id = cursor.lastrowid
+            attempt_number = next_attempt
+        
+        # Save progress as completed
         cursor.execute('''
-            INSERT INTO mathematical_comprehension_progress (user_id, q1, q2, q3, status, updated_at)
+            INSERT INTO mathematical_comprehension_progress (attempt_id, q1, q2, q3, status, updated_at)
             VALUES (%s, %s, %s, %s, %s, NOW())
             ON DUPLICATE KEY UPDATE q1=VALUES(q1), q2=VALUES(q2), q3=VALUES(q3), status=VALUES(status), updated_at=NOW()
-        ''', (session['user_id'], q1, q2, q3, 'Completed'))
-        # Mark task as Completed
+        ''', (attempt_id, q1, q2, q3, 'Completed'))
+        
+        # Mark attempt as completed
+        cursor.execute("""
+            UPDATE user_task_attempts 
+            SET status = 'Completed', completed_at = NOW()
+            WHERE id = %s
+        """, (attempt_id,))
+        
+        # Mark user_tasks as Completed
         cursor.execute('''
             INSERT INTO user_tasks (user_id, task_name, status)
             VALUES (%s, %s, %s)
             ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
         ''', (session['user_id'], task_name, 'Completed'))
+        
         conn.commit()
         cursor.close()
         conn.close()
-        return jsonify({'success': True, 'message': 'Task submitted and marked as completed'})
+        return jsonify({'success': True, 'message': 'Task submitted and marked as completed', 'attempt_id': attempt_id, 'attempt_number': attempt_number})
     except Exception as e:
         print(f"Submit mathematical comprehension DB error: {e}")
         return jsonify({'success': False, 'message': 'Failed to submit task'}), 500
+
+@app.route('/api/retake-mathematical-comprehension', methods=['POST'])
+def retake_mathematical_comprehension():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    
+    data = request.get_json()
+    task_name = data.get('task_name', 'Mathematical Comprehension')
+    
+    try:
+        conn = connect_db()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get task_id
+        cursor.execute("SELECT id FROM tasks WHERE task_name = %s", (task_name,))
+        task_row = cursor.fetchone()
+        if not task_row:
+            return jsonify({'success': False, 'message': 'Task not found'}), 404
+        
+        task_id = task_row['id']
+        
+        # Get next attempt number
+        cursor.execute("""
+            SELECT COALESCE(MAX(attempt_number), 0) + 1 as next_attempt
+            FROM user_task_attempts 
+            WHERE user_id = %s AND task_id = %s
+        """, (session['user_id'], task_id))
+        next_attempt = cursor.fetchone()['next_attempt']
+        
+        # Create new attempt
+        cursor.execute("""
+            INSERT INTO user_task_attempts (user_id, task_id, attempt_number, status, started_at)
+            VALUES (%s, %s, %s, 'In Progress', NOW())
+        """, (session['user_id'], task_id, next_attempt))
+        attempt_id = cursor.lastrowid
+        
+        # Mark user_tasks as In Progress
+        cursor.execute('''
+            INSERT INTO user_tasks (user_id, task_name, status)
+            VALUES (%s, %s, %s)
+            ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
+        ''', (session['user_id'], task_name, 'In Progress'))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True, 
+            'message': 'New attempt created for retake. Previous submissions preserved.',
+            'attempt_id': attempt_id,
+            'attempt_number': next_attempt,
+            'task_name': task_name
+        })
+    except Exception as e:
+        print(f"Error creating retake attempt: {e}")
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
+
+@app.route('/api/retake-writing', methods=['POST'])
+def retake_writing():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    
+    data = request.get_json()
+    task_name = data.get('task_name', 'Writing Task')
+    
+    try:
+        conn = connect_db()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get task_id
+        cursor.execute("SELECT id FROM tasks WHERE task_name = %s", (task_name,))
+        task_row = cursor.fetchone()
+        if not task_row:
+            return jsonify({'success': False, 'message': 'Task not found'}), 404
+        
+        task_id = task_row['id']
+        
+        # Get next attempt number
+        cursor.execute("""
+            SELECT COALESCE(MAX(attempt_number), 0) + 1 as next_attempt
+            FROM user_task_attempts 
+            WHERE user_id = %s AND task_id = %s
+        """, (session['user_id'], task_id))
+        next_attempt = cursor.fetchone()['next_attempt']
+        
+        # Create new attempt
+        cursor.execute("""
+            INSERT INTO user_task_attempts (user_id, task_id, attempt_number, status, started_at)
+            VALUES (%s, %s, %s, 'In Progress', NOW())
+        """, (session['user_id'], task_id, next_attempt))
+        attempt_id = cursor.lastrowid
+        
+        # Mark user_tasks as In Progress
+        cursor.execute('''
+            INSERT INTO user_tasks (user_id, task_name, status)
+            VALUES (%s, %s, %s)
+            ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
+        ''', (session['user_id'], task_name, 'In Progress'))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True, 
+            'message': 'New attempt created for retake. Previous submissions preserved.',
+            'attempt_id': attempt_id,
+            'attempt_number': next_attempt,
+            'task_name': task_name
+        })
+    except Exception as e:
+        print(f"Error creating retake attempt: {e}")
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
+
+@app.route('/api/submit-saved-writing', methods=['POST'])
+def submit_saved_writing():
+    """Submit saved writing progress without uploading a new file"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    
+    data = request.get_json()
+    task_name = data.get('task_name', 'Writing Task')
+    
+    try:
+        conn = connect_db()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get task_id
+        cursor.execute("SELECT id FROM tasks WHERE task_name = %s", (task_name,))
+        task_row = cursor.fetchone()
+        if not task_row:
+            return jsonify({'success': False, 'message': 'Task not found'}), 404
+        
+        task_id = task_row['id']
+        
+        # Get the latest IN PROGRESS attempt
+        cursor.execute("""
+            SELECT id, attempt_number FROM user_task_attempts 
+            WHERE user_id = %s AND task_id = %s AND status = 'In Progress'
+            ORDER BY attempt_number DESC LIMIT 1
+        """, (session['user_id'], task_id))
+        
+        attempt_row = cursor.fetchone()
+        if not attempt_row:
+            return jsonify({'success': False, 'message': 'No saved progress found'}), 404
+        
+        attempt_id = attempt_row['id']
+        attempt_number = attempt_row['attempt_number']
+        
+        # Update the writing sample status to completed
+        cursor.execute("""
+            UPDATE writing_samples 
+            SET status = 'Completed', uploaded_at = NOW()
+            WHERE attempt_id = %s
+        """, (attempt_id,))
+        
+        # Mark attempt as completed
+        cursor.execute("""
+            UPDATE user_task_attempts 
+            SET status = 'Completed', completed_at = NOW()
+            WHERE id = %s
+        """, (attempt_id,))
+        
+        # Mark user_tasks as Completed
+        cursor.execute("""
+            INSERT INTO user_tasks (user_id, task_name, status)
+            VALUES (%s, %s, %s)
+            ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
+        """, (session['user_id'], task_name, 'Completed'))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Saved writing submitted successfully', 
+            'attempt_id': attempt_id, 
+            'attempt_number': attempt_number
+        })
+    except Exception as e:
+        print(f"Error submitting saved writing: {e}")
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
+
+@app.route('/api/save-existing-writing-progress', methods=['POST'])
+def save_existing_writing_progress():
+    """Save existing writing progress without uploading a new file"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    
+    data = request.get_json()
+    task_name = data.get('task_name', 'Writing Task')
+    
+    try:
+        conn = connect_db()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get task_id
+        cursor.execute("SELECT id FROM tasks WHERE task_name = %s", (task_name,))
+        task_row = cursor.fetchone()
+        if not task_row:
+            return jsonify({'success': False, 'message': 'Task not found'}), 404
+        
+        task_id = task_row['id']
+        
+        # Get the latest IN PROGRESS attempt
+        cursor.execute("""
+            SELECT id, attempt_number FROM user_task_attempts 
+            WHERE user_id = %s AND task_id = %s AND status = 'In Progress'
+            ORDER BY attempt_number DESC LIMIT 1
+        """, (session['user_id'], task_id))
+        
+        attempt_row = cursor.fetchone()
+        if not attempt_row:
+            return jsonify({'success': False, 'message': 'No saved progress found'}), 404
+        
+        attempt_id = attempt_row['id']
+        attempt_number = attempt_row['attempt_number']
+        
+        # Update the writing sample uploaded_at timestamp (essentially a no-op but updates timestamp)
+        cursor.execute("""
+            UPDATE writing_samples 
+            SET uploaded_at = NOW()
+            WHERE attempt_id = %s
+        """, (attempt_id,))
+        
+        # Mark user_tasks as In Progress (ensure it stays in progress)
+        cursor.execute("""
+            INSERT INTO user_tasks (user_id, task_name, status)
+            VALUES (%s, %s, %s)
+            ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
+        """, (session['user_id'], task_name, 'In Progress'))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Progress saved successfully', 
+            'attempt_id': attempt_id, 
+            'attempt_number': attempt_number
+        })
+    except Exception as e:
+        print(f"Error saving existing writing progress: {e}")
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

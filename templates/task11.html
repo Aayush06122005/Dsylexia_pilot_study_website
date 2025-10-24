@@ -247,6 +247,15 @@
             });
 
             function checkTaskStatusAndLoadProgress() {
+                // Wait for currentTask to be loaded before making API calls
+                if (!currentTask) {
+                    console.log('Waiting for currentTask to load...');
+                    setTimeout(checkTaskStatusAndLoadProgress, 100);
+                    return;
+                }
+                
+                console.log('Current task loaded:', currentTask);
+                
                 // First check if task is already completed (but allow retakes)
                 const urlParams = new URLSearchParams(window.location.search);
                 const isRetake = urlParams.get('retake') === 'true';
@@ -271,12 +280,16 @@
                 }
 
                 // Check for saved progress (always check, even in retake mode)
-                fetch('/api/get-saved-progress')
+                fetch('/api/get-saved-progress?task_name=Reading Aloud Task 1')
                 .then(res => res.json())
                 .then(data => {
                     if (data.success && data.saved_audio) {
                         // Load saved audio
                         loadSavedAudio(data.saved_audio);
+                        // Show attempt info if available
+                        if (data.attempt_number) {
+                            console.log(`Loading attempt ${data.attempt_number} for ${currentTask.task_name}`);
+                        }
                     }
                 })
                 .catch(() => {
@@ -630,10 +643,8 @@
                 uploadMsg.classList.add('hidden');
                 const formData = new FormData();
                 formData.append('audio', audioBlob, 'recording.webm');
-                // Add task information to form data
-                if (currentTask) {
-                    formData.append('task_name', currentTask.task_name);
-                }
+                // Add task information to form data - always use "Reading Aloud Task 1" for the main task
+                formData.append('task_name', 'Reading Aloud Task 1');
                 
                 fetch('/api/upload-audio', {
                     method: 'POST',
@@ -683,10 +694,8 @@
                 const formData = new FormData();
                 formData.append('audio', audioBlob, 'recording.webm');
                 formData.append('save_progress', 'true'); // Flag to indicate this is a save, not submit
-                // Add task information to form data
-                if (currentTask) {
-                    formData.append('task_name', currentTask.task_name);
-                }
+                // Add task information to form data - always use "Reading Aloud Task 1" for the main task
+                formData.append('task_name', 'Reading Aloud Task 1');
                 fetch('/api/save-progress', {
                     method: 'POST',
                     body: formData
