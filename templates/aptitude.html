@@ -176,15 +176,6 @@
                                 <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="38">38</button>
                             </div>
                         </div>
-                        <div class="question mb-8">
-                            <p class="text-lg font-medium mb-4">2. If all roses are flowers and some flowers are red, then:</p>
-                            <div class="space-y-3">
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-left hover:border-blue-500" data-value="all_roses_red">All roses are red</button>
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-left hover:border-blue-500" data-value="some_roses_red">Some roses are red</button>
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-left hover:border-blue-500" data-value="no_roses_red">No roses are red</button>
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-left hover:border-blue-500" data-value="cannot_determine">Cannot determine</button>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -201,15 +192,6 @@
                                 <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="20">20</button>
                                 <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="25">25</button>
                                 <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="30">30</button>
-                            </div>
-                        </div>
-                        <div class="question mb-8">
-                            <p class="text-lg font-medium mb-4">2. If a train travels 120 km in 2 hours, what is its speed in km/h?</p>
-                            <div class="grid grid-cols-2 gap-4">
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="40">40 km/h</button>
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="50">50 km/h</button>
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="60">60 km/h</button>
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="70">70 km/h</button>
                             </div>
                         </div>
                     </div>
@@ -230,15 +212,6 @@
                                 <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="washing">Washing</button>
                             </div>
                         </div>
-                        <div class="question mb-8">
-                            <p class="text-lg font-medium mb-4">2. Which word is a synonym for "Eloquent"?</p>
-                            <div class="grid grid-cols-2 gap-4">
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="silent">Silent</button>
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="articulate">Articulate</button>
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="quiet">Quiet</button>
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="shy">Shy</button>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -255,15 +228,6 @@
                                 <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="3">3 layers</button>
                                 <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="4">4 layers</button>
                                 <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="6">6 layers</button>
-                            </div>
-                        </div>
-                        <div class="question mb-8">
-                            <p class="text-lg font-medium mb-4">2. Which shape would you get if you rotate a square 90 degrees clockwise?</p>
-                            <div class="grid grid-cols-2 gap-4">
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="same_square">Same square</button>
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="rectangle">Rectangle</button>
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="diamond">Diamond</button>
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="triangle">Triangle</button>
                             </div>
                         </div>
                     </div>
@@ -452,6 +416,113 @@
             });
         });
 
+        // Load aptitude tasks from database based on user's class level
+        function loadAptitudeTasks() {
+            // Get user ID from session or pass it from backend
+            const userId = getUserId(); // We'll need to implement this
+            
+            fetch(`/api/aptitude-tasks/${userId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.tasks && data.tasks.length > 0) {
+                    // Use the first task (should be the appropriate class level)
+                    const task = data.tasks[0];
+                    displayAptitudeTask(task);
+                    
+                    // Show class level info
+                    const classInfo = document.createElement('div');
+                    classInfo.className = 'bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4';
+                    classInfo.innerHTML = `
+                        <p class="font-bold">Class Level ${data.class_level} Aptitude Test</p>
+                        <p>Questions tailored for your class level.</p>
+                    `;
+                    
+                    const contentWrapper = document.querySelector('.content-wrapper');
+                    if (contentWrapper) {
+                        contentWrapper.insertBefore(classInfo, contentWrapper.firstChild);
+                    }
+                } else {
+                    console.error('Failed to load aptitude tasks:', data.message);
+                    // Fall back to default questions
+                    displayDefaultQuestions();
+                }
+            })
+            .catch(error => {
+                console.error('Error loading aptitude tasks:', error);
+                // Fall back to default questions
+                displayDefaultQuestions();
+            });
+        }
+        
+        // Display aptitude task from database
+        function displayAptitudeTask(task) {
+            // Update logical reasoning section
+            updateQuestionSection('logical', task.logical_question, task.logical_question_options);
+            
+            // Update numerical ability section
+            updateQuestionSection('numerical', task.numerical_question, task.numerical_question_options);
+            
+            // Update verbal ability section
+            updateQuestionSection('verbal', task.verbal_question, task.verbal_question_options);
+            
+            // Update spatial reasoning section
+            updateQuestionSection('spatial', task.spatial_question, task.spatial_question_options);
+        }
+        
+        // Update a question section with new question and options
+        function updateQuestionSection(sectionName, question, options) {
+            const section = document.getElementById(sectionName + 'Section');
+            if (!section) return;
+            
+            const questions = section.querySelectorAll('.question');
+            
+            // Update the single question
+            if (questions[0] && question) {
+                const questionText = questions[0].querySelector('p');
+                if (questionText) {
+                    questionText.textContent = '1. ' + question;
+                }
+                
+                // Update options
+                try {
+                    if (typeof options === 'string') {
+                        options = JSON.parse(options);
+                    }
+                } catch (e) {
+                    options = [];
+                }
+                if (options && Array.isArray(options)) {
+                    const optionsContainer = questions[0].querySelector('.grid, .space-y-3');
+                    if (optionsContainer) {
+                        optionsContainer.innerHTML = '';
+                        options.forEach((option, index) => {
+                            const button = document.createElement('button');
+                            button.className = 'option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500';
+                            button.setAttribute('data-value', option);
+                            button.textContent = option;
+                            optionsContainer.appendChild(button);
+                        });
+                    }
+                }
+            }
+            
+            // Hide the second question if it exists
+            if (questions[1]) {
+                questions[1].style.display = 'none';
+            }
+        }
+        
+        // Display default questions (fallback)
+        function displayDefaultQuestions() {
+            // Keep the existing hardcoded questions as fallback
+            console.log('Using default aptitude questions');
+        }
+        
+        // Get user ID from backend template
+        function getUserId() {
+            return {{ user_id|default(1) }};
+        }
+
         // Check if this is a retake on page load
         document.addEventListener('DOMContentLoaded', function() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -473,8 +544,13 @@
                 }
             }
             
-            // Load saved progress if available
-            loadSavedProgress();
+            // Load aptitude tasks first, then saved progress
+            loadAptitudeTasks();
+            
+            // Load saved progress if available (after tasks are loaded)
+            setTimeout(() => {
+                loadSavedProgress();
+            }, 500);
         });
 
         // Test state
@@ -485,7 +561,7 @@
             verbal: {},
             spatial: {}
         };
-        let totalQuestions = 8; // 2 questions per section
+        let totalQuestions = 4; // 1 question per section
         let answeredQuestions = 0;
 
         // DOM elements

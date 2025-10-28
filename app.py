@@ -2372,62 +2372,27 @@ def admin_category_tasks(category_slug: str):
                 )
             elif category_slug == 'aptitude':
                 import json as _json
-                # Detect schema and insert accordingly
-                cursor2 = conn.cursor(dictionary=True)
-                cursor2.execute("SHOW COLUMNS FROM aptitude_tasks")
-                existing_columns = {row['Field'] for row in cursor2.fetchall()}
-                cursor2.close()
-                if 'logical_reasoning_questions' in existing_columns:
-                    def section_from(prefix):
-                        q1 = data.get(f'{prefix}_question1')
-                        q2 = data.get(f'{prefix}_question2')
-                        o1 = data.get(f'{prefix}_question1_options') or []
-                        o2 = data.get(f'{prefix}_question2_options') or []
-                        sec = []
-                        if q1:
-                            sec.append({'question': q1, 'options': o1})
-                        if q2:
-                            sec.append({'question': q2, 'options': o2})
-                        return _json.dumps(sec)
-                    cursor.execute(
-                        """
-                        INSERT INTO aptitude_tasks (
-                            task_name, class_level, difficulty_level,
-                            logical_reasoning_questions, numerical_ability_questions, verbal_ability_questions, spatial_reasoning_questions,
-                            instructions, estimated_time
-                        ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                        """,
-                        (
-                            data.get('task_name'), data.get('class_level'), data.get('difficulty_level'),
-                            section_from('logical'), section_from('numerical'), section_from('verbal'), section_from('spatial'),
-                            data.get('instructions'), data.get('estimated_time')
-                        )
+                # Use the new single question per category schema
+                cursor.execute(
+                    """
+                    INSERT INTO aptitude_tasks (
+                        task_name, class_level, difficulty_level, instructions, estimated_time,
+                        logical_question, logical_question_options,
+                        numerical_question, numerical_question_options,
+                        verbal_question, verbal_question_options,
+                        spatial_question, spatial_question_options
                     )
-                else:
-                    cursor.execute(
-                        """
-                        INSERT INTO aptitude_tasks (
-                            task_name, class_level, difficulty_level, instructions, estimated_time, example,
-                            logical_question1, logical_question1_options, logical_question2, logical_question2_options,
-                            numerical_question1, numerical_question1_options, numerical_question2, numerical_question2_options,
-                            verbal_question1, verbal_question1_options, verbal_question2, verbal_question2_options,
-                            spatial_question1, spatial_question1_options, spatial_question2, spatial_question2_options
-                        )
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                        """,
-                        (
-                            data.get('task_name'), data.get('class_level'), data.get('difficulty_level'),
-                            data.get('instructions'), data.get('estimated_time'), data.get('example'),
-                            data.get('logical_question1'), _json.dumps(data.get('logical_question1_options') or []),
-                            data.get('logical_question2'), _json.dumps(data.get('logical_question2_options') or []),
-                            data.get('numerical_question1'), _json.dumps(data.get('numerical_question1_options') or []),
-                            data.get('numerical_question2'), _json.dumps(data.get('numerical_question2_options') or []),
-                            data.get('verbal_question1'), _json.dumps(data.get('verbal_question1_options') or []),
-                            data.get('verbal_question2'), _json.dumps(data.get('verbal_question2_options') or []),
-                            data.get('spatial_question1'), _json.dumps(data.get('spatial_question1_options') or []),
-                            data.get('spatial_question2'), _json.dumps(data.get('spatial_question2_options') or [])
-                        )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        data.get('task_name'), data.get('class_level'), data.get('difficulty_level'),
+                        data.get('instructions'), data.get('estimated_time'),
+                        data.get('logical_question'), _json.dumps(data.get('logical_question_options') or []),
+                        data.get('numerical_question'), _json.dumps(data.get('numerical_question_options') or []),
+                        data.get('verbal_question'), _json.dumps(data.get('verbal_question_options') or []),
+                        data.get('spatial_question'), _json.dumps(data.get('spatial_question_options') or [])
                     )
+                )
             conn.commit()
             return jsonify({'success': True})
     except Exception as e:
@@ -2972,7 +2937,7 @@ def aptitude():
     # Require login to access the aptitude test so progress can be saved to a user
     if 'user_id' not in session:
         return redirect(url_for('signin'))
-    return render_template('aptitude.html')
+    return render_template('aptitude.html', user_id=session['user_id'])
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -5015,12 +4980,34 @@ def get_aptitude_tasks(user_id):
             print("aptitude_tasks table does not exist")
             return jsonify({'success': False, 'message': 'Aptitude tasks not configured. Please contact administrator.'}), 500
         
-        # Get appropriate aptitude tasks for user's class
-        cursor.execute("""
-            SELECT * FROM aptitude_tasks 
-            WHERE class_level = %s 
-            ORDER BY difficulty_level, class_level
-        """, (class_level,))
+        # Determine user's school (if any)
+        cursor.execute("SELECT school_id FROM users WHERE id=%s", (user_id,))
+        urow = cursor.fetchone() or {}
+        user_school_id = urow.get('school_id')
+
+        # Check if aptitude_tasks has school_id column (optional school scoping)
+        cursor.execute("SHOW COLUMNS FROM aptitude_tasks LIKE 'school_id'")
+        has_school_col = cursor.fetchone() is not None
+
+        # Get appropriate aptitude tasks for user's class (and school if column exists)
+        if has_school_col and user_school_id:
+            cursor.execute(
+                """
+                SELECT * FROM aptitude_tasks 
+                WHERE class_level = %s AND (school_id IS NULL OR school_id = %s)
+                ORDER BY difficulty_level, class_level
+                """,
+                (class_level, user_school_id)
+            )
+        else:
+            cursor.execute(
+                """
+                SELECT * FROM aptitude_tasks 
+                WHERE class_level = %s 
+                ORDER BY difficulty_level, class_level
+                """,
+                (class_level,)
+            )
         
         tasks = cursor.fetchall()
         print(f"Found {len(tasks)} aptitude tasks for class {class_level}")

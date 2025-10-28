@@ -424,12 +424,7 @@
                 // Create button based on status
                 let buttonHtml = '';
                 if (task.status === 'Completed') {
-                    buttonHtml = `
-                        <div class="flex flex-col gap-2 mt-auto w-full">
-                            <button class="task-btn bg-gray-200 text-gray-800 hover:bg-gray-300 px-4 py-2 rounded-md font-semibold transition" data-task="${task.task_name}" data-status="${task.status}">Retake</button>
-                            <button class="task-btn primary-bg opacity-60 text-white px-4 py-2 rounded-md font-semibold transition cursor-not-allowed" disabled>Completed</button>
-                        </div>
-                    `;
+                    buttonHtml = `<button class="task-btn bg-gray-200 text-gray-800 hover:bg-gray-300 px-4 py-2 rounded-md font-semibold mt-auto w-full transition" data-task="${task.task_name}" data-status="${task.status}">Retake</button>`;
                 } else {
                     const buttonText = task.status === 'Not Started' ? 'Start Task' : 'Continue';
                     buttonHtml = `<button class="task-btn primary-bg text-white px-4 py-2 rounded-md font-semibold mt-auto w-full transition" data-task="${task.task_name}" data-status="${task.status}">${buttonText}</button>`;

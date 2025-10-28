@@ -123,99 +123,55 @@
                                                     {% endif %}
                                                     <div class="mt-2 text-xs text-gray-500">Answer 3 type:</div>
                                                     <div class="text-sm text-gray-700">{{ task.answer3_type }}</div>
-                                                                                                 {% elif category_slug == 'aptitude' %}
-                                                     <div class="text-xs text-gray-500 mb-1">Instructions:</div>
-                                                     <div class="text-sm text-gray-700 mb-2">{{ task.instructions }}</div>
-                                                     <div class="text-xs text-gray-500 mb-1">Estimated Time:</div>
-                                                     <div class="text-sm text-gray-700 mb-2">{{ task.estimated_time }}</div>
+                                                {% elif category_slug == 'aptitude' %}
+                                                    <div class="text-xs text-gray-500 mb-1">Instructions:</div>
+                                                    <div class="text-sm text-gray-700 mb-2">{{ task.instructions }}</div>
+                                                    <div class="text-xs text-gray-500 mb-1">Estimated Time:</div>
+                                                    <div class="text-sm text-gray-700 mb-2">{{ task.estimated_time }}</div>
+                                                    
+                                                    <div class="text-xs text-gray-500 mb-1">Logical Reasoning:</div>
+                                                    <div class="text-sm text-gray-700 mb-2">{{ task.logical_question or 'N/A' }}</div>
+                                                    {% if task.logical_question_options %}
+                                                        <div class="text-xs text-gray-500">Options:</div>
+                                                        <ul class="list-disc list-inside text-sm text-gray-700 mb-2">
+                                                            {% for opt in task.logical_question_options %}
+                                                                <li>{{ opt }}</li>
+                                                            {% endfor %}
+                                                        </ul>
+                                                    {% endif %}
                                                      
-                                                     <div class="text-xs text-gray-500 mb-1">Logical Reasoning:</div>
-                                                     <ol class="list-decimal list-inside text-sm text-gray-700 space-y-1 mb-2">
-                                                         <li>{{ task.logical_question1 }}</li>
-                                                         <li>{{ task.logical_question2 }}</li>
-                                                     </ol>
-                                                     {% if task.logical_question1_options %}
-                                                         <div class="text-xs text-gray-500">Options for Q1:</div>
-                                                         <ul class="list-disc list-inside text-sm text-gray-700 mb-2">
-                                                             {% for opt in task.logical_question1_options %}
-                                                                 <li>{{ opt }}</li>
-                                                             {% endfor %}
-                                                         </ul>
-                                                     {% endif %}
-                                                     {% if task.logical_question2_options %}
-                                                         <div class="text-xs text-gray-500">Options for Q2:</div>
-                                                         <ul class="list-disc list-inside text-sm text-gray-700 mb-2">
-                                                             {% for opt in task.logical_question2_options %}
-                                                                 <li>{{ opt }}</li>
-                                                             {% endfor %}
-                                                         </ul>
-                                                     {% endif %}
-                                                     
-                                                     <div class="text-xs text-gray-500 mb-1">Numerical Ability:</div>
-                                                     <ol class="list-decimal list-inside text-sm text-gray-700 space-y-1 mb-2">
-                                                         <li>{{ task.numerical_question1 }}</li>
-                                                         <li>{{ task.numerical_question2 }}</li>
-                                                     </ol>
-                                                     {% if task.numerical_question1_options %}
-                                                         <div class="text-xs text-gray-500">Options for Q1:</div>
-                                                         <ul class="list-disc list-inside text-sm text-gray-700 mb-2">
-                                                             {% for opt in task.numerical_question1_options %}
-                                                                 <li>{{ opt }}</li>
-                                                             {% endfor %}
-                                                         </ul>
-                                                     {% endif %}
-                                                     {% if task.numerical_question2_options %}
-                                                         <div class="text-xs text-gray-500">Options for Q2:</div>
-                                                         <ul class="list-disc list-inside text-sm text-gray-700 mb-2">
-                                                             {% for opt in task.numerical_question2_options %}
-                                                                 <li>{{ opt }}</li>
-                                                             {% endfor %}
-                                                         </ul>
-                                                     {% endif %}
-                                                     
-                                                     <div class="text-xs text-gray-500 mb-1">Verbal Ability:</div>
-                                                     <ol class="list-decimal list-inside text-sm text-gray-700 space-y-1 mb-2">
-                                                         <li>{{ task.verbal_question1 }}</li>
-                                                         <li>{{ task.verbal_question2 }}</li>
-                                                     </ol>
-                                                     {% if task.verbal_question1_options %}
-                                                         <div class="text-xs text-gray-500">Options for Q1:</div>
-                                                         <ul class="list-disc list-inside text-sm text-gray-700 mb-2">
-                                                             {% for opt in task.verbal_question1_options %}
-                                                                 <li>{{ opt }}</li>
-                                                             {% endfor %}
-                                                         </ul>
-                                                     {% endif %}
-                                                     {% if task.verbal_question2_options %}
-                                                         <div class="text-xs text-gray-500">Options for Q2:</div>
-                                                         <ul class="list-disc list-inside text-sm text-gray-700 mb-2">
-                                                             {% for opt in task.verbal_question2_options %}
-                                                                 <li>{{ opt }}</li>
-                                                             {% endfor %}
-                                                         </ul>
-                                                     {% endif %}
-                                                     
-                                                     <div class="text-xs text-gray-500 mb-1">Spatial Reasoning:</div>
-                                                     <ol class="list-decimal list-inside text-sm text-gray-700 space-y-1 mb-2">
-                                                         <li>{{ task.spatial_question1 }}</li>
-                                                         <li>{{ task.spatial_question2 }}</li>
-                                                     </ol>
-                                                     {% if task.spatial_question1_options %}
-                                                         <div class="text-xs text-gray-500">Options for Q1:</div>
-                                                         <ul class="list-disc list-inside text-sm text-gray-700 mb-2">
-                                                             {% for opt in task.spatial_question1_options %}
-                                                                 <li>{{ opt }}</li>
-                                                             {% endfor %}
-                                                         </ul>
-                                                     {% endif %}
-                                                     {% if task.spatial_question2_options %}
-                                                         <div class="text-xs text-gray-500">Options for Q2:</div>
-                                                         <ul class="list-disc list-inside text-sm text-gray-700 mb-2">
-                                                             {% for opt in task.spatial_question2_options %}
-                                                                 <li>{{ opt }}</li>
-                                                             {% endfor %}
-                                                         </ul>
-                                                     {% endif %}
+                                                    <div class="text-xs text-gray-500 mb-1">Numerical Ability:</div>
+                                                    <div class="text-sm text-gray-700 mb-2">{{ task.numerical_question or 'N/A' }}</div>
+                                                    {% if task.numerical_question_options %}
+                                                        <div class="text-xs text-gray-500">Options:</div>
+                                                        <ul class="list-disc list-inside text-sm text-gray-700 mb-2">
+                                                            {% for opt in task.numerical_question_options %}
+                                                                <li>{{ opt }}</li>
+                                                            {% endfor %}
+                                                        </ul>
+                                                    {% endif %}
+                                                    
+                                                    <div class="text-xs text-gray-500 mb-1">Verbal Ability:</div>
+                                                    <div class="text-sm text-gray-700 mb-2">{{ task.verbal_question or 'N/A' }}</div>
+                                                    {% if task.verbal_question_options %}
+                                                        <div class="text-xs text-gray-500">Options:</div>
+                                                        <ul class="list-disc list-inside text-sm text-gray-700 mb-2">
+                                                            {% for opt in task.verbal_question_options %}
+                                                                <li>{{ opt }}</li>
+                                                            {% endfor %}
+                                                        </ul>
+                                                    {% endif %}
+                                                    
+                                                    <div class="text-xs text-gray-500 mb-1">Spatial Reasoning:</div>
+                                                    <div class="text-sm text-gray-700 mb-2">{{ task.spatial_question or 'N/A' }}</div>
+                                                    {% if task.spatial_question_options %}
+                                                        <div class="text-xs text-gray-500">Options:</div>
+                                                        <ul class="list-disc list-inside text-sm text-gray-700 mb-2">
+                                                            {% for opt in task.spatial_question_options %}
+                                                                <li>{{ opt }}</li>
+                                                            {% endfor %}
+                                                        </ul>
+                                                    {% endif %}
                                                 {% endif %}
                                             </td>
                                             <td class="align-top px-6 py-4 text-sm text-gray-900">{{ task.estimated_time }}</td>
@@ -487,19 +443,12 @@ async function editTask(taskId) {
         logicalHeader.className = 'font-semibold text-lg mt-4';
         formFields.appendChild(logicalHeader);
         
-        formFields.appendChild(createFormField('logical_question1', 'Question 1', current.logical_question1, 'textarea'));
-        let currentLogicalOpt1 = current.logical_question1_options || [];
-        if (typeof currentLogicalOpt1 === 'string') {
-            try { currentLogicalOpt1 = JSON.parse(currentLogicalOpt1); } catch(e) { currentLogicalOpt1 = []; }
+        formFields.appendChild(createFormField('logical_question', 'Question', current.logical_question, 'textarea'));
+        let currentLogicalOpt = current.logical_question_options || [];
+        if (typeof currentLogicalOpt === 'string') {
+            try { currentLogicalOpt = JSON.parse(currentLogicalOpt); } catch(e) { currentLogicalOpt = []; }
         }
-        formFields.appendChild(createArrayField('logical_question1_options', 'Options for Question 1', currentLogicalOpt1));
-        
-        formFields.appendChild(createFormField('logical_question2', 'Question 2', current.logical_question2, 'textarea'));
-        let currentLogicalOpt2 = current.logical_question2_options || [];
-        if (typeof currentLogicalOpt2 === 'string') {
-            try { currentLogicalOpt2 = JSON.parse(currentLogicalOpt2); } catch(e) { currentLogicalOpt2 = []; }
-        }
-        formFields.appendChild(createArrayField('logical_question2_options', 'Options for Question 2', currentLogicalOpt2));
+        formFields.appendChild(createArrayField('logical_question_options', 'Options', currentLogicalOpt));
         
         // Numerical Ability Section
         formFields.appendChild(document.createElement('hr'));
@@ -508,19 +457,12 @@ async function editTask(taskId) {
         numericalHeader.className = 'font-semibold text-lg mt-4';
         formFields.appendChild(numericalHeader);
         
-        formFields.appendChild(createFormField('numerical_question1', 'Question 1', current.numerical_question1, 'textarea'));
-        let currentNumericalOpt1 = current.numerical_question1_options || [];
-        if (typeof currentNumericalOpt1 === 'string') {
-            try { currentNumericalOpt1 = JSON.parse(currentNumericalOpt1); } catch(e) { currentNumericalOpt1 = []; }
+        formFields.appendChild(createFormField('numerical_question', 'Question', current.numerical_question, 'textarea'));
+        let currentNumericalOpt = current.numerical_question_options || [];
+        if (typeof currentNumericalOpt === 'string') {
+            try { currentNumericalOpt = JSON.parse(currentNumericalOpt); } catch(e) { currentNumericalOpt = []; }
         }
-        formFields.appendChild(createArrayField('numerical_question1_options', 'Options for Question 1', currentNumericalOpt1));
-        
-        formFields.appendChild(createFormField('numerical_question2', 'Question 2', current.numerical_question2, 'textarea'));
-        let currentNumericalOpt2 = current.numerical_question2_options || [];
-        if (typeof currentNumericalOpt2 === 'string') {
-            try { currentNumericalOpt2 = JSON.parse(currentNumericalOpt2); } catch(e) { currentNumericalOpt2 = []; }
-        }
-        formFields.appendChild(createArrayField('numerical_question2_options', 'Options for Question 2', currentNumericalOpt2));
+        formFields.appendChild(createArrayField('numerical_question_options', 'Options', currentNumericalOpt));
         
         // Verbal Ability Section
         formFields.appendChild(document.createElement('hr'));
@@ -529,19 +471,12 @@ async function editTask(taskId) {
         verbalHeader.className = 'font-semibold text-lg mt-4';
         formFields.appendChild(verbalHeader);
         
-        formFields.appendChild(createFormField('verbal_question1', 'Question 1', current.verbal_question1, 'textarea'));
-        let currentVerbalOpt1 = current.verbal_question1_options || [];
-        if (typeof currentVerbalOpt1 === 'string') {
-            try { currentVerbalOpt1 = JSON.parse(currentVerbalOpt1); } catch(e) { currentVerbalOpt1 = []; }
+        formFields.appendChild(createFormField('verbal_question', 'Question', current.verbal_question, 'textarea'));
+        let currentVerbalOpt = current.verbal_question_options || [];
+        if (typeof currentVerbalOpt === 'string') {
+            try { currentVerbalOpt = JSON.parse(currentVerbalOpt); } catch(e) { currentVerbalOpt = []; }
         }
-        formFields.appendChild(createArrayField('verbal_question1_options', 'Options for Question 1', currentVerbalOpt1));
-        
-        formFields.appendChild(createFormField('verbal_question2', 'Question 2', current.verbal_question2, 'textarea'));
-        let currentVerbalOpt2 = current.verbal_question2_options || [];
-        if (typeof currentVerbalOpt2 === 'string') {
-            try { currentVerbalOpt2 = JSON.parse(currentVerbalOpt2); } catch(e) { currentVerbalOpt2 = []; }
-        }
-        formFields.appendChild(createArrayField('verbal_question2_options', 'Options for Question 2', currentVerbalOpt2));
+        formFields.appendChild(createArrayField('verbal_question_options', 'Options', currentVerbalOpt));
         
         // Spatial Reasoning Section
         formFields.appendChild(document.createElement('hr'));
@@ -550,19 +485,12 @@ async function editTask(taskId) {
         spatialHeader.className = 'font-semibold text-lg mt-4';
         formFields.appendChild(spatialHeader);
         
-        formFields.appendChild(createFormField('spatial_question1', 'Question 1', current.spatial_question1, 'textarea'));
-        let currentSpatialOpt1 = current.spatial_question1_options || [];
-        if (typeof currentSpatialOpt1 === 'string') {
-            try { currentSpatialOpt1 = JSON.parse(currentSpatialOpt1); } catch(e) { currentSpatialOpt1 = []; }
+        formFields.appendChild(createFormField('spatial_question', 'Question', current.spatial_question, 'textarea'));
+        let currentSpatialOpt = current.spatial_question_options || [];
+        if (typeof currentSpatialOpt === 'string') {
+            try { currentSpatialOpt = JSON.parse(currentSpatialOpt); } catch(e) { currentSpatialOpt = []; }
         }
-        formFields.appendChild(createArrayField('spatial_question1_options', 'Options for Question 1', currentSpatialOpt1));
-        
-        formFields.appendChild(createFormField('spatial_question2', 'Question 2', current.spatial_question2, 'textarea'));
-        let currentSpatialOpt2 = current.spatial_question2_options || [];
-        if (typeof currentSpatialOpt2 === 'string') {
-            try { currentSpatialOpt2 = JSON.parse(currentSpatialOpt2); } catch(e) { currentSpatialOpt2 = []; }
-        }
-        formFields.appendChild(createArrayField('spatial_question2_options', 'Options for Question 2', currentSpatialOpt2));
+        formFields.appendChild(createArrayField('spatial_question_options', 'Options', currentSpatialOpt));
     }
     
     // Show the modal
@@ -796,10 +724,8 @@ async function editTask(taskId) {
         logicalHeader.className = 'font-semibold text-lg mt-4';
         formFields.appendChild(logicalHeader);
         
-        formFields.appendChild(createFormField('logical_question1', 'Question 1', '', 'textarea'));
-        formFields.appendChild(createArrayField('logical_question1_options', 'Options for Question 1', []));
-        formFields.appendChild(createFormField('logical_question2', 'Question 2', '', 'textarea'));
-        formFields.appendChild(createArrayField('logical_question2_options', 'Options for Question 2', []));
+        formFields.appendChild(createFormField('logical_question', 'Question', '', 'textarea'));
+        formFields.appendChild(createArrayField('logical_question_options', 'Options', []));
         
         // Numerical Ability Section
         formFields.appendChild(document.createElement('hr'));
@@ -808,10 +734,8 @@ async function editTask(taskId) {
         numericalHeader.className = 'font-semibold text-lg mt-4';
         formFields.appendChild(numericalHeader);
         
-        formFields.appendChild(createFormField('numerical_question1', 'Question 1', '', 'textarea'));
-        formFields.appendChild(createArrayField('numerical_question1_options', 'Options for Question 1', []));
-        formFields.appendChild(createFormField('numerical_question2', 'Question 2', '', 'textarea'));
-        formFields.appendChild(createArrayField('numerical_question2_options', 'Options for Question 2', []));
+        formFields.appendChild(createFormField('numerical_question', 'Question', '', 'textarea'));
+        formFields.appendChild(createArrayField('numerical_question_options', 'Options', []));
         
         // Verbal Ability Section
         formFields.appendChild(document.createElement('hr'));
@@ -820,10 +744,8 @@ async function editTask(taskId) {
         verbalHeader.className = 'font-semibold text-lg mt-4';
         formFields.appendChild(verbalHeader);
         
-        formFields.appendChild(createFormField('verbal_question1', 'Question 1', '', 'textarea'));
-        formFields.appendChild(createArrayField('verbal_question1_options', 'Options for Question 1', []));
-        formFields.appendChild(createFormField('verbal_question2', 'Question 2', '', 'textarea'));
-        formFields.appendChild(createArrayField('verbal_question2_options', 'Options for Question 2', []));
+        formFields.appendChild(createFormField('verbal_question', 'Question', '', 'textarea'));
+        formFields.appendChild(createArrayField('verbal_question_options', 'Options', []));
         
         // Spatial Reasoning Section
         formFields.appendChild(document.createElement('hr'));
@@ -832,10 +754,8 @@ async function editTask(taskId) {
         spatialHeader.className = 'font-semibold text-lg mt-4';
         formFields.appendChild(spatialHeader);
         
-        formFields.appendChild(createFormField('spatial_question1', 'Question 1', '', 'textarea'));
-        formFields.appendChild(createArrayField('spatial_question1_options', 'Options for Question 1', []));
-        formFields.appendChild(createFormField('spatial_question2', 'Question 2', '', 'textarea'));
-        formFields.appendChild(createArrayField('spatial_question2_options', 'Options for Question 2', []));
+        formFields.appendChild(createFormField('spatial_question', 'Question', '', 'textarea'));
+        formFields.appendChild(createArrayField('spatial_question_options', 'Options', []));
     }
     
     // Set task ID to empty for new task
