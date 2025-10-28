@@ -524,6 +524,7 @@
             })
             .then(res => res.json())
             .then(resp => {
+                console.log('Reading comprehension submission response:', resp);
                 const msg = document.getElementById('formMsg');
                 if (resp.success) {
                     msg.textContent = 'Progress saved! Redirecting to dashboard...';
@@ -554,6 +555,7 @@
             const q1 = form.q1.value;
             const q2 = form.q2.value;
             const q3 = form.q3.value;
+            console.log('Submitting reading comprehension:', {q1, q2, q3});
             fetch('/api/submit-comprehension', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -561,6 +563,7 @@
             })
             .then(res => res.json())
             .then(resp => {
+                console.log('Reading comprehension submission response:', resp);
                 const msg = document.getElementById('formMsg');
                 if (resp.success) {
                     msg.textContent = 'Your answers have been submitted. Thank you!';

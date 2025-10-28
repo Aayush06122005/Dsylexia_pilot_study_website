@@ -417,6 +417,8 @@
         });
 
         // Load aptitude tasks from database based on user's class level
+        let currentAptitudeTask = null;
+
         function loadAptitudeTasks() {
             // Get user ID from session or pass it from backend
             const userId = getUserId(); // We'll need to implement this
@@ -427,6 +429,7 @@
                 if (data.success && data.tasks && data.tasks.length > 0) {
                     // Use the first task (should be the appropriate class level)
                     const task = data.tasks[0];
+                    currentAptitudeTask = task; // persist for scoring
                     displayAptitudeTask(task);
                     
                     // Show class level info
@@ -520,7 +523,7 @@
         
         // Get user ID from backend template
         function getUserId() {
-            return {{ user_id|default(1) }};
+            return parseInt('{{ user_id|default(1) }}', 10);
         }
 
         // Check if this is a retake on page load
@@ -581,72 +584,6 @@
             instructions.style.display = 'none';
             testSections.classList.remove('hidden');
         });
-
-        function loadSavedProgress() {
-            fetch('/api/get-aptitude-progress?task_name=Aptitude Test')
-            .then(res => res.json())
-            .then(data => {
-                if (data.success && data.progress) {
-                    // Restore answers from saved progress
-                    if (data.progress.answers) {
-                        try {
-                            const savedAnswers = JSON.parse(data.progress.answers);
-                            answers = savedAnswers;
-                            
-                            // Restore current section
-                            if (data.progress.current_section) {
-                                currentSection = data.progress.current_section;
-                                showSection(currentSection);
-                            }
-                            
-                            // Restore answered questions count
-                            if (data.progress.answered_count) {
-                                answeredQuestions = data.progress.answered_count;
-                                updateProgress();
-                            }
-                            
-                            // Restore selected answers in UI
-                            Object.keys(answers).forEach(section => {
-                                Object.keys(answers[section]).forEach(questionIndex => {
-                                    const sectionElement = document.getElementById(section + 'Section');
-                                    if (sectionElement) {
-                                        const questions = sectionElement.querySelectorAll('.question');
-                                        if (questions[questionIndex]) {
-                                            const selectedValue = answers[section][questionIndex];
-                                            const optionBtn = questions[questionIndex].querySelector(`[data-value="${selectedValue}"]`);
-                                            if (optionBtn) {
-                                                optionBtn.classList.add('selected');
-                                            }
-                                        }
-                                    }
-                                });
-                            });
-                            
-                            // Show notification that progress was loaded
-                            const notificationDiv = document.createElement('div');
-                            notificationDiv.className = 'bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4';
-                            notificationDiv.innerHTML = `
-                                <p class="font-bold">Progress Loaded</p>
-                                <p>Your saved progress has been restored.</p>
-                            `;
-                            
-                            const contentWrapper = document.querySelector('.content-wrapper');
-                            if (contentWrapper) {
-                                contentWrapper.insertBefore(notificationDiv, contentWrapper.firstChild);
-                                setTimeout(() => {
-                                    notificationDiv.remove();
-                                }, 3000);
-                            }
-                        } catch (e) {
-                            console.error('Error parsing saved answers:', e);
-                        }
-                    }
-                }
-            })
-            .catch(error => {
-                console.log('Could not load saved progress:', error);
-            });
-        }
 
         // Section navigation
         sectionNavs.forEach(nav => {
@@ -722,19 +659,39 @@
                 total_score: 0
             };
 
-            // Calculate scores based on correct answers (simplified scoring)
-            Object.keys(answers).forEach(section => {
-                const sectionAnswers = answers[section];
-                let sectionScore = 0;
-                
-                Object.keys(sectionAnswers).forEach(questionIndex => {
-                    // Simple scoring - each answered question gets 1 point
-                    sectionScore += 1;
-                });
-                
-                scores[section + '_score'] = sectionScore;
-                scores.total_score += sectionScore;
-            });
+            // Require task loaded
+            if (!currentAptitudeTask) {
+                return scores;
+            }
+
+            // Normalize helper
+            const norm = v => (v == null ? '' : String(v).trim().toLowerCase());
+
+            // One question per section → correct if selected equals *_answer
+            const logicalSelected = answers.logical && answers.logical[0];
+            if (norm(logicalSelected) === norm(currentAptitudeTask.logical_answer)) {
+                scores.logical_reasoning_score = 1;
+            }
+
+            const numericalSelected = answers.numerical && answers.numerical[0];
+            if (norm(numericalSelected) === norm(currentAptitudeTask.numerical_answer)) {
+                scores.numerical_ability_score = 1;
+            }
+
+            const verbalSelected = answers.verbal && answers.verbal[0];
+            if (norm(verbalSelected) === norm(currentAptitudeTask.verbal_answer)) {
+                scores.verbal_ability_score = 1;
+            }
+
+            const spatialSelected = answers.spatial && answers.spatial[0];
+            if (norm(spatialSelected) === norm(currentAptitudeTask.spatial_answer)) {
+                scores.spatial_reasoning_score = 1;
+            }
+
+            scores.total_score = scores.logical_reasoning_score
+                + scores.numerical_ability_score
+                + scores.verbal_ability_score
+                + scores.spatial_reasoning_score;
 
             return scores;
         }
@@ -941,17 +898,23 @@
 
         // Load saved progress
         function loadSavedProgress() {
+            console.log('Loading saved aptitude progress...');
             fetch('/api/get-aptitude-progress?task_name=Aptitude Test')
             .then(response => response.json())
             .then(data => {
+                console.log('Aptitude progress API response:', data);
                 if (data.success && data.progress) {
                     try {
                         const saved = data.progress;
+                        console.log('Saved progress data:', saved);
+                        
                         // Restore answers
                         if (saved.answers) {
                             const savedAnswers = typeof saved.answers === 'string' ? JSON.parse(saved.answers) : saved.answers;
+                            console.log('Parsed saved answers:', savedAnswers);
                             if (savedAnswers && typeof savedAnswers === 'object') {
                                 answers = savedAnswers;
+                                console.log('Answers restored:', answers);
                             }
                         }
 

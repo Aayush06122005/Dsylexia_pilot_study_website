@@ -176,6 +176,8 @@ CREATE TABLE IF NOT EXISTS comprehension_progress (
     q2 VARCHAR(255),
     q3 TEXT,
     status ENUM('In Progress', 'Completed') DEFAULT 'In Progress',
+    score INT DEFAULT 0,
+    max_score INT DEFAULT 2,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (attempt_id) REFERENCES user_task_attempts(id) ON DELETE CASCADE
 );
@@ -189,6 +191,7 @@ CREATE TABLE IF NOT EXISTS aptitude_progress (
     verbal_ability_score INT DEFAULT 0,
     spatial_reasoning_score INT DEFAULT 0,
     total_score INT DEFAULT 0,
+    max_score INT DEFAULT 4,
     status ENUM('In Progress', 'Completed') DEFAULT 'In Progress',
     answers JSON NULL,
     current_section VARCHAR(50) NULL,
@@ -214,6 +217,8 @@ CREATE TABLE IF NOT EXISTS mathematical_comprehension_progress (
     q2 TEXT,
     q3 TEXT,
     status ENUM('In Progress', 'Completed') DEFAULT 'In Progress',
+    score INT DEFAULT 0,
+    max_score INT DEFAULT 3,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (attempt_id) REFERENCES user_task_attempts(id) ON DELETE CASCADE
 );
@@ -850,6 +855,18 @@ VALUES
 ('The Fall of the Berlin Wall', 12, 'Hard',
 'The Berlin Wall, which had symbolised the division between the capitalist and the communist worlds, was felled by the people in November 1989. This event was followed by the disintegration of the Soviet Union itself, which formally ended the Cold War. The internal weaknesses of the Soviet economic and political system, combined with the reforms (perestroika and glasnost) introduced by Mikhail Gorbachev, led to this collapse. This marked the end of bipolarity in global politics.',
 'Write about how the fall of the Berlin Wall changed world politics.', 0, 91, 15);
+
+CREATE TABLE IF NOT EXISTS user_badge_notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    badge_name VARCHAR(255) NOT NULL,
+    badge_icon VARCHAR(10) NOT NULL,
+    badge_description TEXT NOT NULL,
+    earned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    notified_at TIMESTAMP NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_badge_user (user_id, badge_name)
+);
 
 CREATE TABLE IF NOT EXISTS user_task_attempts (
     id INT AUTO_INCREMENT PRIMARY KEY,

@@ -97,13 +97,74 @@
 
 
     <main class="max-w-4xl mx-auto py-10 px-4">
-        <!-- Animated Progress Bar -->
-        <div class="mb-8">
-            <h2 class="text-2xl font-bold mb-2 text-blue-900">Overall Progress</h2>
-            <div class="w-full bg-gray-200 rounded-full h-6 mb-2">
-                <div id="progressBar" class="bg-blue-600 h-6 rounded-full transition-all duration-1000 ease-in-out" style="width: 0%"></div>
+        <!-- Progress Overview Section -->
+        <div class="bg-white rounded-xl shadow p-6 mb-8 animate-fade-in">
+            <h3 class="text-2xl font-bold mb-6 text-blue-900 text-center">Progress Overview</h3>
+            <div class="text-center mb-6">
+                <div class="text-4xl font-bold text-blue-600 mb-2" id="progressPercentage">0%</div>
+                <div class="text-lg text-gray-600 mb-4">Tasks Completed</div>
+                <div class="w-full bg-gray-200 rounded-full h-6 mb-2">
+                    <div class="bg-blue-600 h-6 rounded-full transition-all duration-1000 ease-in-out" id="progressBar" style="width: 0%"></div>
+                </div>
+                <div class="text-sm text-gray-500" id="progressText">0 of 6 tasks completed</div>
             </div>
-            <div class="text-right text-blue-800 font-semibold" id="progressText">Loading...</div>
+        </div>
+
+        <!-- Task Scores Section -->
+        <div class="bg-white rounded-xl shadow p-6 mb-8 animate-fade-in">
+            <h3 class="text-2xl font-bold mb-6 text-blue-900 text-center">Your Task Scores</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="scoresContainer">
+                <!-- Scores will be loaded dynamically -->
+                <div class="text-center">
+                    <div class="animate-pulse bg-gray-200 h-32 rounded-lg"></div>
+                </div>
+                <div class="text-center">
+                    <div class="animate-pulse bg-gray-200 h-32 rounded-lg"></div>
+                </div>
+                <div class="text-center">
+                    <div class="animate-pulse bg-gray-200 h-32 rounded-lg"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Time Spent Section -->
+        <div class="bg-white rounded-xl shadow p-6 mb-8 animate-fade-in">
+            <h3 class="text-2xl font-bold mb-6 text-green-900 text-center">Time Spent on Tasks</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="timeSpentContainer">
+                <!-- Time data will be loaded dynamically -->
+            </div>
+        </div>
+
+        <!-- Class Comparison Section -->
+        <div class="bg-white rounded-xl shadow p-6 mb-8 animate-fade-in">
+            <h3 class="text-2xl font-bold mb-6 text-purple-900 text-center">Class Comparison</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="classComparisonContainer">
+                <!-- Class averages will be loaded dynamically -->
+            </div>
+        </div>
+
+        <!-- Personal Bests Section -->
+        <div class="bg-white rounded-xl shadow p-6 mb-8 animate-fade-in">
+            <h3 class="text-2xl font-bold mb-6 text-orange-900 text-center">Personal Bests</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="personalBestsContainer">
+                <!-- Personal bests will be loaded dynamically -->
+            </div>
+        </div>
+
+        <!-- Most Improved Section -->
+        <div class="bg-white rounded-xl shadow p-6 mb-8 animate-fade-in">
+            <h3 class="text-2xl font-bold mb-6 text-indigo-900 text-center">Most Improved</h3>
+            <div class="text-center" id="mostImprovedContainer">
+                <!-- Most improved data will be loaded dynamically -->
+            </div>
+        </div>
+
+        <!-- Badges Section -->
+        <div class="bg-white rounded-xl shadow p-6 mb-8 animate-fade-in">
+            <h3 class="text-2xl font-bold mb-6 text-yellow-900 text-center">Badges Earned</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="badgesContainer">
+                <!-- Badges will be loaded dynamically -->
+            </div>
         </div>
 
         <!-- Motivational Statements -->
@@ -114,7 +175,7 @@
             </div>
             <div class="bg-white rounded-xl shadow p-6 flex flex-col justify-center items-center animate-fade-in">
                 <span class="text-2xl font-bold text-blue-600 mb-2">-20s</span>
-                <p class="text-lg text-gray-700 text-center">You completed today’s reading task <span class="font-bold">20 seconds faster</span> than your previous try!</p>
+                <p class="text-lg text-gray-700 text-center">You completed today's reading task <span class="font-bold">20 seconds faster</span> than your previous try!</p>
             </div>
             <div class="bg-white rounded-xl shadow p-6 flex flex-col justify-center items-center animate-fade-in">
                 <span class="text-2xl font-bold text-purple-600 mb-2">+3</span>
@@ -310,6 +371,329 @@
             root.style.fontSize = `${currentFontSize}px`;
         }
 
+        // Load and display comprehensive student stats
+        async function loadStudentScores() {
+            try {
+                const response = await fetch('/api/student-scores/{{ user_id|default(1) }}', {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayAllStats(data.stats);
+                } else {
+                    console.error('Failed to load stats:', data.message);
+                    displayErrorStats();
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+                displayErrorStats();
+            }
+        }
+        
+        function displayScores(scores) {
+            const container = document.getElementById('scoresContainer');
+            
+            const taskConfigs = [
+                {
+                    key: 'reading_comprehension',
+                    title: 'Reading Comprehension',
+                    icon: '📖',
+                    color: 'blue'
+                },
+                {
+                    key: 'mathematical_comprehension',
+                    title: 'Mathematical Comprehension',
+                    icon: '🔢',
+                    color: 'green'
+                },
+                {
+                    key: 'aptitude',
+                    title: 'Aptitude Test',
+                    icon: '🧠',
+                    color: 'purple'
+                }
+            ];
+            
+            container.innerHTML = '';
+            
+            taskConfigs.forEach(config => {
+                const taskScore = scores[config.key];
+                // Always use latest_score for display, even if it's 0
+                const displayScore = (taskScore.latest_score !== null && taskScore.latest_score !== undefined)
+                    ? taskScore.latest_score
+                    : taskScore.score;
+                const percentage = taskScore.max_score > 0 ? Math.round((displayScore / taskScore.max_score) * 100) : 0;
+                
+                const scoreCard = document.createElement('div');
+                scoreCard.className = `bg-${config.color}-50 rounded-xl p-6 text-center border-2 border-${config.color}-200`;
+                
+                scoreCard.innerHTML = `
+                    <div class="text-4xl mb-3">${config.icon}</div>
+                    <h4 class="text-lg font-semibold text-${config.color}-900 mb-2">${config.title}</h4>
+                    <div class="text-3xl font-bold text-${config.color}-700 mb-1">
+                        ${displayScore}/${taskScore.max_score}
+                    </div>
+                    <div class="text-sm text-${config.color}-600 mb-2">
+                        ${percentage}% accuracy
+                    </div>
+                    <div class="text-xs text-gray-400">
+                        Max ${taskScore.max_score} points
+                    </div>
+                    <div class="text-xs text-gray-500">
+                        ${taskScore.attempts} attempt${taskScore.attempts !== 1 ? 's' : ''}
+                    </div>
+                    ${taskScore.attempts > 1 ? `
+                        <div class="text-xs text-gray-500 mt-1">
+                            Average: ${taskScore.score}/${taskScore.max_score}
+                        </div>
+                    ` : ''}
+                `;
+                
+                container.appendChild(scoreCard);
+            });
+        }
+        
+        function displayErrorScores() {
+            const container = document.getElementById('scoresContainer');
+            container.innerHTML = `
+                <div class="col-span-full text-center py-8">
+                    <div class="text-gray-500 text-lg">Unable to load scores at this time</div>
+                    <div class="text-gray-400 text-sm mt-2">Please try refreshing the page</div>
+                </div>
+            `;
+        }
+        
+        function displayAllStats(stats) {
+            // 1. Display progress overview
+            displayProgress(stats.progress);
+            
+            // 2. Display task scores
+            displayScores(stats.scores);
+            
+            // 3. Display time spent
+            displayTimeSpent(stats.time_spent);
+            
+            // 4. Display class comparison
+            displayClassComparison(stats.class_averages);
+            
+            // 5. Display personal bests
+            displayPersonalBests(stats.personal_bests);
+            
+            // 6. Display most improved
+            displayMostImproved(stats.most_improved);
+            
+            // 7. Display badges
+            displayBadges(stats.badges);
+        }
+        
+        function displayProgress(progress) {
+            const percentageEl = document.getElementById('progressPercentage');
+            const progressBarEl = document.getElementById('progressBar');
+            const progressTextEl = document.getElementById('progressText');
+            
+            if (percentageEl) percentageEl.textContent = progress.percentage + '%';
+            if (progressBarEl) progressBarEl.style.width = progress.percentage + '%';
+            if (progressTextEl) progressTextEl.textContent = `${progress.completed} of ${progress.total} tasks completed`;
+        }
+        
+        function displayTimeSpent(timeSpent) {
+            const container = document.getElementById('timeSpentContainer');
+            
+            if (Object.keys(timeSpent).length === 0) {
+                container.innerHTML = '<div class="col-span-full text-center text-gray-500">No time data available yet</div>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            Object.entries(timeSpent).forEach(([taskName, data]) => {
+                const timeCard = document.createElement('div');
+                timeCard.className = 'bg-green-50 rounded-lg p-4 text-center border border-green-200';
+                
+                const hours = Math.floor(data.avg_minutes / 60);
+                const minutes = Math.round(data.avg_minutes % 60);
+                const timeText = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+                
+                timeCard.innerHTML = `
+                    <div class="text-2xl mb-2">⏱️</div>
+                    <h4 class="font-semibold text-green-900 mb-1">${taskName}</h4>
+                    <div class="text-lg font-bold text-green-700">${timeText}</div>
+                    <div class="text-xs text-green-600">Average time</div>
+                    <div class="text-xs text-gray-500 mt-1">${data.attempts} attempt${data.attempts !== 1 ? 's' : ''}</div>
+                `;
+                
+                container.appendChild(timeCard);
+            });
+        }
+        
+        function displayClassComparison(classAverages) {
+            const container = document.getElementById('classComparisonContainer');
+            
+            if (Object.keys(classAverages).length === 0) {
+                container.innerHTML = '<div class="col-span-full text-center text-gray-500">No class data available</div>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            const taskConfigs = [
+                { key: 'Reading Comprehension', icon: '📖', color: 'blue' },
+                { key: 'Mathematical Comprehension', icon: '🔢', color: 'green' },
+                { key: 'Aptitude Test', icon: '🧠', color: 'purple' }
+            ];
+            
+            taskConfigs.forEach(config => {
+                const classData = classAverages[config.key];
+                const classCard = document.createElement('div');
+                classCard.className = `bg-${config.color}-50 rounded-xl p-6 text-center border-2 border-${config.color}-200`;
+                
+                if (classData) {
+                    const percentage = classData.max_score > 0 ? Math.round((classData.avg_score / classData.max_score) * 100) : 0;
+                    classCard.innerHTML = `
+                        <div class="text-4xl mb-3">${config.icon}</div>
+                        <h4 class="text-lg font-semibold text-${config.color}-900 mb-2">${config.key}</h4>
+                        <div class="text-3xl font-bold text-${config.color}-700 mb-1">
+                            ${classData.avg_score}/${classData.max_score}
+                        </div>
+                        <div class="text-sm text-${config.color}-600 mb-2">
+                            ${percentage}% class average
+                        </div>
+                        <div class="text-xs text-gray-500">
+                            ${classData.student_count} student${classData.student_count !== 1 ? 's' : ''}
+                        </div>
+                    `;
+                } else {
+                    classCard.innerHTML = `
+                        <div class="text-4xl mb-3">${config.icon}</div>
+                        <h4 class="text-lg font-semibold text-${config.color}-900 mb-2">${config.key}</h4>
+                        <div class="text-lg text-gray-500">No class data</div>
+                    `;
+                }
+                
+                container.appendChild(classCard);
+            });
+        }
+        
+        function displayPersonalBests(personalBests) {
+            const container = document.getElementById('personalBestsContainer');
+            
+            if (Object.keys(personalBests).length === 0) {
+                container.innerHTML = '<div class="col-span-full text-center text-gray-500">No personal bests yet</div>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            const taskConfigs = [
+                { key: 'Reading Comprehension', icon: '📖', color: 'blue' },
+                { key: 'Mathematical Comprehension', icon: '🔢', color: 'green' },
+                { key: 'Aptitude Test', icon: '🧠', color: 'purple' }
+            ];
+            
+            taskConfigs.forEach(config => {
+                const personalBest = personalBests[config.key];
+                const bestCard = document.createElement('div');
+                bestCard.className = `bg-${config.color}-50 rounded-xl p-6 text-center border-2 border-${config.color}-200`;
+                
+                if (personalBest) {
+                    const percentage = personalBest.max_score > 0 ? Math.round((personalBest.best_score / personalBest.max_score) * 100) : 0;
+                    bestCard.innerHTML = `
+                        <div class="text-4xl mb-3">${config.icon}</div>
+                        <h4 class="text-lg font-semibold text-${config.color}-900 mb-2">${config.key}</h4>
+                        <div class="text-3xl font-bold text-${config.color}-700 mb-1">
+                            ${personalBest.best_score}/${personalBest.max_score}
+                        </div>
+                        <div class="text-sm text-${config.color}-600 mb-2">
+                            ${percentage}% personal best
+                        </div>
+                        <div class="text-xs text-gray-500">
+                            ${personalBest.attempts} attempt${personalBest.attempts !== 1 ? 's' : ''}
+                        </div>
+                    `;
+                } else {
+                    bestCard.innerHTML = `
+                        <div class="text-4xl mb-3">${config.icon}</div>
+                        <h4 class="text-lg font-semibold text-${config.color}-900 mb-2">${config.key}</h4>
+                        <div class="text-lg text-gray-500">No attempts yet</div>
+                    `;
+                }
+                
+                container.appendChild(bestCard);
+            });
+        }
+        
+        function displayMostImproved(mostImproved) {
+            const container = document.getElementById('mostImprovedContainer');
+            
+            if (!mostImproved.task || mostImproved.improvement <= 0) {
+                container.innerHTML = `
+                    <div class="text-center text-gray-500">
+                        <div class="text-4xl mb-2">📊</div>
+                        <div class="text-lg">Keep practicing to see improvements!</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="bg-indigo-50 rounded-xl p-8 text-center border-2 border-indigo-200 max-w-md mx-auto">
+                    <div class="text-6xl mb-4">📈</div>
+                    <h4 class="text-2xl font-bold text-indigo-900 mb-2">Most Improved</h4>
+                    <div class="text-3xl font-bold text-indigo-700 mb-2">+${mostImproved.improvement}</div>
+                    <div class="text-lg text-indigo-600 mb-2">points improvement</div>
+                    <div class="text-sm text-indigo-500">on ${mostImproved.task}</div>
+                </div>
+            `;
+        }
+        
+        function displayBadges(badges) {
+            const container = document.getElementById('badgesContainer');
+            
+            if (badges.length === 0) {
+                container.innerHTML = '<div class="col-span-full text-center text-gray-500">No badges earned yet. Complete tasks to earn badges!</div>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            badges.forEach(badge => {
+                const badgeCard = document.createElement('div');
+                badgeCard.className = 'bg-yellow-50 rounded-lg p-4 text-center border border-yellow-200 hover:shadow-md transition-shadow';
+                
+                badgeCard.innerHTML = `
+                    <div class="text-4xl mb-3">${badge.icon}</div>
+                    <h4 class="font-semibold text-yellow-900 mb-2">${badge.name}</h4>
+                    <div class="text-sm text-yellow-700">${badge.description}</div>
+                `;
+                
+                container.appendChild(badgeCard);
+            });
+        }
+        
+        function displayErrorStats() {
+            // Display error for all sections
+            const sections = ['scoresContainer', 'timeSpentContainer', 'classComparisonContainer', 
+                            'personalBestsContainer', 'mostImprovedContainer', 'badgesContainer'];
+            
+            sections.forEach(sectionId => {
+                const container = document.getElementById(sectionId);
+                if (container) {
+                    container.innerHTML = `
+                        <div class="col-span-full text-center py-8">
+                            <div class="text-gray-500 text-lg">Unable to load data at this time</div>
+                            <div class="text-gray-400 text-sm mt-2">Please try refreshing the page</div>
+                        </div>
+                    `;
+                }
+            });
+        }
+
         // Animate progress bar
         document.addEventListener('DOMContentLoaded', function() {
             const percent = 82; // Example: 82% tasks completed
@@ -319,6 +703,9 @@
                 bar.style.width = percent + '%';
                 text.textContent = percent + '% of tasks completed';
             }, 300);
+            
+            // Load scores when page loads
+            loadStudentScores();
         });
 
         // Chart.js line graph for progress

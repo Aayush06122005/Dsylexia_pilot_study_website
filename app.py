@@ -70,6 +70,22 @@ def connect_db():
         print(f"Error: {err}")
         return None
 
+def _get_user_class_level(conn, user_id):
+    """Helper function to get user's class level from demographics"""
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT d.education_level 
+            FROM demographics d 
+            WHERE d.user_id = %s
+        """, (user_id,))
+        result = cursor.fetchone()
+        cursor.close()
+        return result['education_level'] if result else None
+    except Exception as e:
+        print(f"Error getting user class level: {e}")
+        return None
+
 # Ensure suggested_tasks table exists after DB connector is defined
 ensure_suggested_tasks_table()
 
@@ -2374,8 +2390,8 @@ def admin_category_tasks(category_slug: str):
                 import json as _json
                 # Use the new single question per category schema
                 cursor.execute(
-                    """
-                    INSERT INTO aptitude_tasks (
+                        """
+                        INSERT INTO aptitude_tasks (
                         task_name, class_level, difficulty_level, instructions, estimated_time,
                         logical_question, logical_question_options,
                         numerical_question, numerical_question_options,
@@ -2383,16 +2399,16 @@ def admin_category_tasks(category_slug: str):
                         spatial_question, spatial_question_options
                     )
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    """,
-                    (
-                        data.get('task_name'), data.get('class_level'), data.get('difficulty_level'),
+                        """,
+                        (
+                            data.get('task_name'), data.get('class_level'), data.get('difficulty_level'),
                         data.get('instructions'), data.get('estimated_time'),
                         data.get('logical_question'), _json.dumps(data.get('logical_question_options') or []),
                         data.get('numerical_question'), _json.dumps(data.get('numerical_question_options') or []),
                         data.get('verbal_question'), _json.dumps(data.get('verbal_question_options') or []),
                         data.get('spatial_question'), _json.dumps(data.get('spatial_question_options') or [])
+                        )
                     )
-                )
             conn.commit()
             return jsonify({'success': True})
     except Exception as e:
@@ -3698,6 +3714,8 @@ def submit_comprehension():
     q3 = data.get('q3', '')
     task_name = data.get('task_name', 'Reading Comprehension')
     
+    print(f"Reading Comprehension Submission - User: {session['user_id']}, Q1: {q1}, Q2: {q2}, Q3: {q3}")
+    
     try:
         conn = connect_db()
         cursor = conn.cursor()
@@ -3735,12 +3753,71 @@ def submit_comprehension():
             """, (session['user_id'], task_id, attempt_number, 'In Progress'))
             attempt_id = cursor.lastrowid
         
-        # Save final progress to comprehension_progress table
+        # Calculate score by comparing answers with correct answers
+        score = 0
+        max_score = 2  # Reading comprehension has 2 questions with correct answers
+        
+        # Get all tasks for this user's class level and find the one that matches
+        cursor.execute("""
+            SELECT id, answer1, answer2 FROM reading_comprehension_tasks 
+            WHERE class_level = (
+                SELECT d.education_level FROM demographics d 
+                WHERE d.user_id = %s
+            )
+        """, (session['user_id'],))
+        
+        all_tasks = cursor.fetchall()
+        print(f"Reading Comprehension - Found {len(all_tasks)} tasks for class level")
+        for i, task in enumerate(all_tasks):
+            print(f"Reading Comprehension - Task {i+1}: answer1='{task['answer1']}', answer2='{task['answer2']}'")
+        matching_task = None
+        
+        # Find the task that matches the user's answers
+        for task in all_tasks:
+            correct_answer1, correct_answer2 = task['answer1'], task['answer2']
+            q1_match = q1 and q1.strip().lower() == correct_answer1.lower()
+            q2_match = q2 and q2.strip().lower() == correct_answer2.lower()
+            
+            # If both answers match, this is the task the user worked on
+            if q1_match and q2_match:
+                matching_task = task
+                break
+        
+        # If no exact match found, try partial matching (at least 1 answer matches)
+        if not matching_task:
+            for task in all_tasks:
+                correct_answer1, correct_answer2 = task['answer1'], task['answer2']
+                q1_match = q1 and q1.strip().lower() == correct_answer1.lower()
+                q2_match = q2 and q2.strip().lower() == correct_answer2.lower()
+                
+                # If at least one answer matches, use this task
+                if q1_match or q2_match:
+                    matching_task = task
+                    break
+        
+        # Calculate score based on matching task
+        if matching_task:
+            correct_answer1, correct_answer2 = matching_task['answer1'], matching_task['answer2']
+            print(f"Reading Comprehension - User answers: q1='{q1}', q2='{q2}'")
+            print(f"Reading Comprehension - Correct answers: answer1='{correct_answer1}', answer2='{correct_answer2}'")
+            # Check q1 answer (text input)
+            if q1 and q1.strip().lower() == correct_answer1.lower():
+                score += 1
+                print(f"Reading Comprehension - Q1 correct!")
+            # Check q2 answer (multiple choice)
+            if q2 and q2.strip().lower() == correct_answer2.lower():
+                score += 1
+                print(f"Reading Comprehension - Q2 correct!")
+            print(f"Reading Comprehension - Final score: {score}/{max_score}")
+        else:
+            print(f"Reading Comprehension - No matching task found for user answers: q1='{q1}', q2='{q2}'")
+        
+        # Save final progress to comprehension_progress table with score
         cursor.execute('''
-            INSERT INTO comprehension_progress (attempt_id, q1, q2, q3, status, updated_at)
-            VALUES (%s, %s, %s, %s, %s, NOW())
-            ON DUPLICATE KEY UPDATE q1=VALUES(q1), q2=VALUES(q2), q3=VALUES(q3), status=VALUES(status), updated_at=NOW()
-        ''', (attempt_id, q1, q2, q3, 'Completed'))
+            INSERT INTO comprehension_progress (attempt_id, q1, q2, q3, status, score, max_score, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
+            ON DUPLICATE KEY UPDATE q1=VALUES(q1), q2=VALUES(q2), q3=VALUES(q3), status=VALUES(status), score=VALUES(score), max_score=VALUES(max_score), updated_at=NOW()
+        ''', (attempt_id, q1, q2, q3, 'Completed', score, max_score))
         
         # Mark attempt as completed
         cursor.execute("""
@@ -3825,11 +3902,19 @@ def save_aptitude_progress():
     print(f"Received aptitude save data: {data}")  # Debug logging
     
     task_name = data.get('task_name', 'Aptitude Test')
-    logical_reasoning_score = data.get('logical_reasoning_score', 0)
-    numerical_ability_score = data.get('numerical_ability_score', 0)
-    verbal_ability_score = data.get('verbal_ability_score', 0)
-    spatial_reasoning_score = data.get('spatial_reasoning_score', 0)
-    total_score = data.get('total_score', 0)
+    # Coerce incoming scores to integers and clamp between 0 and 1
+    def _to01(v):
+        try:
+            iv = int(v)
+        except (TypeError, ValueError):
+            iv = 0
+        return 1 if iv > 0 else 0
+
+    logical_reasoning_score = _to01(data.get('logical_reasoning_score', 0))
+    numerical_ability_score = _to01(data.get('numerical_ability_score', 0))
+    verbal_ability_score = _to01(data.get('verbal_ability_score', 0))
+    spatial_reasoning_score = _to01(data.get('spatial_reasoning_score', 0))
+    total_score = int(data.get('total_score', 0) or 0)
     answers = data.get('answers')
     current_section = data.get('current_section')
     answered_count = data.get('answered_count', 0)
@@ -3907,12 +3992,12 @@ def save_aptitude_progress():
             )
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
             ON DUPLICATE KEY UPDATE 
-                logical_reasoning_score=VALUES(logical_reasoning_score),
-                numerical_ability_score=VALUES(numerical_ability_score),
-                verbal_ability_score=VALUES(verbal_ability_score),
-                spatial_reasoning_score=VALUES(spatial_reasoning_score),
-                total_score=VALUES(total_score),
-                status=VALUES(status),
+                logical_reasoning_score=VALUES(logical_reasoning_score), 
+                numerical_ability_score=VALUES(numerical_ability_score), 
+                verbal_ability_score=VALUES(verbal_ability_score), 
+                spatial_reasoning_score=VALUES(spatial_reasoning_score), 
+                total_score=VALUES(total_score), 
+                status=VALUES(status), 
                 answers=VALUES(answers),
                 current_section=VALUES(current_section),
                 answered_count=VALUES(answered_count),
@@ -3962,7 +4047,7 @@ def get_aptitude_progress():
         
         task_id = task_row['id']
         
-        # Get the latest IN PROGRESS attempt and its progress
+        # Get the latest attempt and its progress (regardless of status)
         cursor.execute('''
             SELECT 
                 uta.id as attempt_id,
@@ -3977,8 +4062,8 @@ def get_aptitude_progress():
                 ap.progress_percent, ap.updated_at
             FROM user_task_attempts uta
             LEFT JOIN aptitude_progress ap ON ap.attempt_id = uta.id
-            WHERE uta.user_id = %s AND uta.task_id = %s AND uta.status = 'In Progress'
-            ORDER BY ap.updated_at DESC
+            WHERE uta.user_id = %s AND uta.task_id = %s
+            ORDER BY uta.started_at DESC, ap.updated_at DESC
             LIMIT 1
         ''', (session['user_id'], task_id))
         
@@ -4066,19 +4151,27 @@ def submit_aptitude():
                 print(f"Error serializing answers: {e}")
                 answers_json = None
         
+        # Calculate total score as sum of all section scores
+        calculated_total_score = (
+            logical_reasoning_score + numerical_ability_score +
+            verbal_ability_score + spatial_reasoning_score
+        )
+        max_score = 4  # Aptitude test has 4 sections, 1 point each
+        
         cursor.execute("""
             INSERT INTO aptitude_progress (
                 attempt_id, logical_reasoning_score, numerical_ability_score, 
-                verbal_ability_score, spatial_reasoning_score, total_score, 
+                verbal_ability_score, spatial_reasoning_score, total_score, max_score,
                 status, answers, current_section, answered_count, progress_percent, updated_at
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
             ON DUPLICATE KEY UPDATE 
-                logical_reasoning_score=VALUES(logical_reasoning_score),
-                numerical_ability_score=VALUES(numerical_ability_score),
-                verbal_ability_score=VALUES(verbal_ability_score),
-                spatial_reasoning_score=VALUES(spatial_reasoning_score),
-                total_score=VALUES(total_score),
+                logical_reasoning_score=VALUES(logical_reasoning_score), 
+                numerical_ability_score=VALUES(numerical_ability_score), 
+                verbal_ability_score=VALUES(verbal_ability_score), 
+                spatial_reasoning_score=VALUES(spatial_reasoning_score), 
+                total_score=VALUES(total_score), 
+                max_score=VALUES(max_score),
                 status='Completed',
                 answers=VALUES(answers),
                 current_section=VALUES(current_section),
@@ -4087,7 +4180,7 @@ def submit_aptitude():
                 updated_at=NOW()
         """, (
             attempt_id, logical_reasoning_score, numerical_ability_score,
-            verbal_ability_score, spatial_reasoning_score, total_score,
+            verbal_ability_score, spatial_reasoning_score, calculated_total_score, max_score,
             'Completed', answers_json,
             current_section, answered_count, progress_percent
         ))
@@ -5002,9 +5095,9 @@ def get_aptitude_tasks(user_id):
         else:
             cursor.execute(
                 """
-                SELECT * FROM aptitude_tasks 
-                WHERE class_level = %s 
-                ORDER BY difficulty_level, class_level
+            SELECT * FROM aptitude_tasks 
+            WHERE class_level = %s 
+            ORDER BY difficulty_level, class_level
                 """,
                 (class_level,)
             )
@@ -5901,7 +5994,9 @@ def contact():
 
 @app.route('/stats')
 def stats():
-    return render_template('stats.html')
+    if 'user_id' not in session:
+        return redirect(url_for('signin'))
+    return render_template('stats.html', user_id=session['user_id'])
 
 @app.route('/api/admin/data-quality-metrics', methods=['GET'])
 def get_data_quality_metrics():
@@ -6637,12 +6732,78 @@ def submit_mathematical_comprehension():
             attempt_id = cursor.lastrowid
             attempt_number = next_attempt
         
-        # Save progress as completed
+        # Calculate score by comparing answers with correct answers
+        score = 0
+        max_score = 3  # Mathematical comprehension has 3 questions
+        
+        # Get all tasks for this user's class level and find the one that matches
+        cursor.execute("""
+            SELECT id, answer1, answer2, answer3 FROM mathematical_comprehension_tasks 
+            WHERE class_level = (
+                SELECT d.education_level FROM demographics d 
+                WHERE d.user_id = %s
+            )
+        """, (session['user_id'],))
+        
+        all_tasks = cursor.fetchall()
+        print(f"Mathematical Comprehension - Found {len(all_tasks)} tasks for class level")
+        for i, task in enumerate(all_tasks):
+            print(f"Mathematical Comprehension - Task {i+1}: answer1='{task['answer1']}', answer2='{task['answer2']}', answer3='{task['answer3']}'")
+        matching_task = None
+        
+        # Find the task that matches the user's answers
+        for task in all_tasks:
+            correct_answer1, correct_answer2, correct_answer3 = task['answer1'], task['answer2'], task['answer3']
+            q1_match = q1 and q1.strip().lower() == correct_answer1.lower()
+            q2_match = q2 and q2.strip().lower() == correct_answer2.lower()
+            q3_match = q3 and q3.strip().lower() == correct_answer3.lower()
+            
+            # If all answers match, this is the task the user worked on
+            if q1_match and q2_match and q3_match:
+                matching_task = task
+                break
+        
+        # If no exact match found, try partial matching (at least 2 answers match)
+        if not matching_task:
+            for task in all_tasks:
+                correct_answer1, correct_answer2, correct_answer3 = task['answer1'], task['answer2'], task['answer3']
+                q1_match = q1 and q1.strip().lower() == correct_answer1.lower()
+                q2_match = q2 and q2.strip().lower() == correct_answer2.lower()
+                q3_match = q3 and q3.strip().lower() == correct_answer3.lower()
+                
+                # If at least 2 answers match, use this task
+                match_count = sum([q1_match, q2_match, q3_match])
+                if match_count >= 2:
+                    matching_task = task
+                    break
+        
+        # Calculate score based on matching task
+        if matching_task:
+            correct_answer1, correct_answer2, correct_answer3 = matching_task['answer1'], matching_task['answer2'], matching_task['answer3']
+            print(f"Mathematical Comprehension - User answers: q1='{q1}', q2='{q2}', q3='{q3}'")
+            print(f"Mathematical Comprehension - Correct answers: answer1='{correct_answer1}', answer2='{correct_answer2}', answer3='{correct_answer3}'")
+            # Check q1 answer (multiple choice)
+            if q1 and q1.strip().lower() == correct_answer1.lower():
+                score += 1
+                print(f"Mathematical Comprehension - Q1 correct!")
+            # Check q2 answer (multiple choice)
+            if q2 and q2.strip().lower() == correct_answer2.lower():
+                score += 1
+                print(f"Mathematical Comprehension - Q2 correct!")
+            # Check q3 answer (number/text)
+            if q3 and q3.strip().lower() == correct_answer3.lower():
+                score += 1
+                print(f"Mathematical Comprehension - Q3 correct!")
+            print(f"Mathematical Comprehension - Final score: {score}/{max_score}")
+        else:
+            print(f"Mathematical Comprehension - No matching task found for user answers: q1='{q1}', q2='{q2}', q3='{q3}'")
+        
+        # Save progress as completed with score
         cursor.execute('''
-            INSERT INTO mathematical_comprehension_progress (attempt_id, q1, q2, q3, status, updated_at)
-            VALUES (%s, %s, %s, %s, %s, NOW())
-            ON DUPLICATE KEY UPDATE q1=VALUES(q1), q2=VALUES(q2), q3=VALUES(q3), status=VALUES(status), updated_at=NOW()
-        ''', (attempt_id, q1, q2, q3, 'Completed'))
+            INSERT INTO mathematical_comprehension_progress (attempt_id, q1, q2, q3, status, score, max_score, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
+            ON DUPLICATE KEY UPDATE q1=VALUES(q1), q2=VALUES(q2), q3=VALUES(q3), status=VALUES(status), score=VALUES(score), max_score=VALUES(max_score), updated_at=NOW()
+        ''', (attempt_id, q1, q2, q3, 'Completed', score, max_score))
         
         # Mark attempt as completed
         cursor.execute("""
@@ -6665,6 +6826,385 @@ def submit_mathematical_comprehension():
     except Exception as e:
         print(f"Submit mathematical comprehension DB error: {e}")
         return jsonify({'success': False, 'message': 'Failed to submit task'}), 500
+
+@app.route('/api/student-scores/<int:user_id>', methods=['GET'])
+def get_student_scores(user_id):
+    """Get comprehensive stats for a specific student including progress, time spent, class averages, personal bests, improvements, and badges"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    
+    # Only allow users to view their own scores or admin access
+    if session['user_id'] != user_id and session.get('user_type') != 'admin':
+        return jsonify({'success': False, 'message': 'Access denied'}), 403
+    
+    try:
+        conn = connect_db()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get user's class level for class averages
+        class_level = _get_user_class_level(conn, user_id)
+        
+        stats = {
+            'progress': {'completed': 0, 'total': 6, 'percentage': 0},
+            'time_spent': {},
+            'class_averages': {},
+            'personal_bests': {},
+            'most_improved': {'task': None, 'improvement': 0},
+            'badges': [],
+            'scores': {
+                'reading_comprehension': {'score': 0, 'max_score': 2, 'attempts': 0, 'latest_score': 0},
+                'mathematical_comprehension': {'score': 0, 'max_score': 3, 'attempts': 0, 'latest_score': 0},
+                'aptitude': {'score': 0, 'max_score': 4, 'attempts': 0, 'latest_score': 0}
+            }
+        }
+        
+        # 1. Calculate progress (completed tasks)
+        cursor.execute("""
+            SELECT COUNT(*) as completed FROM user_tasks 
+            WHERE user_id = %s AND status = 'Completed'
+        """, (user_id,))
+        completed_result = cursor.fetchone()
+        stats['progress']['completed'] = completed_result['completed'] if completed_result else 0
+        stats['progress']['percentage'] = round((stats['progress']['completed'] / stats['progress']['total']) * 100, 1)
+        
+        # 2. Calculate time spent on each task (only for completed attempts)
+        task_time_query = """
+            SELECT 
+                t.task_name,
+                AVG(TIMESTAMPDIFF(MINUTE, uta.started_at, uta.completed_at)) as avg_time_minutes,
+                COUNT(*) as attempts
+            FROM user_task_attempts uta
+            JOIN tasks t ON uta.task_id = t.id
+            WHERE uta.user_id = %s AND uta.status = 'Completed' AND uta.completed_at IS NOT NULL
+            AND TIMESTAMPDIFF(MINUTE, uta.started_at, uta.completed_at) BETWEEN 1 AND 120
+            GROUP BY t.task_name
+        """
+        cursor.execute(task_time_query, (user_id,))
+        time_results = cursor.fetchall()
+        for result in time_results:
+            stats['time_spent'][result['task_name']] = {
+                'avg_minutes': round(result['avg_time_minutes'] or 0, 1),
+                'attempts': result['attempts']
+            }
+        
+        # 3. Calculate class averages (if class level available)
+        if class_level:
+            class_avg_query = """
+                SELECT 
+                    'Reading Comprehension' as task_name,
+                    AVG(cp.score) as avg_score,
+                    MAX(cp.max_score) as max_score,
+                    COUNT(DISTINCT uta.user_id) as student_count
+                FROM user_task_attempts uta
+                JOIN comprehension_progress cp ON cp.attempt_id = uta.id
+                JOIN users u ON uta.user_id = u.id
+                JOIN demographics d ON u.id = d.user_id
+                WHERE uta.status = 'Completed' AND d.education_level = %s
+                
+                UNION ALL
+                
+                SELECT 
+                    'Mathematical Comprehension' as task_name,
+                    AVG(mcp.score) as avg_score,
+                    MAX(mcp.max_score) as max_score,
+                    COUNT(DISTINCT uta.user_id) as student_count
+                FROM user_task_attempts uta
+                JOIN mathematical_comprehension_progress mcp ON mcp.attempt_id = uta.id
+                JOIN users u ON uta.user_id = u.id
+                JOIN demographics d ON u.id = d.user_id
+                WHERE uta.status = 'Completed' AND d.education_level = %s
+                
+                UNION ALL
+                
+                SELECT 
+                    'Aptitude Test' as task_name,
+                    AVG(ap.total_score) as avg_score,
+                    MAX(ap.max_score) as max_score,
+                    COUNT(DISTINCT uta.user_id) as student_count
+                FROM user_task_attempts uta
+                JOIN aptitude_progress ap ON ap.attempt_id = uta.id
+                JOIN users u ON uta.user_id = u.id
+                JOIN demographics d ON u.id = d.user_id
+                WHERE uta.status = 'Completed' AND d.education_level = %s
+            """
+            cursor.execute(class_avg_query, (class_level, class_level, class_level))
+            class_results = cursor.fetchall()
+            for result in class_results:
+                stats['class_averages'][result['task_name']] = {
+                    'avg_score': round(result['avg_score'] or 0, 2),
+                    'max_score': result['max_score'] or 0,
+                    'student_count': result['student_count']
+                }
+        
+        # 4. Calculate personal bests and improvements
+        personal_best_query = """
+            SELECT 
+                'Reading Comprehension' as task_name,
+                MAX(cp.score) as best_score,
+                MAX(cp.max_score) as max_score,
+                COUNT(*) as attempts,
+                (SELECT cp2.score FROM comprehension_progress cp2 
+                 JOIN user_task_attempts uta2 ON cp2.attempt_id = uta2.id 
+                 WHERE uta2.user_id = %s AND uta2.status = 'Completed' 
+                 ORDER BY uta2.completed_at DESC LIMIT 1) as latest_score,
+                (SELECT cp3.score FROM comprehension_progress cp3 
+                 JOIN user_task_attempts uta3 ON cp3.attempt_id = uta3.id 
+                 WHERE uta3.user_id = %s AND uta3.status = 'Completed' 
+                 ORDER BY uta3.completed_at ASC LIMIT 1) as first_score
+            FROM user_task_attempts uta
+            JOIN comprehension_progress cp ON cp.attempt_id = uta.id
+            WHERE uta.user_id = %s AND uta.status = 'Completed'
+            
+            UNION ALL
+            
+            SELECT 
+                'Mathematical Comprehension' as task_name,
+                MAX(mcp.score) as best_score,
+                MAX(mcp.max_score) as max_score,
+                COUNT(*) as attempts,
+                (SELECT mcp2.score FROM mathematical_comprehension_progress mcp2 
+                 JOIN user_task_attempts uta2 ON mcp2.attempt_id = uta2.id 
+                 WHERE uta2.user_id = %s AND uta2.status = 'Completed' 
+                 ORDER BY uta2.completed_at DESC LIMIT 1) as latest_score,
+                (SELECT mcp3.score FROM mathematical_comprehension_progress mcp3 
+                 JOIN user_task_attempts uta3 ON mcp3.attempt_id = uta3.id 
+                 WHERE uta3.user_id = %s AND uta3.status = 'Completed' 
+                 ORDER BY uta3.completed_at ASC LIMIT 1) as first_score
+            FROM user_task_attempts uta
+            JOIN mathematical_comprehension_progress mcp ON mcp.attempt_id = uta.id
+            WHERE uta.user_id = %s AND uta.status = 'Completed'
+            
+            UNION ALL
+            
+            SELECT 
+                'Aptitude Test' as task_name,
+                MAX(ap.total_score) as best_score,
+                MAX(ap.max_score) as max_score,
+                COUNT(*) as attempts,
+                (SELECT ap2.total_score FROM aptitude_progress ap2 
+                 JOIN user_task_attempts uta2 ON ap2.attempt_id = uta2.id 
+                 WHERE uta2.user_id = %s AND uta2.status = 'Completed' 
+                 ORDER BY uta2.completed_at DESC LIMIT 1) as latest_score,
+                (SELECT ap3.total_score FROM aptitude_progress ap3 
+                 JOIN user_task_attempts uta3 ON ap3.attempt_id = uta3.id 
+                 WHERE uta3.user_id = %s AND uta3.status = 'Completed' 
+                 ORDER BY uta3.completed_at ASC LIMIT 1) as first_score
+            FROM user_task_attempts uta
+            JOIN aptitude_progress ap ON ap.attempt_id = uta.id
+            WHERE uta.user_id = %s AND uta.status = 'Completed'
+        """
+        cursor.execute(personal_best_query, (user_id, user_id, user_id, user_id, user_id, user_id, user_id, user_id, user_id))
+        personal_results = cursor.fetchall()
+        
+        max_improvement = 0
+        most_improved_task = None
+        
+        for result in personal_results:
+            if result['attempts'] > 0:
+                task_name = result['task_name']
+                stats['personal_bests'][task_name] = {
+                    'best_score': result['best_score'] or 0,
+                    'max_score': result['max_score'] or 0,
+                    'attempts': result['attempts']
+                }
+                
+                # Calculate improvement
+                if result['first_score'] is not None and result['latest_score'] is not None:
+                    improvement = result['latest_score'] - result['first_score']
+                    if improvement > max_improvement:
+                        max_improvement = improvement
+                        most_improved_task = task_name
+        
+        stats['most_improved'] = {
+            'task': most_improved_task,
+            'improvement': max_improvement
+        }
+        
+        # 5. Calculate badges
+        badges = []
+        
+        # Completion badges
+        completed_tasks = stats['progress']['completed']
+        if completed_tasks >= 1:
+            badges.append({'name': 'First Steps', 'icon': '🎯', 'description': 'Completed your first task'})
+        if completed_tasks >= 3:
+            badges.append({'name': 'Getting Started', 'icon': '🚀', 'description': 'Completed 3 tasks'})
+        if completed_tasks >= 6:
+            badges.append({'name': 'Task Master', 'icon': '🏆', 'description': 'Completed all tasks'})
+        
+        # Performance badges
+        for task_name, personal_best in stats['personal_bests'].items():
+            if personal_best['best_score'] == personal_best['max_score']:
+                badges.append({
+                    'name': f'Perfect {task_name}',
+                    'icon': '⭐',
+                    'description': f'Scored perfectly on {task_name}'
+                })
+        
+        # Improvement badges
+        if max_improvement > 0:
+            badges.append({
+                'name': 'Improver',
+                'icon': '📈',
+                'description': f'Improved by {max_improvement} points on {most_improved_task}'
+            })
+        
+        stats['badges'] = badges
+        
+        # 6. Get detailed scores (existing logic)
+        # Reading comprehension scores
+        cursor.execute("""
+            SELECT cp.score, cp.max_score, cp.updated_at
+            FROM comprehension_progress cp
+            JOIN user_task_attempts uta ON cp.attempt_id = uta.id
+            WHERE uta.user_id = %s AND cp.status = 'Completed'
+            ORDER BY cp.updated_at DESC
+        """, (user_id,))
+        
+        reading_scores = cursor.fetchall()
+        if reading_scores:
+            stats['scores']['reading_comprehension']['attempts'] = len(reading_scores)
+            stats['scores']['reading_comprehension']['latest_score'] = reading_scores[0]['score']
+            stats['scores']['reading_comprehension']['max_score'] = reading_scores[0]['max_score']
+            total_score = sum(score['score'] for score in reading_scores)
+            stats['scores']['reading_comprehension']['score'] = round(total_score / len(reading_scores), 2)
+        
+        # Mathematical comprehension scores
+        cursor.execute("""
+            SELECT mcp.score, mcp.max_score, mcp.updated_at
+            FROM mathematical_comprehension_progress mcp
+            JOIN user_task_attempts uta ON mcp.attempt_id = uta.id
+            WHERE uta.user_id = %s AND mcp.status = 'Completed'
+            ORDER BY mcp.updated_at DESC
+        """, (user_id,))
+        
+        math_scores = cursor.fetchall()
+        if math_scores:
+            stats['scores']['mathematical_comprehension']['attempts'] = len(math_scores)
+            stats['scores']['mathematical_comprehension']['latest_score'] = math_scores[0]['score']
+            stats['scores']['mathematical_comprehension']['max_score'] = math_scores[0]['max_score']
+            total_score = sum(score['score'] for score in math_scores)
+            stats['scores']['mathematical_comprehension']['score'] = round(total_score / len(math_scores), 2)
+        
+        # Aptitude scores
+        cursor.execute("""
+            SELECT ap.total_score, ap.max_score, ap.updated_at
+            FROM aptitude_progress ap
+            JOIN user_task_attempts uta ON ap.attempt_id = uta.id
+            WHERE uta.user_id = %s AND ap.status = 'Completed'
+            ORDER BY ap.updated_at DESC
+        """, (user_id,))
+        
+        aptitude_scores = cursor.fetchall()
+        if aptitude_scores:
+            stats['scores']['aptitude']['attempts'] = len(aptitude_scores)
+            stats['scores']['aptitude']['latest_score'] = aptitude_scores[0]['total_score']
+            stats['scores']['aptitude']['max_score'] = aptitude_scores[0]['max_score']
+            total_score = sum(score['total_score'] for score in aptitude_scores)
+            stats['scores']['aptitude']['score'] = round(total_score / len(aptitude_scores), 2)
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'stats': stats,
+            'user_id': user_id,
+            'class_level': class_level
+        })
+        
+    except Exception as e:
+        print(f"Get student stats error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'Failed to fetch stats: {str(e)}'}), 500
+
+@app.route('/api/check-new-badges', methods=['GET'])
+def check_new_badges():
+    """Check for new badges earned since last visit"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 401
+    
+    try:
+        user_id = session['user_id']
+        conn = connect_db()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get completed tasks count
+        cursor.execute("""
+            SELECT COUNT(*) as completed FROM user_tasks 
+            WHERE user_id = %s AND status = 'Completed'
+        """, (user_id,))
+        completed_result = cursor.fetchone()
+        completed_tasks = completed_result['completed'] if completed_result else 0
+        
+        print(f"Badge check: User {user_id} has {completed_tasks} completed tasks")
+        
+        new_badges = []
+        
+        # Check for completion badges (simplified approach)
+        if completed_tasks >= 1:
+            # Check if this is a new badge by looking at session
+            if not session.get('badge_first_steps', False):
+                new_badges.append({'name': 'First Steps', 'icon': '🎯', 'description': 'Completed your first task'})
+                session['badge_first_steps'] = True
+                print("Badge: First Steps earned")
+        
+        if completed_tasks >= 3:
+            if not session.get('badge_getting_started', False):
+                new_badges.append({'name': 'Getting Started', 'icon': '🚀', 'description': 'Completed 3 tasks'})
+                session['badge_getting_started'] = True
+                print("Badge: Getting Started earned")
+        
+        if completed_tasks >= 6:
+            if not session.get('badge_task_master', False):
+                new_badges.append({'name': 'Task Master', 'icon': '🏆', 'description': 'Completed all tasks'})
+                session['badge_task_master'] = True
+                print("Badge: Task Master earned")
+        
+        # Check for performance badges
+        task_configs = [
+            ('Reading Comprehension', 'comprehension_progress', 'score', 'max_score'),
+            ('Mathematical Comprehension', 'mathematical_comprehension_progress', 'score', 'max_score'),
+            ('Aptitude Test', 'aptitude_progress', 'total_score', 'max_score')
+        ]
+        
+        for task_name, table_name, score_col, max_score_col in task_configs:
+            badge_key = f'badge_perfect_{task_name.lower().replace(" ", "_")}'
+            if not session.get(badge_key, False):
+                cursor.execute(f"""
+                    SELECT MAX({score_col}) as best_score, MAX({max_score_col}) as max_score
+                    FROM {table_name} cp
+                    JOIN user_task_attempts uta ON cp.attempt_id = uta.id
+                    WHERE uta.user_id = %s AND cp.status = 'Completed'
+                """, (user_id,))
+                
+                result = cursor.fetchone()
+                if result and result['best_score'] == result['max_score'] and result['max_score'] > 0:
+                    new_badges.append({
+                        'name': f'Perfect {task_name}',
+                        'icon': '⭐',
+                        'description': f'Scored perfectly on {task_name}'
+                    })
+                    session[badge_key] = True
+                    print(f"Badge: Perfect {task_name} earned")
+        
+        cursor.close()
+        conn.close()
+        
+        print(f"Badge check: Returning {len(new_badges)} new badges")
+        
+        return jsonify({
+            'success': True,
+            'newBadges': new_badges,
+            'totalBadges': len(new_badges)
+        })
+        
+    except Exception as e:
+        print(f"Check new badges error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'Failed to check badges: {str(e)}'}), 500
 
 @app.route('/api/retake-mathematical-comprehension', methods=['POST'])
 def retake_mathematical_comprehension():
