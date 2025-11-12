@@ -193,7 +193,7 @@
     <!-- School Dashboard -->
     <main class="flex h-[calc(100vh-120px)] overflow-hidden">
         <!-- Left Sidebar -->
-        <aside class="w-80 bg-white border-r border-gray-200 flex flex-col overflow-y-auto">
+        <aside class="w-80 bg-[#f5f5dc] border-r border-gray-200 flex flex-col overflow-y-auto">
             <!-- Quick Actions -->
             <div class="p-6 border-b border-gray-200">
                 <h2 class="text-xl font-bold text-gray-800 mb-4">Quick Actions</h2>
@@ -275,14 +275,6 @@
                             Classes & Sections
                         </div>
                     </button>
-                    <button class="nav-tab w-full text-left px-4 py-3 rounded-lg transition font-medium text-gray-700 hover:bg-gray-100" data-tab="statistics">
-                        <div class="flex items-center">
-                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                            </svg>
-                            Statistics
-                        </div>
-                    </button>
                 </nav>
             </div>
         </aside>
@@ -299,13 +291,13 @@
                     
                     <!-- Charts Grid -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                        <div class="bg-white rounded-lg shadow-md p-6">
+                        <div class="bg-[#f5f5dc] rounded-lg shadow-md p-6">
                             <h4 class="text-lg font-semibold text-gray-800 mb-4">Task Completion Rates</h4>
                             <div class="bg-gray-50 rounded-lg p-4">
                                 <canvas id="taskCompletionChart" width="400" height="200"></canvas>
                             </div>
                         </div>
-                        <div class="bg-white rounded-lg shadow-md p-6">
+                        <div class="bg-[#f5f5dc] rounded-lg shadow-md p-6">
                             <h4 class="text-lg font-semibold text-gray-800 mb-4">Recent Activity (Last 7 Days)</h4>
                             <div class="bg-gray-50 rounded-lg p-4">
                                 <canvas id="recentActivityChart" width="400" height="200"></canvas>
@@ -314,7 +306,7 @@
                     </div>
 
                     <!-- Class-wise Distribution -->
-                    <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="bg-[#f5f5dc] rounded-lg shadow-md p-6">
                         <h4 class="text-lg font-semibold text-gray-800 mb-4">Class-wise Distribution</h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="classStats">
                             <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
@@ -343,11 +335,11 @@
                     </div>
 
                     <!-- Excel Upload Section -->
-                    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <div class="bg-[#f5f5dc] rounded-lg shadow-md p-6 mb-6">
                         <h3 class="text-xl font-semibold text-gray-800 mb-4">Bulk Parent Registration</h3>
                         <form id="excelUploadForm" class="flex flex-col md:flex-row gap-4 items-end">
                             <div class="flex-1">
-                                <input type="file" id="excelFile" accept=".xlsx,.xls" class="w-full border rounded px-3 py-2" required>
+                                <input type="file" id="excelFile" accept=".xlsx,.xls" class="w-full border bg-white rounded px-3 py-2" required>
                                 <p class="text-xs text-gray-500 mt-1">Upload an Excel file with columns: Name, Email (or Parent Name, Parent Email)</p>
                             </div>
                             <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition">Upload Excel</button>
@@ -356,7 +348,7 @@
                     </div>
 
                     <!-- Parents List -->
-                    <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="bg-[#f5f5dc] rounded-lg shadow-md p-6">
                         <h3 class="text-xl font-semibold text-gray-800 mb-6">Registered Parents</h3>
                         
                         <!-- Loading State -->
@@ -391,7 +383,7 @@
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <!-- Classes List -->
                         <div class="lg:col-span-1">
-                            <div class="bg-white rounded-lg shadow-md p-6">
+                            <div class="bg-[#f5f5dc] rounded-lg shadow-md p-6">
                                 <h3 class="text-xl font-semibold text-gray-800 mb-4">Classes</h3>
                                 <div id="classesContainer" class="space-y-3 max-h-[600px] overflow-y-auto">
                                     <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
@@ -403,7 +395,7 @@
 
                         <!-- Section Detail -->
                         <div class="lg:col-span-2">
-                            <div id="sectionDetail" class="bg-white rounded-lg shadow-md p-6 hidden">
+                            <div id="sectionDetail" class="bg-[#f5f5dc] rounded-lg shadow-md p-6 hidden">
                                 <div class="flex items-center justify-between mb-4">
                                     <h3 class="text-xl font-semibold text-gray-800" id="sectionTitle">Section</h3>
                                     <div class="flex flex-wrap gap-2">
@@ -427,44 +419,12 @@
                                     </div>
                                 </div>
                             </div>
-                            <div id="sectionPlaceholder" class="bg-white rounded-lg shadow-md p-12 text-center">
+                            <div id="sectionPlaceholder" class="bg-[#f5f5dc] rounded-lg shadow-md p-12 text-center">
                                 <svg class="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
                                 </svg>
                                 <h3 class="mt-4 text-lg font-medium text-gray-900">Select a Section</h3>
                                 <p class="mt-2 text-sm text-gray-500">Click on a section from the classes list to view details</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Statistics Tab -->
-                <div id="tab-statistics" class="tab-content hidden">
-                    <div class="mb-6">
-                        <h2 class="text-2xl font-bold text-gray-800 mb-2">School Performance Statistics</h2>
-                        <p class="text-gray-600">View detailed analytics and performance metrics.</p>
-                    </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div class="bg-white rounded-lg shadow-md p-6">
-                            <h4 class="text-lg font-semibold text-gray-800 mb-4">Task Completion Rates</h4>
-                            <div class="bg-gray-50 rounded-lg p-4">
-                                <canvas id="taskCompletionChartStats" width="400" height="200"></canvas>
-                            </div>
-                        </div>
-                        <div class="bg-white rounded-lg shadow-md p-6">
-                            <h4 class="text-lg font-semibold text-gray-800 mb-4">Recent Activity (Last 7 Days)</h4>
-                            <div class="bg-gray-50 rounded-lg p-4">
-                                <canvas id="recentActivityChartStats" width="400" height="200"></canvas>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mt-6 bg-white rounded-lg shadow-md p-6">
-                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Class-wise Distribution</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="classStatsStats">
-                            <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                                <h4 class="font-medium text-gray-700">Loading statistics...</h4>
                             </div>
                         </div>
                     </div>
