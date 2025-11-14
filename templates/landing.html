@@ -21,8 +21,11 @@
                     <li><a href="#about" class="hover:text-yellow-100 transition">About</a></li>
                     <li><a href="#eligibility" class="hover:text-yellow-100 transition">Eligibility</a></li>
                     <li><a href="#contact" class="hover:text-yellow-100 transition">Contact</a></li>
-                    {% if session.get('user_id') %}
-                    <li><a href="/participant-dashboard" class="hover:text-yellow-100 transition">Dashboard</a></li>
+                    {% if session.get('user_type') %}
+                    <li>
+                        <a href="{% if session.get('user_type') == 'parent' %}/parent{% elif session.get('user_type') == 'school' %}/school.html{% else %}/participant-dashboard{% endif %}" 
+                           class="hover:text-yellow-100 transition">Dashboard</a>
+                    </li>
                     {% else %}
                     <li><a href="{{ url_for('signin') }}" class="hover:text-yellow-100 transition" id="signinBtn">Sign In</a></li>
                     {% endif %}
