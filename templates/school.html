@@ -306,11 +306,37 @@
                     </div>
 
                     <!-- Class-wise Distribution -->
-                    <div class="bg-[#f5f5dc] rounded-lg shadow-md p-6">
-                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Class-wise Distribution</h4>
+                    <div class="bg-[#f5f5dc] rounded-lg shadow-md p-6 mb-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h4 class="text-lg font-semibold text-gray-800">Class-wise Distribution</h4>
+                            <button id="refreshClassStatsBtn" class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition flex items-center">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                                Refresh
+                            </button>
+                        </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="classStats">
                             <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
                                 <h4 class="font-medium text-gray-700">Loading statistics...</h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Class-wise Statistics -->
+                    <div class="bg-[#f5f5dc] rounded-lg shadow-md p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h4 class="text-lg font-semibold text-gray-800">Detailed Class-wise Statistics</h4>
+                            <button id="refreshDetailedStatsBtn" class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition flex items-center">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                                Refresh
+                            </button>
+                        </div>
+                        <div id="detailedClassStats" class="space-y-4">
+                            <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                <p class="text-gray-600">Loading detailed statistics...</p>
                             </div>
                         </div>
                     </div>
@@ -1199,12 +1225,173 @@ function displayRecentActivityChart(recentActivity) {
     }
 }
 
+        // Load detailed class-wise statistics
+        async function loadDetailedClassStatistics() {
+            const container = document.getElementById('detailedClassStats');
+            container.innerHTML = '<div class="p-4 bg-gray-50 rounded-lg border border-gray-200"><p class="text-gray-600">Loading detailed statistics...</p></div>';
+            
+            try {
+                const response = await fetch('/api/school/class-wise-statistics');
+                const data = await response.json();
+                
+                if (data.success && data.statistics) {
+                    displayDetailedClassStatistics(data.statistics);
+                } else {
+                    container.innerHTML = '<div class="p-4 bg-gray-50 rounded-lg border border-gray-200"><p class="text-red-600">Failed to load statistics: ' + (data.message || 'Unknown error') + '</p></div>';
+                }
+            } catch (error) {
+                console.error('Error loading detailed class statistics:', error);
+                container.innerHTML = '<div class="p-4 bg-gray-50 rounded-lg border border-gray-200"><p class="text-red-600">Error loading statistics. Please try again.</p></div>';
+            }
+        }
+
+        function displayDetailedClassStatistics(statistics) {
+            const container = document.getElementById('detailedClassStats');
+            container.innerHTML = '';
+            
+            if (statistics.length === 0) {
+                container.innerHTML = '<div class="p-4 bg-gray-50 rounded-lg border border-gray-200"><p class="text-gray-600">No class statistics available yet.</p></div>';
+                return;
+            }
+            
+            statistics.forEach(classStat => {
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-lg shadow-md p-6 border border-gray-200';
+                
+                const reading = classStat.reading_comprehension || {};
+                const math = classStat.mathematical_comprehension || {};
+                const aptitude = classStat.aptitude || {};
+                
+                card.innerHTML = `
+                    <div class="mb-4">
+                        <h5 class="text-xl font-bold text-gray-800 mb-2">
+                            ${classStat.class_name || 'Unnamed Class'}
+                            ${classStat.academic_year ? `(${classStat.academic_year})` : ''}
+                        </h5>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                            <div class="bg-blue-50 p-3 rounded">
+                                <p class="text-xs text-gray-600">Total Students</p>
+                                <p class="text-2xl font-bold text-blue-700">${classStat.total_students || 0}</p>
+                            </div>
+                            <div class="bg-green-50 p-3 rounded">
+                                <p class="text-xs text-gray-600">Tasks Completed</p>
+                                <p class="text-2xl font-bold text-green-700">${classStat.total_tasks_completed || 0}</p>
+                            </div>
+                            <div class="bg-purple-50 p-3 rounded">
+                                <p class="text-xs text-gray-600">Attempted All</p>
+                                <p class="text-2xl font-bold text-purple-700">${classStat.students_attempted_all_tasks || 0}</p>
+                            </div>
+                            <div class="bg-yellow-50 p-3 rounded">
+                                <p class="text-xs text-gray-600">Completed All</p>
+                                <p class="text-2xl font-bold text-yellow-700">${classStat.students_completed_all_tasks || 0}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Reading Comprehension -->
+                        <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                            <h6 class="font-semibold text-blue-800 mb-3">Reading Comprehension</h6>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Average Score:</span>
+                                    <span class="font-semibold">${reading.average_score || 0}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Min Score:</span>
+                                    <span class="font-semibold">${reading.min_score || 0}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Max Score:</span>
+                                    <span class="font-semibold">${reading.max_score || 0}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Attempted:</span>
+                                    <span class="font-semibold">${reading.students_attempted || 0}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Completed:</span>
+                                    <span class="font-semibold">${reading.students_completed || 0}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Mathematical Comprehension -->
+                        <div class="bg-green-50 rounded-lg p-4 border border-green-200">
+                            <h6 class="font-semibold text-green-800 mb-3">Mathematical Comprehension</h6>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Average Score:</span>
+                                    <span class="font-semibold">${math.average_score || 0}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Min Score:</span>
+                                    <span class="font-semibold">${math.min_score || 0}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Max Score:</span>
+                                    <span class="font-semibold">${math.max_score || 0}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Attempted:</span>
+                                    <span class="font-semibold">${math.students_attempted || 0}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Completed:</span>
+                                    <span class="font-semibold">${math.students_completed || 0}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Aptitude Test -->
+                        <div class="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                            <h6 class="font-semibold text-purple-800 mb-3">Aptitude Test</h6>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Average Score:</span>
+                                    <span class="font-semibold">${aptitude.average_score || 0}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Min Score:</span>
+                                    <span class="font-semibold">${aptitude.min_score || 0}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Max Score:</span>
+                                    <span class="font-semibold">${aptitude.max_score || 0}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Attempted:</span>
+                                    <span class="font-semibold">${aptitude.students_attempted || 0}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Completed:</span>
+                                    <span class="font-semibold">${aptitude.students_completed || 0}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+
+        // Refresh buttons
+        document.getElementById('refreshClassStatsBtn')?.addEventListener('click', function() {
+            loadClassStats();
+        });
+
+        document.getElementById('refreshDetailedStatsBtn')?.addEventListener('click', function() {
+            loadDetailedClassStatistics();
+        });
+
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             loadParents();
             loadClassStats();
             loadClasses();
             loadSchoolStatistics();
+            loadDetailedClassStatistics();
         });
 
         const devicesDropdownBtn = document.getElementById('devicesDropdownBtn');

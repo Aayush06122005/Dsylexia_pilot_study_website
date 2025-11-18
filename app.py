@@ -6170,6 +6170,278 @@ def get_school_statistics():
         print(f"Error getting school statistics: {e}")
         return jsonify({'success': False, 'message': 'Failed to load statistics'}), 500
 
+@app.route('/api/school/class-wise-statistics', methods=['GET'])
+def get_class_wise_statistics():
+    """Get class-wise statistics for a school including task completion and scores"""
+    auth = ensure_school_logged_in()
+    if auth:
+        return auth
+
+    try:
+        conn, cursor = get_db_cursor(dictionary=True)
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+        school_id = session['school_id']
+
+        # Get all classes for this school
+        cursor.execute("""
+            SELECT id, name, academic_year
+            FROM school_classes
+            WHERE school_id = %s
+            ORDER BY academic_year DESC, name ASC
+        """, (school_id,))
+        classes = cursor.fetchall()
+
+        class_statistics = []
+
+        for class_info in classes:
+            class_id = class_info['id']
+            class_name = class_info['name']
+            academic_year = class_info['academic_year']
+
+            # Get all students (children) in this class (through sections)
+            cursor.execute("""
+                SELECT DISTINCT u.id as student_id
+                FROM users u
+                JOIN class_sections cs ON u.section_id = cs.id
+                WHERE cs.class_id = %s AND u.user_type = 'child' AND u.school_id = %s
+            """, (class_id, school_id))
+            students = cursor.fetchall()
+            student_ids = [s['student_id'] for s in students]
+            total_students = len(student_ids)
+
+            if total_students == 0:
+                # No students in this class, add empty stats
+                class_statistics.append({
+                    'class_id': class_id,
+                    'class_name': class_name,
+                    'academic_year': academic_year,
+                    'total_students': 0,
+                    'total_tasks_completed': 0,
+                    'students_attempted_all_tasks': 0,
+                    'students_completed_all_tasks': 0,
+                    'reading_comprehension': {
+                        'average_score': 0,
+                        'min_score': 0,
+                        'max_score': 0,
+                        'students_attempted': 0,
+                        'students_completed': 0
+                    },
+                    'mathematical_comprehension': {
+                        'average_score': 0,
+                        'min_score': 0,
+                        'max_score': 0,
+                        'students_attempted': 0,
+                        'students_completed': 0
+                    },
+                    'aptitude': {
+                        'average_score': 0,
+                        'min_score': 0,
+                        'max_score': 0,
+                        'students_attempted': 0,
+                        'students_completed': 0
+                    }
+                })
+                continue
+
+            # Get task IDs for the three main tasks
+            cursor.execute("""
+                SELECT id, task_name FROM tasks 
+                WHERE task_name IN ('Reading Comprehension', 'Mathematical Comprehension', 'Aptitude Test')
+            """)
+            task_map = {row['task_name']: row['id'] for row in cursor.fetchall()}
+
+            # 1. Total tasks completed (count distinct completed tasks across all students)
+            if student_ids:
+                cursor.execute("""
+                    SELECT COUNT(DISTINCT ut.task_name) as total_tasks_completed
+                    FROM user_tasks ut
+                    WHERE ut.user_id IN ({}) AND ut.status = 'Completed'
+                """.format(','.join(['%s'] * len(student_ids))), student_ids)
+                total_tasks_completed_result = cursor.fetchone()
+                total_tasks_completed = total_tasks_completed_result['total_tasks_completed'] if total_tasks_completed_result else 0
+            else:
+                total_tasks_completed = 0
+
+            # 2. Students attempted and completed all tasks
+            # Get all available tasks (from tasks table or from section_assessments)
+            # First, try to get tasks assigned to sections in this class
+            cursor.execute("""
+                SELECT DISTINCT sa.task_name
+                FROM section_assessments sa
+                JOIN class_sections cs ON sa.section_id = cs.id
+                WHERE cs.class_id = %s
+            """, (class_id,))
+            assigned_tasks = [row['task_name'] for row in cursor.fetchall()]
+            
+            # If no assigned tasks, get all tasks from tasks table
+            if not assigned_tasks:
+                cursor.execute("SELECT DISTINCT task_name FROM tasks")
+                assigned_tasks = [row['task_name'] for row in cursor.fetchall()]
+            
+            total_available_tasks = len(assigned_tasks) if assigned_tasks else 0
+
+            # Count students who attempted and completed all tasks
+            students_attempted_all = 0
+            students_completed_all = 0
+
+            if total_available_tasks > 0 and student_ids:
+                # Get task counts for each student
+                cursor.execute("""
+                    SELECT ut.user_id, 
+                           COUNT(DISTINCT ut.task_name) as attempted_tasks,
+                           COUNT(DISTINCT CASE WHEN ut.status = 'Completed' THEN ut.task_name END) as completed_tasks
+                    FROM user_tasks ut
+                    WHERE ut.user_id IN ({})
+                    GROUP BY ut.user_id
+                """.format(','.join(['%s'] * len(student_ids))), student_ids)
+                
+                for row in cursor.fetchall():
+                    if row['attempted_tasks'] == total_available_tasks:
+                        students_attempted_all += 1
+                    if row['completed_tasks'] == total_available_tasks:
+                        students_completed_all += 1
+
+            # 3. Reading Comprehension Statistics
+            reading_stats = {'average_score': 0, 'min_score': 0, 'max_score': 0, 'students_attempted': 0, 'students_completed': 0}
+            if 'Reading Comprehension' in task_map and student_ids:
+                reading_task_id = task_map['Reading Comprehension']
+                # Count students who attempted (any attempt)
+                cursor.execute("""
+                    SELECT COUNT(DISTINCT uta.user_id) as students_attempted
+                    FROM user_task_attempts uta
+                    WHERE uta.user_id IN ({}) AND uta.task_id = %s
+                """.format(','.join(['%s'] * len(student_ids))), student_ids + [reading_task_id])
+                attempted_result = cursor.fetchone()
+                students_attempted = int(attempted_result['students_attempted']) if attempted_result and attempted_result['students_attempted'] else 0
+                
+                # Get score statistics from completed attempts only
+                cursor.execute("""
+                    SELECT 
+                        AVG(cp.score) as avg_score,
+                        MIN(cp.score) as min_score,
+                        MAX(cp.score) as max_score,
+                        COUNT(DISTINCT uta.user_id) as students_completed
+                    FROM user_task_attempts uta
+                    INNER JOIN comprehension_progress cp ON cp.attempt_id = uta.id AND cp.status = 'Completed'
+                    WHERE uta.user_id IN ({}) AND uta.task_id = %s AND uta.status = 'Completed'
+                """.format(','.join(['%s'] * len(student_ids))), student_ids + [reading_task_id])
+                
+                reading_result = cursor.fetchone()
+                if reading_result and reading_result['avg_score'] is not None:
+                    reading_stats = {
+                        'average_score': round(float(reading_result['avg_score']), 2),
+                        'min_score': int(reading_result['min_score']) if reading_result['min_score'] is not None else 0,
+                        'max_score': int(reading_result['max_score']) if reading_result['max_score'] is not None else 0,
+                        'students_attempted': students_attempted,
+                        'students_completed': int(reading_result['students_completed']) if reading_result['students_completed'] else 0
+                    }
+                else:
+                    reading_stats['students_attempted'] = students_attempted
+
+            # 4. Mathematical Comprehension Statistics
+            math_stats = {'average_score': 0, 'min_score': 0, 'max_score': 0, 'students_attempted': 0, 'students_completed': 0}
+            if 'Mathematical Comprehension' in task_map and student_ids:
+                math_task_id = task_map['Mathematical Comprehension']
+                # Count students who attempted (any attempt)
+                cursor.execute("""
+                    SELECT COUNT(DISTINCT uta.user_id) as students_attempted
+                    FROM user_task_attempts uta
+                    WHERE uta.user_id IN ({}) AND uta.task_id = %s
+                """.format(','.join(['%s'] * len(student_ids))), student_ids + [math_task_id])
+                attempted_result = cursor.fetchone()
+                students_attempted = int(attempted_result['students_attempted']) if attempted_result and attempted_result['students_attempted'] else 0
+                
+                # Get score statistics from completed attempts only
+                cursor.execute("""
+                    SELECT 
+                        AVG(mcp.score) as avg_score,
+                        MIN(mcp.score) as min_score,
+                        MAX(mcp.score) as max_score,
+                        COUNT(DISTINCT uta.user_id) as students_completed
+                    FROM user_task_attempts uta
+                    INNER JOIN mathematical_comprehension_progress mcp ON mcp.attempt_id = uta.id AND mcp.status = 'Completed'
+                    WHERE uta.user_id IN ({}) AND uta.task_id = %s AND uta.status = 'Completed'
+                """.format(','.join(['%s'] * len(student_ids))), student_ids + [math_task_id])
+                
+                math_result = cursor.fetchone()
+                if math_result and math_result['avg_score'] is not None:
+                    math_stats = {
+                        'average_score': round(float(math_result['avg_score']), 2),
+                        'min_score': int(math_result['min_score']) if math_result['min_score'] is not None else 0,
+                        'max_score': int(math_result['max_score']) if math_result['max_score'] is not None else 0,
+                        'students_attempted': students_attempted,
+                        'students_completed': int(math_result['students_completed']) if math_result['students_completed'] else 0
+                    }
+                else:
+                    math_stats['students_attempted'] = students_attempted
+
+            # 5. Aptitude Test Statistics
+            aptitude_stats = {'average_score': 0, 'min_score': 0, 'max_score': 0, 'students_attempted': 0, 'students_completed': 0}
+            if 'Aptitude Test' in task_map and student_ids:
+                aptitude_task_id = task_map['Aptitude Test']
+                # Count students who attempted (any attempt)
+                cursor.execute("""
+                    SELECT COUNT(DISTINCT uta.user_id) as students_attempted
+                    FROM user_task_attempts uta
+                    WHERE uta.user_id IN ({}) AND uta.task_id = %s
+                """.format(','.join(['%s'] * len(student_ids))), student_ids + [aptitude_task_id])
+                attempted_result = cursor.fetchone()
+                students_attempted = int(attempted_result['students_attempted']) if attempted_result and attempted_result['students_attempted'] else 0
+                
+                # Get score statistics from completed attempts only
+                cursor.execute("""
+                    SELECT 
+                        AVG(ap.total_score) as avg_score,
+                        MIN(ap.total_score) as min_score,
+                        MAX(ap.total_score) as max_score,
+                        COUNT(DISTINCT uta.user_id) as students_completed
+                    FROM user_task_attempts uta
+                    INNER JOIN aptitude_progress ap ON ap.attempt_id = uta.id AND ap.status = 'Completed'
+                    WHERE uta.user_id IN ({}) AND uta.task_id = %s AND uta.status = 'Completed'
+                """.format(','.join(['%s'] * len(student_ids))), student_ids + [aptitude_task_id])
+                
+                aptitude_result = cursor.fetchone()
+                if aptitude_result and aptitude_result['avg_score'] is not None:
+                    aptitude_stats = {
+                        'average_score': round(float(aptitude_result['avg_score']), 2),
+                        'min_score': int(aptitude_result['min_score']) if aptitude_result['min_score'] is not None else 0,
+                        'max_score': int(aptitude_result['max_score']) if aptitude_result['max_score'] is not None else 0,
+                        'students_attempted': students_attempted,
+                        'students_completed': int(aptitude_result['students_completed']) if aptitude_result['students_completed'] else 0
+                    }
+                else:
+                    aptitude_stats['students_attempted'] = students_attempted
+
+            class_statistics.append({
+                'class_id': class_id,
+                'class_name': class_name,
+                'academic_year': academic_year,
+                'total_students': total_students,
+                'total_tasks_completed': total_tasks_completed,
+                'students_attempted_all_tasks': students_attempted_all,
+                'students_completed_all_tasks': students_completed_all,
+                'reading_comprehension': reading_stats,
+                'mathematical_comprehension': math_stats,
+                'aptitude': aptitude_stats
+            })
+
+        return jsonify({
+            'success': True,
+            'statistics': class_statistics
+        })
+
+    except Exception as e:
+        print(f"Error getting class-wise statistics: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'Failed to load statistics: {str(e)}'}), 500
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+
 @app.route('/api/parent/statistics', methods=['GET'])
 def get_parent_statistics():
     """Get comprehensive statistics for the current parent's children."""
