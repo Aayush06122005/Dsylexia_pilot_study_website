@@ -1354,6 +1354,34 @@ def get_school_parents():
         print(f"Get parents error: {e}")
         return jsonify({'success': False, 'message': 'Internal server error'}), 500
 
+
+@app.route('/api/school/parents/<int:parent_id>', methods=['DELETE'])
+def delete_school_parent(parent_id: int):
+    auth = ensure_school_logged_in()
+    if auth:
+        return auth
+    conn, cur = get_db_cursor()
+    if not conn:
+        return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+    try:
+        cur.execute(
+            "SELECT id, email FROM users WHERE id=%s AND user_type='parent' AND school_id=%s",
+            (parent_id, session['school_id'])
+        )
+        row = cur.fetchone()
+        if not row:
+            return jsonify({'success': False, 'message': 'Not found'}), 404
+        parent_email = row[1]
+        _delete_parent_and_children(cur, parent_id, parent_email)
+        conn.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        conn.rollback()
+        print(f"Delete parent error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to delete parent'}), 500
+    finally:
+        cur.close(); conn.close()
+
 # ---------- Classes & Sections APIs ----------
 
 def _delete_section_and_dependents(cur, section_id: int):
@@ -1378,6 +1406,25 @@ def _delete_class_and_dependents(cur, class_id: int):
     for row in section_rows:
         _delete_section_and_dependents(cur, row[0])
     cur.execute("DELETE FROM school_classes WHERE id=%s", (class_id,))
+
+
+def _delete_parent_and_children(cur, parent_id: int, parent_email: str = None):
+    """Delete a parent user along with all linked children."""
+    child_ids = set()
+    cur.execute("SELECT id FROM users WHERE parent_id=%s AND user_type='child'", (parent_id,))
+    for row in cur.fetchall() or []:
+        child_ids.add(row[0])
+    if parent_email:
+        cur.execute(
+            "SELECT id FROM users WHERE user_type='child' AND pending_parent_email=%s",
+            (parent_email,)
+        )
+        for row in cur.fetchall() or []:
+            child_ids.add(row[0])
+    if child_ids:
+        placeholders = ','.join(['%s'] * len(child_ids))
+        cur.execute(f"DELETE FROM users WHERE id IN ({placeholders})", list(child_ids))
+    cur.execute("DELETE FROM users WHERE id=%s AND user_type='parent'", (parent_id,))
 
 @app.route('/api/school/classes', methods=['GET'])
 def list_classes():

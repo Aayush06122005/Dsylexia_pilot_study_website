@@ -1060,14 +1060,18 @@
                                     class="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition">
                                 View Details
                             </button>
-                            <!-- <button onclick="manageParent(${parent.id})" 
-                                    class="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600 transition">
-                                Manage
-                            </button> -->
+                            <button class="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition delete-parent-btn">
+                                Delete
+                            </button>
                         </div>
                     </div>
                 `;
                 
+                const deleteBtn = parentCard.querySelector('.delete-parent-btn');
+                if (deleteBtn) {
+                    deleteBtn.addEventListener('click', () => deleteParent(parent.id, parent.name));
+                }
+
                 parentsList.appendChild(parentCard);
             });
             
@@ -1082,6 +1086,30 @@
         // Manage Parent (placeholder function)
         function manageParent(parentId) {
             alert('Manage parent functionality will be implemented here for parent ID: ' + parentId);
+        }
+
+        async function deleteParent(parentId, parentName) {
+            const confirmed = confirm(`Delete ${parentName || 'this parent'}? All linked students will also be removed.`);
+            if (!confirmed) return;
+            try {
+                const res = await fetch(`/api/school/parents/${parentId}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (!data.success) {
+                    alert(data.message || 'Failed to delete parent');
+                    return;
+                }
+                loadParents();
+                loadClassStats();
+                loadDetailedClassStatistics();
+                loadSchoolStatistics();
+                if (currentSectionId) {
+                    loadStudents(currentSectionId);
+                    loadSectionAssessments(currentSectionId);
+                }
+            } catch (err) {
+                console.error('Error deleting parent:', err);
+                alert('Network error while deleting parent');
+            }
         }
 
         // Excel Upload Functionality
