@@ -591,6 +591,19 @@
                                         <button id="bulkStudentsBtn" class="px-3 py-1.5 bg-gray-700 text-white text-sm rounded-md hover:bg-gray-800 transition">Bulk Upload</button>
                                     </div>
                                 </div>
+                                
+                                <!-- Bulk Upload Info Banner -->
+                                <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <div class="flex items-start">
+                                        <svg class="w-5 h-5 text-blue-600 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <div class="text-sm text-blue-800">
+                                            <strong>Bulk Upload:</strong> Excel file should have columns: <span class="font-mono bg-blue-100 px-1 rounded">Student Name</span> or <span class="font-mono bg-blue-100 px-1 rounded">Name</span>, <span class="font-mono bg-blue-100 px-1 rounded">Parent Email</span> or <span class="font-mono bg-blue-100 px-1 rounded">Email</span>, and optionally <span class="font-mono bg-blue-100 px-1 rounded">Student Email</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
                                         <h4 class="text-lg font-semibold text-gray-800 mb-3">Students</h4>
@@ -1911,22 +1924,17 @@ function displayRecentActivityChart(recentActivity) {
             
             const student_name = studentNameInput.value.trim();
             const parent_email = parentEmailInput.value.trim();
-            const student_email = studentEmailInput.value.trim() || '';
+            const student_email = studentEmailInput.value.trim();
             
             if (!student_name || !parent_email) {
                 return alert('Please fill in all required fields');
             }
             
             try {
-                const payload = { student_name, parent_email };
-                if (student_email) {
-                    payload.student_email = student_email;
-                }
-                
                 const res = await fetch(`/api/school/sections/${currentSectionId}/students`, {
                     method: 'POST', 
                     headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({ student_name, parent_email, student_email })
                 });
                 const data = await res.json();
                 if (data.success) {
@@ -1944,48 +1952,116 @@ function displayRecentActivityChart(recentActivity) {
 
         bulkStudentsBtn.addEventListener('click', async function() {
             if (!currentSectionId) return alert('Open a section first');
-            // Reuse XLSX loading approach
+            
+            // Create file input
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = '.xlsx,.xls';
+            
             input.onchange = async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
-                if (typeof XLSX === 'undefined') {
-                    const script = document.createElement('script');
-                    script.src = 'https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js';
-                    script.onload = () => parseAndUpload(file);
-                    document.head.appendChild(script);
-                } else {
-                    parseAndUpload(file);
+                
+                // Show processing message
+                const originalText = bulkStudentsBtn.textContent;
+                bulkStudentsBtn.disabled = true;
+                bulkStudentsBtn.textContent = 'Processing...';
+                
+                try {
+                    // Load XLSX library if not already loaded
+                    if (typeof XLSX === 'undefined') {
+                        console.log('Loading XLSX library...');
+                        const script = document.createElement('script');
+                        script.src = 'https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js';
+                        await new Promise((resolve, reject) => {
+                            script.onload = resolve;
+                            script.onerror = () => reject(new Error('Failed to load XLSX library'));
+                            document.head.appendChild(script);
+                        });
+                        console.log('XLSX library loaded');
+                    }
+                    
+                    await parseAndUpload(file);
+                } catch (err) {
+                    console.error('Error in bulk upload:', err);
+                    alert('Error processing file: ' + err.message);
+                } finally {
+                    bulkStudentsBtn.disabled = false;
+                    bulkStudentsBtn.textContent = originalText;
                 }
             };
+            
             input.click();
 
-            function parseAndUpload(file) {
-                const reader = new FileReader();
-                reader.onload = async function(ev) {
-                    const data = new Uint8Array(ev.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const rows = XLSX.utils.sheet_to_json(firstSheet);
-                    const payload = rows.map(r => ({
+            async function parseAndUpload(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    
+                    reader.onerror = () => reject(new Error('Failed to read file'));
+                    
+                    reader.onload = async function(ev) {
+                        try {
+                            console.log('Parsing Excel file...');
+                            const data = new Uint8Array(ev.target.result);
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            
+                            if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+                                throw new Error('Excel file has no sheets');
+                            }
+                            
+                            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                            const rows = XLSX.utils.sheet_to_json(firstSheet);
+                            
+                            console.log(`Found ${rows.length} rows in Excel file`);
+                            
+                            if (rows.length === 0) {
+                                throw new Error('Excel file is empty or has no data rows');
+                            }
+                            
+                            // Show first row for debugging
+                            console.log('First row columns:', Object.keys(rows[0]));
+                            
+                            const payload = rows.map(r => ({
                         student_name: r['Student Name'] || r['Name'] || r['student_name'] || r['name'] || '',
                         parent_email: r['Parent Email'] || r['parent_email'] || r['Email'] || r['email'] || '',
-                        student_email: r['Student Email'] || r['student_email'] || ''
-                    })).filter(r => r.student_name && r.parent_email);
-                    const res = await fetch(`/api/school/sections/${currentSectionId}/students/bulk`, {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ students: payload })
-                    });
-                    const result = await res.json();
-                    if (result.success) {
-                        alert(`Bulk upload: ${result.added} added, ${result.failed} failed`);
-                        loadStudents(currentSectionId);
-                    } else {
-                        alert(result.message || 'Bulk upload failed');
-                    }
-                };
-                reader.readAsArrayBuffer(file);
+                                student_email: r['Student Email'] || r['student_email'] || r['Student Email Address'] || ''
+                            })).filter(r => r.student_name && r.parent_email);
+                            
+                            console.log(`Filtered to ${payload.length} valid student records`);
+                            
+                            if (payload.length === 0) {
+                                throw new Error('No valid student records found. Please ensure columns are named: "Student Name" (or "Name"), "Parent Email" (or "Email"), and optionally "Student Email"');
+                            }
+                            
+                            console.log('Uploading to server...');
+                            const res = await fetch(`/api/school/sections/${currentSectionId}/students/bulk`, {
+                                method: 'POST', 
+                                headers: { 'Content-Type': 'application/json' }, 
+                                body: JSON.stringify({ students: payload })
+                            });
+                            
+                            if (!res.ok) {
+                                throw new Error(`Server error: ${res.status} ${res.statusText}`);
+                            }
+                            
+                            const result = await res.json();
+                            console.log('Upload result:', result);
+                            
+                            if (result.success) {
+                                alert(`✅ Bulk upload complete!\n\n${result.added || 0} students added\n${result.failed || 0} failed`);
+                                loadStudents(currentSectionId);
+                                resolve();
+                            } else {
+                                throw new Error(result.message || 'Bulk upload failed');
+                            }
+                        } catch (err) {
+                            console.error('Error in parseAndUpload:', err);
+                            reject(err);
+                        }
+                    };
+                    
+                    reader.readAsArrayBuffer(file);
+                });
             }
         });
 
