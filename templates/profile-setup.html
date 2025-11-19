@@ -156,7 +156,37 @@
                         <!-- Native Language(s) -->
                         <div>
                             <label for="nativeLanguage" class="block text-sm font-medium text-gray-700 mb-1">Native Language(s)</label>
-                            <input type="text" id="nativeLanguage" name="nativeLanguage" placeholder="e.g., English, Hindi" class="w-full px-4 py-2 border-2 border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-blue" required>
+                            <select id="nativeLanguage" name="nativeLanguage"
+                                class="w-full px-4 py-2 border-2 border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-blue"
+                                required>
+
+                                <option value="" disabled selected>Select your native language</option>
+                                <option value="Assamese">Assamese</option>
+                                <option value="Bengali">Bengali</option>
+                                <option value="Bodo">Bodo</option>
+                                <option value="Dogri">Dogri</option>
+                                <option value="English">English</option>
+                                <option value="Gujarati">Gujarati</option>
+                                <option value="Hindi">Hindi</option>
+                                <option value="Kannada">Kannada</option>
+                                <option value="Kashmiri">Kashmiri</option>
+                                <option value="Konkani">Konkani</option>
+                                <option value="Maithili">Maithili</option>
+                                <option value="Malayalam">Malayalam</option>
+                                <option value="Marathi">Marathi</option>
+                                <option value="Meitei">Meitei</option>
+                                <option value="Nepali">Nepali</option>
+                                <option value="Odia">Odia</option>
+                                <option value="Punjabi">Punjabi</option>
+                                <option value="Sanskrit">Sanskrit</option>
+                                <option value="Santali">Santali</option>
+                                <option value="Sindhi">Sindhi</option>
+                                <option value="Tamil">Tamil</option>
+                                <option value="Telugu">Telugu</option>
+                                <option value="Urdu">Urdu</option>
+                                <option value="Other">Other (specify below)</option>
+                            </select>
+                            <input type="text" id="nativeLanguageOther" name="nativeLanguageOther" placeholder="Please specify your native language" class="hidden w-full px-4 py-2 border-2 border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-blue mt-2">
                         </div>
                         <!-- Class Level -->
                         <div>
@@ -361,14 +391,38 @@
 
         // Demographics form submission
         const demographicsForm = document.getElementById('demographicsForm');
+        const nativeLanguageSelect = document.getElementById('nativeLanguage');
+        const nativeLanguageOther = document.getElementById('nativeLanguageOther');
+
+        // Show/hide "Other" text field based on selection
+        if (nativeLanguageSelect) {
+            nativeLanguageSelect.addEventListener('change', function() {
+                if (this.value === 'Other') {
+                    nativeLanguageOther.classList.remove('hidden');
+                    nativeLanguageOther.required = true;
+                } else {
+                    nativeLanguageOther.classList.add('hidden');
+                    nativeLanguageOther.required = false;
+                    nativeLanguageOther.value = '';
+                }
+            });
+        }
+
         if (demographicsForm) {
             demographicsForm.addEventListener('submit', function(e) {
                 e.preventDefault();
+                
+                // Get native language value (either from dropdown or "Other" field)
+                let nativeLanguageValue = nativeLanguageSelect.value;
+                if (nativeLanguageValue === 'Other') {
+                    nativeLanguageValue = nativeLanguageOther.value;
+                }
+                
                 // Collect form data
                 const data = {
                     dob: document.getElementById('dob').value,
                     gender: document.getElementById('gender').value,
-                    native_language: document.getElementById('nativeLanguage').value,
+                    native_language: nativeLanguageValue,
                     education_level: document.getElementById('classLevel').value,
                     dyslexia_status: document.getElementById('dyslexiaStatus').value
                 };
@@ -385,7 +439,14 @@
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
-                        window.location.href = '/parent'; // Redirect to parent dashboard
+                        // Check if parent is logging in as child
+                        if (sessionStorage.getItem('viewing_as_child') === 'true') {
+                            // Redirect to student dashboard
+                            window.location.href = '/participant-dashboard';
+                        } else {
+                            // Regular signup flow - redirect to parent dashboard
+                            window.location.href = '/parent';
+                        }
                     } else {
                         alert(data.message || 'Failed to save demographics');
                     }
@@ -395,6 +456,17 @@
                 });
             });
         }
+
+        const langSelect = document.getElementById("nativeLanguage");
+
+        langSelect.addEventListener("focus", () => {
+            langSelect.setAttribute("size", 6);
+        });
+
+        langSelect.addEventListener("blur", () => {
+            langSelect.removeAttribute("size");
+        });
+
 
     </script>
 </body>

@@ -169,9 +169,9 @@
 
         
         <!-- Motivational Statement -->
-        <div class="bg-yellow-100 rounded-xl shadow p-6 flex flex-col items-center animate-fade-in">
-            <span class="text-2xl font-bold text-yellow-800 mb-2">“You’re doing great!”</span>
-            <p class="text-lg text-gray-700 text-center">Your typing speed is improving steadily, and your reading accuracy is already above the group average. Keep practicing—every step counts!</p>
+        <div id="motivationalStatement" class="bg-yellow-100 rounded-xl shadow p-6 flex flex-col items-center animate-fade-in">
+            <span class="text-2xl font-bold text-yellow-800 mb-2" id="motivationTitle">"You're doing great!"</span>
+            <p class="text-lg text-gray-700 text-center" id="motivationMessage">Loading your personalized message...</p>
         </div>
     </main>
 
@@ -442,6 +442,9 @@
             
             // 7. Display badges
             displayBadges(stats.badges);
+            
+            // 8. Display dynamic motivational statement
+            displayMotivationalStatement(stats);
         }
         
         function displayProgress(progress) {
@@ -468,15 +471,26 @@
                 const timeCard = document.createElement('div');
                 timeCard.className = 'bg-green-50 rounded-lg p-4 text-center border border-green-200';
                 
-                const hours = Math.floor(data.avg_minutes / 60);
-                const minutes = Math.round(data.avg_minutes % 60);
-                const timeText = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+                // Convert seconds to appropriate format
+                const totalSeconds = Math.round(data.time_seconds);
+                const hours = Math.floor(totalSeconds / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const seconds = totalSeconds % 60;
+                
+                let timeText = '';
+                if (hours > 0) {
+                    timeText = `${hours}h ${minutes}m ${seconds}s`;
+                } else if (minutes > 0) {
+                    timeText = `${minutes}m ${seconds}s`;
+                } else {
+                    timeText = `${seconds}s`;
+                }
                 
                 timeCard.innerHTML = `
                     <div class="text-2xl mb-2">⏱️</div>
                     <h4 class="font-semibold text-green-900 mb-1">${taskName}</h4>
                     <div class="text-lg font-bold text-green-700">${timeText}</div>
-                    <div class="text-xs text-green-600">Average time</div>
+                    <div class="text-xs text-green-600">Time spent</div>
                     <div class="text-xs text-gray-500 mt-1">${data.attempts} attempt${data.attempts !== 1 ? 's' : ''}</div>
                 `;
                 
@@ -628,6 +642,64 @@
             });
         }
         
+        function displayMotivationalStatement(stats) {
+            const titleEl = document.getElementById('motivationTitle');
+            const messageEl = document.getElementById('motivationMessage');
+            const containerEl = document.getElementById('motivationalStatement');
+            
+            let title = "Keep Going!";
+            let message = "";
+            let bgColor = "bg-yellow-100";
+            
+            const totalCompleted = stats.progress.completed;
+            const totalTasks = stats.progress.total;
+            const improvementTask = stats.most_improved.task;
+            const improvementPoints = stats.most_improved.improvement;
+            const badgeCount = stats.badges.length;
+            
+            // Determine message based on progress
+            if (totalCompleted === 0) {
+                // No tasks completed yet
+                title = "Welcome to Your Journey! 🚀";
+                message = "Every great journey begins with a single step. Start with any task that interests you, and remember—there's no rush! Take your time to explore and learn at your own pace.";
+                bgColor = "bg-blue-100";
+            } else if (totalCompleted === totalTasks) {
+                // All tasks completed
+                title = "Outstanding Achievement! 🏆";
+                message = `You've completed all ${totalTasks} tasks! Your dedication and hard work are truly impressive. ${badgeCount > 0 ? `You've earned ${badgeCount} badge${badgeCount > 1 ? 's' : ''} along the way!` : ''} You're a star performer!`;
+                bgColor = "bg-green-100";
+            } else if (totalCompleted >= totalTasks * 0.75) {
+                // 75% or more completed
+                title = "Almost There! 💪";
+                message = `You've completed ${totalCompleted} out of ${totalTasks} tasks! You're so close to finishing everything. ${improvementTask ? `Your ${improvementTask} skills have improved significantly by ${improvementPoints} points!` : 'Keep up this amazing momentum!'}`;
+                bgColor = "bg-purple-100";
+            } else if (totalCompleted >= totalTasks * 0.5) {
+                // 50% or more completed
+                title = "You're Doing Great! 🌟";
+                message = `Halfway there! You've completed ${totalCompleted} out of ${totalTasks} tasks. ${improvementTask ? `We noticed your ${improvementTask} scores improved by ${improvementPoints} points—that's fantastic progress!` : 'Your consistent effort is really paying off. Keep going!'}`;
+                bgColor = "bg-yellow-100";
+            } else if (totalCompleted >= totalTasks * 0.25) {
+                // 25% or more completed
+                title = "Great Start! 🎯";
+                message = `You've completed ${totalCompleted} task${totalCompleted > 1 ? 's' : ''} so far! Every task you complete helps us understand more and helps you grow. ${badgeCount > 0 ? `You've already earned ${badgeCount} badge${badgeCount > 1 ? 's' : ''}!` : 'Keep it up!'}`;
+                bgColor = "bg-indigo-100";
+            } else {
+                // Less than 25% completed
+                title = "Excellent Progress! ✨";
+                message = `You've taken the first steps by completing ${totalCompleted} task${totalCompleted > 1 ? 's' : ''}! ${improvementTask ? `Your effort in ${improvementTask} is already showing improvement!` : 'Each task brings new learning opportunities. Take your time and enjoy the process!'}`;
+                bgColor = "bg-teal-100";
+            }
+            
+            // Update the DOM
+            if (titleEl) titleEl.textContent = title;
+            if (messageEl) messageEl.textContent = message;
+            
+            // Update background color
+            if (containerEl) {
+                containerEl.className = `${bgColor} rounded-xl shadow p-6 flex flex-col items-center animate-fade-in`;
+            }
+        }
+        
         function displayErrorStats() {
             // Display error for all sections
             const sections = ['scoresContainer', 'timeSpentContainer', 'classComparisonContainer', 
@@ -648,7 +720,7 @@
 
         // Animate progress bar
         document.addEventListener('DOMContentLoaded', function() {
-            const percent = 82; // Example: 82% tasks completed
+            //const percent = 82; // Example: 82% tasks completed
             const bar = document.getElementById('progressBar');
             const text = document.getElementById('progressText');
             setTimeout(() => {

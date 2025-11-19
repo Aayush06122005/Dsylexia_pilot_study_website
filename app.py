@@ -672,6 +672,26 @@ def parent_login_child():
         if child_user_type != 'child':
             return jsonify({'success': False, 'message': 'Invalid child account'}), 400
         
+        # Check for consent and demographics before logging in
+        conn = connect_db()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+        
+        cursor = conn.cursor()
+        
+        # Check consent
+        cursor.execute("SELECT consent_given FROM consent_data WHERE user_id = %s ORDER BY consent_date DESC LIMIT 1", (child_id_from_db,))
+        consent = cursor.fetchone()
+        has_consent = consent and consent[0]
+        
+        # Check demographics
+        cursor.execute("SELECT id FROM demographics WHERE user_id = %s", (child_id_from_db,))
+        demographics = cursor.fetchone()
+        has_demographics = demographics is not None
+        
+        cursor.close()
+        conn.close()
+        
         # Store parent session info before switching to child
         session['parent_user_id'] = parent_id
         session['parent_email'] = session.get('email')
@@ -687,7 +707,11 @@ def parent_login_child():
             'message': 'Child logged in successfully',
             'child_id': child_id_from_db,
             'email': child_email,
-            'user_type': 'child'
+            'user_type': 'child',
+            'has_consent': has_consent,
+            'has_demographics': has_demographics,
+            'needs_consent': not has_consent,
+            'needs_profile_setup': not has_demographics
         })
         
     except Exception as e:
@@ -1318,7 +1342,7 @@ def get_class_stats():
 
 @app.route('/api/school/parents', methods=['GET'])
 def get_school_parents():
-    """API endpoint to get all parents of a school."""
+    """API endpoint to get all parents of a school with their children information."""
     try:
         # Check if user is logged in and is a school
         if 'school_id' not in session:
@@ -1331,13 +1355,40 @@ def get_school_parents():
         if conn:
             cursor = conn.cursor(dictionary=True)
             query = """
-            SELECT u.id, u.name, u.email, u.created_at, u.user_type
+            SELECT 
+                u.id, 
+                u.name, 
+                u.email, 
+                u.created_at, 
+                u.user_type
             FROM users u
             WHERE u.school_id = %s AND u.user_type = 'parent'
             ORDER BY u.created_at DESC
             """
             cursor.execute(query, (session['school_id'],))
             parents = cursor.fetchall()
+            
+            # For each parent, get their children with class and section info
+            for parent in parents:
+                children_query = """
+                SELECT 
+                    c.id,
+                    c.name,
+                    c.email,
+                    cs.name AS section_name,
+                    sc.name AS class_name,
+                    sc.academic_year
+                FROM users c
+                LEFT JOIN class_sections cs ON cs.id = c.section_id
+                LEFT JOIN school_classes sc ON sc.id = cs.class_id
+                WHERE (c.parent_id = %s OR c.pending_parent_email = %s)
+                AND c.user_type = 'child'
+                AND c.school_id = %s
+                ORDER BY c.name ASC
+                """
+                cursor.execute(children_query, (parent['id'], parent['email'], session['school_id']))
+                parent['children'] = cursor.fetchall()
+            
             cursor.close()
             conn.close()
             
@@ -7329,22 +7380,38 @@ def get_student_scores(user_id):
         stats['progress']['percentage'] = round((stats['progress']['completed'] / stats['progress']['total']) * 100, 1)
         
         # 2. Calculate time spent on each task (only for completed attempts)
+        # For typing tasks, use typing_progress.timer (in seconds) - show actual time not average
+        # For other tasks, use user_task_attempts timestamps
         task_time_query = """
             SELECT 
                 t.task_name,
-                AVG(TIMESTAMPDIFF(MINUTE, uta.started_at, uta.completed_at)) as avg_time_minutes,
+                tp.timer as time_seconds,
+                1 as attempts
+            FROM user_task_attempts uta
+            JOIN tasks t ON uta.task_id = t.id
+            JOIN typing_progress tp ON tp.attempt_id = uta.id
+            WHERE uta.user_id = %s AND uta.status = 'Completed' 
+            AND tp.timer IS NOT NULL AND tp.timer > 0
+            
+            UNION ALL
+            
+            SELECT 
+                t.task_name,
+                AVG(TIMESTAMPDIFF(SECOND, uta.started_at, uta.completed_at)) as time_seconds,
                 COUNT(*) as attempts
             FROM user_task_attempts uta
             JOIN tasks t ON uta.task_id = t.id
+            LEFT JOIN typing_progress tp ON tp.attempt_id = uta.id
             WHERE uta.user_id = %s AND uta.status = 'Completed' AND uta.completed_at IS NOT NULL
+            AND tp.id IS NULL
             AND TIMESTAMPDIFF(MINUTE, uta.started_at, uta.completed_at) BETWEEN 1 AND 120
             GROUP BY t.task_name
         """
-        cursor.execute(task_time_query, (user_id,))
+        cursor.execute(task_time_query, (user_id, user_id))
         time_results = cursor.fetchall()
         for result in time_results:
             stats['time_spent'][result['task_name']] = {
-                'avg_minutes': round(result['avg_time_minutes'] or 0, 1),
+                'time_seconds': result['time_seconds'] or 0,
                 'attempts': result['attempts']
             }
         

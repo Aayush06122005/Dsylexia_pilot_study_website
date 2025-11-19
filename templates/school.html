@@ -449,41 +449,6 @@
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Charts Grid -->
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                        <div class="bg-[#f5f5dc] rounded-lg shadow-md p-6">
-                            <h4 class="text-lg font-semibold text-gray-800 mb-4">Task Completion Rates</h4>
-                            <div class="bg-gray-50 rounded-lg p-4">
-                                <canvas id="taskCompletionChart" width="400" height="200"></canvas>
-                            </div>
-                        </div>
-                        <div class="bg-[#f5f5dc] rounded-lg shadow-md p-6">
-                            <h4 class="text-lg font-semibold text-gray-800 mb-4">Recent Activity (Last 7 Days)</h4>
-                            <div class="bg-gray-50 rounded-lg p-4">
-                                <canvas id="recentActivityChart" width="400" height="200"></canvas>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Class-wise Distribution -->
-                    <div class="bg-[#f5f5dc] rounded-lg shadow-md p-6 mb-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <h4 class="text-lg font-semibold text-gray-800">Class-wise Distribution</h4>
-                            <button id="refreshClassStatsBtn" class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition flex items-center">
-                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                </svg>
-                                Refresh
-                            </button>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="classStats">
-                            <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                                <h4 class="font-medium text-gray-700">Loading statistics...</h4>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Detailed Class-wise Statistics -->
                     <div class="bg-[#f5f5dc] rounded-lg shadow-md p-6">
                         <div class="flex justify-between items-center mb-4">
@@ -529,7 +494,7 @@
                                 <input type="file" id="excelFile" accept=".xlsx,.xls" class="w-full border bg-white rounded px-3 py-2" required>
                                 <p class="text-xs text-gray-500 mt-1">Upload an Excel file with columns: Name, Email (or Parent Name, Parent Email)</p>
                             </div>
-                            <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition">Upload Excel</button>
+                            <button type="submit" class="bg-green-600 text-white px-4 py-2 text-sm rounded hover:bg-green-700 transition whitespace-nowrap">Upload Excel</button>
                         </form>
                         <div id="excelUploadMsg" class="mt-2 text-sm text-gray-600"></div>
                     </div>
@@ -1047,20 +1012,39 @@
                 
                 const createdDate = new Date(parent.created_at).toLocaleDateString();
                 
+                // Build children display
+                let childrenHtml = '';
+                if (parent.children && parent.children.length > 0) {
+                    childrenHtml = '<div class="mt-3 pt-3 border-t border-gray-300">';
+                    childrenHtml += '<p class="text-sm font-semibold text-gray-700 mb-2">Children:</p>';
+                    childrenHtml += '<div class="space-y-2">';
+                    parent.children.forEach(child => {
+                        const classSection = child.class_name 
+                            ? `${child.class_name}${child.academic_year ? ' (' + child.academic_year + ')' : ''} - Section ${child.section_name || 'N/A'}`
+                            : 'Not assigned';
+                        childrenHtml += `
+                            <div class="pl-3 border-l-2 border-blue-300">
+                                <p class="text-sm font-medium text-gray-800">${child.name || 'Unnamed'}</p>
+                                ${child.email ? `<p class="text-xs text-gray-600">${child.email}</p>` : ''}
+                                <p class="text-xs text-gray-500">${classSection}</p>
+                            </div>
+                        `;
+                    });
+                    childrenHtml += '</div></div>';
+                } else {
+                    childrenHtml = '<div class="mt-3 pt-3 border-t border-gray-300"><p class="text-sm text-gray-500 italic">No children registered</p></div>';
+                }
+                
                 parentCard.innerHTML = `
                     <div class="flex justify-between items-start">
-                        <div>
+                        <div class="flex-1">
                             <h4 class="text-lg font-semibold text-gray-800">${parent.name}</h4>
                             <p class="text-gray-600">${parent.email}</p>
-                            <p class="text-sm text-gray-500">Class: ${parent.class || 'Not specified'}</p>
                             <p class="text-sm text-gray-500">Registered: ${createdDate}</p>
+                            ${childrenHtml}
                         </div>
-                        <div class="flex space-x-2">
-                            <button onclick="viewParentDetails(${parent.id})" 
-                                    class="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition">
-                                View Details
-                            </button>
-                            <button class="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition delete-parent-btn">
+                        <div class="flex flex-col gap-2 ml-4">
+                            <button class="px-3 py-1.5 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition delete-parent-btn whitespace-nowrap">
                                 Delete
                             </button>
                         </div>
@@ -1078,15 +1062,6 @@
             parentsList.classList.remove('hidden');
         }
 
-        // View Parent Details (placeholder function)
-        function viewParentDetails(parentId) {
-            alert('View parent details functionality will be implemented here for parent ID: ' + parentId);
-        }
-
-        // Manage Parent (placeholder function)
-        function manageParent(parentId) {
-            alert('Manage parent functionality will be implemented here for parent ID: ' + parentId);
-        }
 
         async function deleteParent(parentId, parentName) {
             const confirmed = confirm(`Delete ${parentName || 'this parent'}? All linked students will also be removed.`);
@@ -1188,24 +1163,7 @@
     }
 
 
-       function loadClassStats() {
-    const statsContainer = document.getElementById('classStats');
-    statsContainer.innerHTML = '<div class="p-4 bg-gray-50 rounded-lg border border-gray-200"><h4 class="font-medium text-gray-700">Loading statistics...</h4></div>';
 
-    fetch('/api/school/class-stats')
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                displayClassStats(data.stats);
-            } else {
-                statsContainer.innerHTML = '<div class="p-4 bg-gray-50 rounded-lg border border-gray-200"><h4 class="font-medium text-text-red-600">Failed to load statistics</h4></div>';
-            }
-        })
-        .catch(err => {
-            console.error('Error loading class stats:', err);
-            statsContainer.innerHTML = '<div class="p-4 bg-gray-50 rounded-lg border border-gray-200"><h4 class="font-medium text-red-600">Error loading statistics</h4></div>';
-        });
-}
 
 function displayClassStats(stats) {
     const statsContainer = document.getElementById('classStats');
@@ -1605,7 +1563,6 @@ function displayRecentActivityChart(recentActivity) {
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             loadParents();
-            loadClassStats();
             loadClasses();
             loadSchoolStatistics();
             loadDetailedClassStatistics();

@@ -104,6 +104,8 @@
                     Manage your children's participation in the dyslexia research study. You can add new children, 
                     monitor their progress, and access their study results.
                 </p>
+
+                
                 
                 <!-- Add Child Button -->
                 <div class="flex flex-col sm:flex-row gap-4">
@@ -122,78 +124,6 @@
                         </svg>
                         Refresh
                     </button>
-                </div>
-            </div>
-
-            <!-- Children Performance Overview -->
-            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-                <h3 class="text-xl font-semibold text-gray-800 mb-4">Children Performance Overview</h3>
-                
-                <!-- Performance Summary Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6" id="performanceOverviewCards">
-                    <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                        <div class="flex items-center">
-                            <div class="p-2 bg-blue-100 rounded-lg">
-                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-                                </svg>
-                            </div>
-                            <div class="ml-3">
-                                <p class="text-sm font-medium text-gray-600">Total Children</p>
-                                <p class="text-2xl font-semibold text-gray-900" id="totalChildren">-</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="p-4 bg-green-50 rounded-lg border border-green-200">
-                        <div class="flex items-center">
-                            <div class="p-2 bg-green-100 rounded-lg">
-                                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            </div>
-                            <div class="ml-3">
-                                <p class="text-sm font-medium text-gray-600">Active Children</p>
-                                <p class="text-2xl font-semibold text-gray-900" id="activeChildren">-</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                        <div class="flex items-center">
-                            <div class="p-2 bg-yellow-100 rounded-lg">
-                                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-                                </svg>
-                            </div>
-                            <div class="ml-3">
-                                <p class="text-sm font-medium text-gray-600">Avg. Progress</p>
-                                <p class="text-2xl font-semibold text-gray-900" id="avgProgress">-</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="p-4 bg-purple-50 rounded-lg border border-purple-200">
-                        <div class="flex items-center">
-                            <div class="p-2 bg-purple-100 rounded-lg">
-                                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                                </svg>
-                            </div>
-                            <div class="ml-3">
-                                <p class="text-sm font-medium text-gray-600">Tasks Completed</p>
-                                <p class="text-2xl font-semibold text-gray-900" id="tasksCompleted">-</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Children Progress Chart -->
-                <div class="mb-6">
-                    <h4 class="text-lg font-semibold text-gray-800 mb-3">Children Progress Overview</h4>
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <canvas id="childrenProgressChart" width="400" height="200"></canvas>
-                    </div>
                 </div>
             </div>
 
@@ -462,7 +392,6 @@
                 showBackToParentButton();
             } else {
                 loadChildren();
-                loadParentStatistics(); // Load comprehensive parent statistics
             }
         });
 
@@ -620,93 +549,6 @@ function displayChildren(children) {
     childrenList.classList.remove('hidden');
 }
 
-// Load comprehensive parent statistics
-async function loadParentStatistics() {
-    try {
-        const response = await fetch('/api/parent/statistics');
-        const data = await response.json();
-        
-        if (data.success) {
-            displayParentOverview(data.data);
-            displayChildrenProgressChart(data.data.children_stats);
-        } else {
-            console.error('Failed to load parent statistics:', data.message);
-        }
-    } catch (error) {
-        console.error('Error loading parent statistics:', error);
-    }
-}
-
-function displayParentOverview(data) {
-    const childrenStats = data.children_stats || [];
-    
-    // Update overview cards
-    document.getElementById('totalChildren').textContent = data.children_count || 0;
-    
-    const activeChildren = childrenStats.filter(child => child.child_info.is_active).length;
-    document.getElementById('activeChildren').textContent = activeChildren;
-    
-    // Calculate average progress
-    const avgProgress = childrenStats.length > 0 
-        ? (childrenStats.reduce((sum, child) => sum + child.overall_progress, 0) / childrenStats.length).toFixed(1)
-        : 0;
-    document.getElementById('avgProgress').textContent = avgProgress + '%';
-    
-    // Calculate total tasks completed
-    const totalTasksCompleted = childrenStats.reduce((sum, child) => {
-        return sum + child.task_progress.filter(task => task.status === 'Completed').length;
-    }, 0);
-    document.getElementById('tasksCompleted').textContent = totalTasksCompleted;
-}
-
-function displayChildrenProgressChart(childrenStats) {
-    const ctx = document.getElementById('childrenProgressChart').getContext('2d');
-    
-    const labels = childrenStats.map(child => child.child_info.name);
-    const progressData = childrenStats.map(child => child.overall_progress);
-    
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Progress (%)',
-                data: progressData,
-                backgroundColor: progressData.map(progress => {
-                    if (progress >= 80) return 'rgba(16, 185, 129, 0.8)';
-                    if (progress >= 50) return 'rgba(245, 158, 11, 0.8)';
-                    return 'rgba(239, 68, 68, 0.8)';
-                }),
-                borderColor: progressData.map(progress => {
-                    if (progress >= 80) return 'rgba(16, 185, 129, 1)';
-                    if (progress >= 50) return 'rgba(245, 158, 11, 1)';
-                    return 'rgba(239, 68, 68, 1)';
-                }),
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 100,
-                    ticks: {
-                        callback: function(value) {
-                            return value + '%';
-                        }
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: false
-                }
-            }
-        }
-    });
-}
-
 async function viewChildDetails(childId){
     try{
         const res = await fetch(`/api/parent/child-details?child_id=${childId}`);
@@ -764,8 +606,18 @@ function loginChildDirectly(childId) {
         if (data.success) {
             // Set flag to indicate we're viewing as child
             sessionStorage.setItem('viewing_as_child', 'true');
-            // Successfully logged in child, redirect to student dashboard
-            window.location.href = '/participant-dashboard';
+            
+            // Check if child needs to complete consent or profile setup
+            if (data.needs_consent) {
+                // Redirect to consent page
+                window.location.href = `/consent?child_id=${childId}`;
+            } else if (data.needs_profile_setup) {
+                // Redirect to profile setup page
+                window.location.href = '/profile-setup';
+            } else {
+                // Both consent and demographics are complete, go to dashboard
+                window.location.href = '/participant-dashboard';
+            }
         } else {
             // Show error message
             alert('Error: ' + data.message);
