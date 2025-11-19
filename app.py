@@ -1356,6 +1356,29 @@ def get_school_parents():
 
 # ---------- Classes & Sections APIs ----------
 
+def _delete_section_and_dependents(cur, section_id: int):
+    """Delete a section, its students, and related data. Expects valid cursor."""
+    # Delete students (children) tied to this section so cascading FK cleanup runs
+    cur.execute("SELECT id FROM users WHERE section_id=%s AND user_type='child'", (section_id,))
+    child_rows = cur.fetchall() or []
+    if child_rows:
+        placeholders = ','.join(['%s'] * len(child_rows))
+        child_ids = [row[0] for row in child_rows]
+        cur.execute(f"DELETE FROM users WHERE id IN ({placeholders})", child_ids)
+    # Remove assigned assessments explicitly (FK has cascade but this keeps rowcount accurate)
+    cur.execute("DELETE FROM section_assessments WHERE section_id=%s", (section_id,))
+    # Finally delete the section itself
+    cur.execute("DELETE FROM class_sections WHERE id=%s", (section_id,))
+
+
+def _delete_class_and_dependents(cur, class_id: int):
+    """Delete a class, all of its sections, and students/assessments."""
+    cur.execute("SELECT id FROM class_sections WHERE class_id=%s", (class_id,))
+    section_rows = cur.fetchall() or []
+    for row in section_rows:
+        _delete_section_and_dependents(cur, row[0])
+    cur.execute("DELETE FROM school_classes WHERE id=%s", (class_id,))
+
 @app.route('/api/school/classes', methods=['GET'])
 def list_classes():
     auth = ensure_school_logged_in()
@@ -1415,6 +1438,30 @@ def create_class():
         print(f"Create class outer error: {e}")
         return jsonify({'success': False, 'message': 'Internal server error'}), 500
 
+
+@app.route('/api/school/classes/<int:class_id>', methods=['DELETE'])
+def delete_class(class_id: int):
+    auth = ensure_school_logged_in()
+    if auth:
+        return auth
+    conn, cur = get_db_cursor()
+    if not conn:
+        return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+    try:
+        # Ensure the class belongs to the school
+        cur.execute("SELECT id FROM school_classes WHERE id=%s AND school_id=%s", (class_id, session['school_id']))
+        if not cur.fetchone():
+            return jsonify({'success': False, 'message': 'Not found'}), 404
+        _delete_class_and_dependents(cur, class_id)
+        conn.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        conn.rollback()
+        print(f"Delete class error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to delete class'}), 500
+    finally:
+        cur.close(); conn.close()
+
 @app.route('/api/school/classes/<int:class_id>/sections', methods=['GET'])
 def list_sections(class_id: int):
     auth = ensure_school_logged_in()
@@ -1471,6 +1518,36 @@ def create_section(class_id: int):
     except Exception as e:
         print(f"Create section outer error: {e}")
         return jsonify({'success': False, 'message': 'Internal server error'}), 500
+
+
+@app.route('/api/school/sections/<int:section_id>', methods=['DELETE'])
+def delete_section(section_id: int):
+    auth = ensure_school_logged_in()
+    if auth:
+        return auth
+    conn, cur = get_db_cursor()
+    if not conn:
+        return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+    try:
+        cur.execute(
+            """
+            SELECT s.id FROM class_sections s
+            JOIN school_classes c ON c.id = s.class_id
+            WHERE s.id=%s AND c.school_id=%s
+            """,
+            (section_id, session['school_id'])
+        )
+        if not cur.fetchone():
+            return jsonify({'success': False, 'message': 'Not found'}), 404
+        _delete_section_and_dependents(cur, section_id)
+        conn.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        conn.rollback()
+        print(f"Delete section error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to delete section'}), 500
+    finally:
+        cur.close(); conn.close()
 
 # ---------- Students management ----------
 
@@ -1547,6 +1624,32 @@ def add_student_to_section(section_id: int):
     except Exception as e:
         print(f"Add student outer error: {e}")
         return jsonify({'success': False, 'message': 'Internal server error'}), 500
+
+
+@app.route('/api/school/students/<int:student_id>', methods=['DELETE'])
+def delete_student(student_id: int):
+    auth = ensure_school_logged_in()
+    if auth:
+        return auth
+    conn, cur = get_db_cursor()
+    if not conn:
+        return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+    try:
+        cur.execute(
+            "SELECT id FROM users WHERE id=%s AND user_type='child' AND school_id=%s",
+            (student_id, session['school_id'])
+        )
+        if not cur.fetchone():
+            return jsonify({'success': False, 'message': 'Not found'}), 404
+        cur.execute("DELETE FROM users WHERE id=%s", (student_id,))
+        conn.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        conn.rollback()
+        print(f"Delete student error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to delete student'}), 500
+    finally:
+        cur.close(); conn.close()
 
 @app.route('/api/school/sections/<int:section_id>/students/bulk', methods=['POST'])
 def bulk_add_students(section_id: int):
@@ -1666,6 +1769,45 @@ def assign_assessments(section_id: int):
     except Exception as e:
         print(f"Assign assessments outer error: {e}")
         return jsonify({'success': False, 'message': 'Internal server error'}), 500
+
+
+@app.route('/api/school/sections/<int:section_id>/assessments', methods=['DELETE'])
+def delete_assigned_assessment(section_id: int):
+    auth = ensure_school_logged_in()
+    if auth:
+        return auth
+    data = request.get_json() or {}
+    task_name = (data.get('task_name') or '').strip()
+    if not task_name:
+        return jsonify({'success': False, 'message': 'task_name is required'}), 400
+    conn, cur = get_db_cursor()
+    if not conn:
+        return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+    try:
+        cur.execute(
+            """
+            SELECT s.id FROM class_sections s
+            JOIN school_classes c ON c.id = s.class_id
+            WHERE s.id=%s AND c.school_id=%s
+            """,
+            (section_id, session['school_id'])
+        )
+        if not cur.fetchone():
+            return jsonify({'success': False, 'message': 'Not found'}), 404
+        cur.execute(
+            "DELETE FROM section_assessments WHERE section_id=%s AND task_name=%s",
+            (section_id, task_name)
+        )
+        if cur.rowcount == 0:
+            return jsonify({'success': False, 'message': 'Assignment not found'}), 404
+        conn.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        conn.rollback()
+        print(f"Delete assessment error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to delete assessment'}), 500
+    finally:
+        cur.close(); conn.close()
 
 @app.route('/api/school/class-stats', methods=['GET'])
 def class_stats():

@@ -1704,6 +1704,7 @@ function displayRecentActivityChart(recentActivity) {
                                 <div class="flex flex-col gap-2 min-w-fit">
                                     <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors add-section-btn" data-classid="${cls.id}">Add Section</button>
                                     <button class="px-4 py-2 bg-gray-700 hover:bg-gray-800 text-white text-sm rounded transition-colors refresh-sections-btn" data-classid="${cls.id}">Refresh</button>
+                                    <button class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors delete-class-btn" data-classid="${cls.id}" data-classname="${cls.name}">Delete Class</button>
                                 </div>
                             </div>
                         `;
@@ -1717,6 +1718,35 @@ function displayRecentActivityChart(recentActivity) {
                 });
         }
 
+        async function deleteClass(classId, className) {
+            if (!classId) return;
+            const confirmed = confirm(`Delete ${className}? This removes all sections, students, and assignments in it.`);
+            if (!confirmed) return;
+            try {
+                const res = await fetch(`/api/school/classes/${classId}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (!data.success) {
+                    alert(data.message || 'Failed to delete class');
+                    return;
+                }
+                if (currentSectionId) {
+                    currentSectionId = null;
+                    const sectionPlaceholder = document.getElementById('sectionPlaceholder');
+                    if (sectionDetail && sectionPlaceholder) {
+                        sectionDetail.classList.add('hidden');
+                        sectionPlaceholder.classList.remove('hidden');
+                    }
+                }
+                loadClasses();
+                loadClassStats();
+                loadDetailedClassStatistics();
+                loadSchoolStatistics();
+            } catch (err) {
+                console.error('Error deleting class:', err);
+                alert('Network error while deleting class');
+            }
+        }
+
         function loadSections(classId) {
             fetch(`/api/school/classes/${classId}/sections`)
                 .then(res => res.json())
@@ -1726,17 +1756,59 @@ function displayRecentActivityChart(recentActivity) {
                     if (!data.sections || data.sections.length === 0) { mount.textContent = 'No sections yet'; return; }
                     mount.innerHTML = '';
                     data.sections.forEach(sec => {
+                        const row = document.createElement('div');
+                        row.className = 'flex items-center justify-between mb-2 px-3 py-2 border border-gray-200 rounded bg-white shadow-sm';
+
                         const btn = document.createElement('button');
-                        btn.className = 'mr-3 mb-2 px-4 py-2 border border-gray-300 rounded hover:bg-blue-50 hover:border-blue-400 transition-colors text-sm font-medium';
+                        btn.className = 'flex-1 text-left font-medium text-gray-800 hover:text-blue-700';
                         btn.textContent = `Section ${sec.name}`;
                         btn.addEventListener('click', () => openSection(sec.id, `${sec.name}`));
-                        mount.appendChild(btn);
+
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.className = 'text-xs font-semibold text-red-600 hover:text-red-700';
+                        deleteBtn.textContent = 'Delete';
+                        deleteBtn.addEventListener('click', (event) => {
+                            event.stopPropagation();
+                            deleteSection(sec.id, classId, sec.name);
+                        });
+
+                        row.appendChild(btn);
+                        row.appendChild(deleteBtn);
+                        mount.appendChild(row);
                     });
                 })
                 .catch(() => {
                     const mount = document.getElementById(`sections-of-${classId}`);
                     if (mount) mount.textContent = 'Failed to load sections';
                 });
+        }
+
+        async function deleteSection(sectionId, classId, sectionName) {
+            const confirmed = confirm(`Delete Section ${sectionName}? All students and assigned tasks will be removed.`);
+            if (!confirmed) return;
+            try {
+                const res = await fetch(`/api/school/sections/${sectionId}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (!data.success) {
+                    alert(data.message || 'Failed to delete section');
+                    return;
+                }
+                if (currentSectionId && parseInt(sectionId, 10) === parseInt(currentSectionId, 10)) {
+                    currentSectionId = null;
+                    const sectionPlaceholder = document.getElementById('sectionPlaceholder');
+                    if (sectionDetail && sectionPlaceholder) {
+                        sectionDetail.classList.add('hidden');
+                        sectionPlaceholder.classList.remove('hidden');
+                    }
+                }
+                loadSections(classId);
+                loadClassStats();
+                loadDetailedClassStatistics();
+                loadSchoolStatistics();
+            } catch (err) {
+                console.error('Error deleting section:', err);
+                alert('Network error while deleting section');
+            }
         }
 
         function bindSectionButtons() {
@@ -1750,6 +1822,13 @@ function displayRecentActivityChart(recentActivity) {
             classesContainer.querySelectorAll('.refresh-sections-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     loadSections(btn.getAttribute('data-classid'));
+                });
+            });
+            classesContainer.querySelectorAll('.delete-class-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const classId = btn.getAttribute('data-classid');
+                    const className = btn.getAttribute('data-classname') || 'this class';
+                    deleteClass(classId, className);
                 });
             });
         }
@@ -1871,14 +1950,51 @@ function displayRecentActivityChart(recentActivity) {
             studentsContainer.innerHTML = '';
             data.students.forEach(st => {
                 const row = document.createElement('div');
-                row.className = 'p-3 bg-gray-50 rounded border border-gray-200 flex justify-between';
-                row.innerHTML = `<div>
+                row.className = 'p-3 bg-gray-50 rounded border border-gray-200 flex items-center justify-between gap-4';
+
+                const info = document.createElement('div');
+                info.innerHTML = `
                     <div class="font-medium text-gray-800">${st.name}</div>
                     <div class="text-sm text-gray-600">${st.email || ''}</div>
-                </div>
-                <div class="text-sm ${st.is_active ? 'text-green-700' : 'text-yellow-700'}">${st.is_active ? 'Active' : 'Inactive'}</div>`;
+                `;
+
+                const status = document.createElement('div');
+                status.className = `text-sm font-semibold ${st.is_active ? 'text-green-700' : 'text-yellow-700'}`;
+                status.textContent = st.is_active ? 'Active' : 'Inactive';
+
+                const actions = document.createElement('div');
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'text-sm font-semibold text-red-600 hover:text-red-700';
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.addEventListener('click', () => deleteStudent(st.id, st.name));
+                actions.appendChild(deleteBtn);
+
+                row.appendChild(info);
+                row.appendChild(status);
+                row.appendChild(actions);
                 studentsContainer.appendChild(row);
             });
+        }
+
+        async function deleteStudent(studentId, studentName) {
+            if (!currentSectionId) return;
+            const confirmed = confirm(`Remove ${studentName || 'this student'} from the section? This cannot be undone.`);
+            if (!confirmed) return;
+            try {
+                const res = await fetch(`/api/school/students/${studentId}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (!data.success) {
+                    alert(data.message || 'Failed to delete student');
+                    return;
+                }
+                loadStudents(currentSectionId);
+                loadClassStats();
+                loadDetailedClassStatistics();
+                loadSchoolStatistics();
+            } catch (err) {
+                console.error('Error deleting student:', err);
+                alert('Network error while deleting student');
+            }
         }
 
         async function loadSectionAssessments(sectionId) {
@@ -1890,11 +2006,49 @@ function displayRecentActivityChart(recentActivity) {
             assessmentsContainer.innerHTML = '';
             data.assessments.forEach(a => {
                 const row = document.createElement('div');
-                row.className = 'p-3 bg-gray-50 rounded border border-gray-200';
+                row.className = 'p-3 bg-gray-50 rounded border border-gray-200 flex items-center justify-between gap-4';
                 const dateStr = a.assigned_at ? new Date(a.assigned_at).toLocaleString() : '';
-                row.textContent = `${a.task_name} ${dateStr ? '(' + dateStr + ')' : ''}`;
+
+                const info = document.createElement('div');
+                info.innerHTML = `
+                    <div class="font-medium text-gray-800">${a.task_name}</div>
+                    ${dateStr ? `<div class="text-xs text-gray-500">${dateStr}</div>` : ''}
+                `;
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'text-sm font-semibold text-red-600 hover:text-red-700';
+                deleteBtn.textContent = 'Remove';
+                deleteBtn.addEventListener('click', () => deleteAssessment(a.task_name));
+
+                row.appendChild(info);
+                row.appendChild(deleteBtn);
                 assessmentsContainer.appendChild(row);
             });
+        }
+
+        async function deleteAssessment(taskName) {
+            if (!currentSectionId || !taskName) return;
+            const confirmed = confirm(`Remove ${taskName} from this section?`);
+            if (!confirmed) return;
+            try {
+                const res = await fetch(`/api/school/sections/${currentSectionId}/assessments`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ task_name: taskName })
+                });
+                const data = await res.json();
+                if (!data.success) {
+                    alert(data.message || 'Failed to remove assessment');
+                    return;
+                }
+                loadSectionAssessments(currentSectionId);
+                loadSchoolStatistics();
+                loadClassStats();
+                loadDetailedClassStatistics();
+            } catch (err) {
+                console.error('Error deleting assessment:', err);
+                alert('Network error while removing assessment');
+            }
         }
 
         addStudentBtn.addEventListener('click', function() {
