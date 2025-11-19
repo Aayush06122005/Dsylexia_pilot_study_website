@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS schools (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
+select * from schools;
+
 
 -- Create users table (for parents and children)
 CREATE TABLE IF NOT EXISTS users (
@@ -31,6 +33,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
 ALTER TABLE users 
 ADD COLUMN class VARCHAR(50) DEFAULT NULL;
+select * from users;
 
 -- Add academic year and class tracking
 ALTER TABLE users 
@@ -56,6 +59,7 @@ CREATE TABLE IF NOT EXISTS school_parents (
     UNIQUE KEY unique_school_parent (school_id, parent_id)
 );
 
+
 -- Create parent_children table to track parent-child relationships
 CREATE TABLE IF NOT EXISTS parent_children (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -67,30 +71,6 @@ CREATE TABLE IF NOT EXISTS parent_children (
     UNIQUE KEY unique_parent_child (parent_id, child_id)
 );
 
--- Insert a sample school
-INSERT INTO schools (name, email, password_hash, address, phone) VALUES
-('Sample School', 'school@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/HS.i8eO', '123 School Street, City', '555-0123');
-
--- Insert sample parents linked to the school
-INSERT INTO users (name, email, password_hash, is_18_or_above, user_type, school_id) VALUES
-('John Parent', 'parent1@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/HS.i8eO', TRUE, 'parent', 1),
-('Jane Parent', 'parent2@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/HS.i8eO', TRUE, 'parent', 1);
-
--- Link parents to school
-INSERT INTO school_parents (school_id, parent_id) VALUES
-(1, 1),
-(1, 2);
-
--- Insert sample children linked to parents
-INSERT INTO users (name, email, password_hash, is_18_or_above, user_type, parent_id) VALUES
-('Child One', 'child1@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/HS.i8eO', TRUE, 'child', 1),
-('Child Two', 'child2@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/HS.i8eO', TRUE, 'child', 2);
-
--- Link children to parents
-INSERT INTO parent_children (parent_id, child_id) VALUES
-(1, 3),
-(2, 4);
-
 -- Create consent table to store consent data
 CREATE TABLE IF NOT EXISTS consent_data (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -101,7 +81,6 @@ CREATE TABLE IF NOT EXISTS consent_data (
     user_agent TEXT,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
-
 
 -- Create demographics table to store profile setup data
 CREATE TABLE IF NOT EXISTS demographics (
@@ -151,13 +130,13 @@ BEGIN
 END$$
 DELIMITER ;
 
-CREATE TABLE IF NOT EXISTS audio_recordings (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    attempt_id INT NOT NULL,
-    filename VARCHAR(255) NOT NULL,
-    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (attempt_id) REFERENCES user_task_attempts(id) ON DELETE CASCADE
-);
+-- CREATE TABLE IF NOT EXISTS audio_recordings (
+--     id INT AUTO_INCREMENT PRIMARY KEY,
+--     attempt_id INT NOT NULL,
+--     filename VARCHAR(255) NOT NULL,
+--     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     FOREIGN KEY (attempt_id) REFERENCES user_task_attempts(id) ON DELETE CASCADE
+-- );
 
 CREATE TABLE IF NOT EXISTS typing_progress (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -176,11 +155,10 @@ CREATE TABLE IF NOT EXISTS comprehension_progress (
     q2 VARCHAR(255),
     q3 TEXT,
     status ENUM('In Progress', 'Completed') DEFAULT 'In Progress',
-    score INT DEFAULT 0,
-    max_score INT DEFAULT 2,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (attempt_id) REFERENCES user_task_attempts(id) ON DELETE CASCADE
 );
+ALTER TABLE comprehension_progress ADD COLUMN score INT DEFAULT 0, ADD COLUMN max_score INT DEFAULT 2;
 
 -- Create aptitude_progress table for storing aptitude task data
 CREATE TABLE IF NOT EXISTS aptitude_progress (
@@ -191,7 +169,6 @@ CREATE TABLE IF NOT EXISTS aptitude_progress (
     verbal_ability_score INT DEFAULT 0,
     spatial_reasoning_score INT DEFAULT 0,
     total_score INT DEFAULT 0,
-    max_score INT DEFAULT 4,
     status ENUM('In Progress', 'Completed') DEFAULT 'In Progress',
     answers JSON NULL,
     current_section VARCHAR(50) NULL,
@@ -200,6 +177,11 @@ CREATE TABLE IF NOT EXISTS aptitude_progress (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (attempt_id) REFERENCES user_task_attempts(id) ON DELETE CASCADE
 );
+ALTER TABLE aptitude_progress ADD COLUMN max_score INT DEFAULT 4;
+-- Update existing records to have proper max_score values
+UPDATE comprehension_progress SET max_score = 2 WHERE max_score = 0;
+UPDATE mathematical_comprehension_progress SET max_score = 3 WHERE max_score = 0;
+UPDATE aptitude_progress SET max_score = 4 WHERE max_score = 0;
 
 CREATE TABLE IF NOT EXISTS writing_samples (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -217,11 +199,10 @@ CREATE TABLE IF NOT EXISTS mathematical_comprehension_progress (
     q2 TEXT,
     q3 TEXT,
     status ENUM('In Progress', 'Completed') DEFAULT 'In Progress',
-    score INT DEFAULT 0,
-    max_score INT DEFAULT 3,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (attempt_id) REFERENCES user_task_attempts(id) ON DELETE CASCADE
 );
+ALTER TABLE mathematical_comprehension_progress ADD COLUMN score INT DEFAULT 0, ADD COLUMN max_score INT DEFAULT 3;
 
 CREATE TABLE IF NOT EXISTS tasks (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -461,7 +442,7 @@ VALUES
 CREATE TABLE IF NOT EXISTS aptitude_tasks (
     id INT AUTO_INCREMENT PRIMARY KEY,
     task_name VARCHAR(255) NOT NULL,
-	class_level INT NOT NULL CHECK (class_level BETWEEN 1 AND 12),
+    class_level INT NOT NULL CHECK (class_level BETWEEN 1 AND 12),
     difficulty_level ENUM('Easy', 'Medium', 'Hard') NOT NULL,
     
     -- Logical Reasoning
@@ -763,7 +744,7 @@ VALUES
  'What is the particle\'s position when it stops?',
  '["0","1","2","3"]',
  '["1","2","3","4"]',
- 'number', 
+ 'number',
  '3', '2', '-1',
  'Use differentiation to find velocity and position.', 6),
 
@@ -775,7 +756,7 @@ VALUES
  'Given P(t) = 100e^{2t}, what is the approximate population after 1 hour? (Use e ≈ 2.72)',
  '["Linear","Quadratic","Exponential","Logarithmic"]',
  '["100 bacteria/hr","200 bacteria/hr","50 bacteria/hr","0 bacteria/hr"]',
- 'number', 
+ 'number',
  'Exponential', '200 bacteria/hr', '739',
  'Understand exponential growth and apply the model.', 6);
 
@@ -856,18 +837,6 @@ VALUES
 'The Berlin Wall, which had symbolised the division between the capitalist and the communist worlds, was felled by the people in November 1989. This event was followed by the disintegration of the Soviet Union itself, which formally ended the Cold War. The internal weaknesses of the Soviet economic and political system, combined with the reforms (perestroika and glasnost) introduced by Mikhail Gorbachev, led to this collapse. This marked the end of bipolarity in global politics.',
 'Write about how the fall of the Berlin Wall changed world politics.', 0, 91, 15);
 
-CREATE TABLE IF NOT EXISTS user_badge_notifications (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    badge_name VARCHAR(255) NOT NULL,
-    badge_icon VARCHAR(10) NOT NULL,
-    badge_description TEXT NOT NULL,
-    earned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    notified_at TIMESTAMP NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_badge_user (user_id, badge_name)
-);
-
 CREATE TABLE IF NOT EXISTS user_task_attempts (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -880,6 +849,7 @@ CREATE TABLE IF NOT EXISTS user_task_attempts (
     FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
     UNIQUE KEY unique_attempt (user_id, task_id, attempt_number)
 );
+
 
 CREATE TABLE IF NOT EXISTS suggested_tasks (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -941,3 +911,20 @@ CREATE TABLE IF NOT EXISTS section_assessments (
     FOREIGN KEY (task_name) REFERENCES tasks(task_name) ON DELETE CASCADE,
     UNIQUE KEY unique_section_task (section_id, task_name)
 );
+
+CREATE TABLE IF NOT EXISTS user_badge_notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    badge_name VARCHAR(255) NOT NULL,
+    badge_icon VARCHAR(10) NOT NULL,
+    badge_description TEXT NOT NULL,
+    earned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    notified_at TIMESTAMP NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_badge_user (user_id, badge_name)
+);
+
+-- select * from user_badge_notifications;
+-- SET FOREIGN_KEY_CHECKS = 0;
+-- TRUNCATE TABLE section_assessments;
+-- SET FOREIGN_KEY_CHECKS = 1;	
