@@ -1012,25 +1012,26 @@
                 
                 const createdDate = new Date(parent.created_at).toLocaleDateString();
                 
-                // Build children display
+                // Generate children HTML
                 let childrenHtml = '';
                 if (parent.children && parent.children.length > 0) {
                     childrenHtml = '<div class="mt-3 pt-3 border-t border-gray-300">';
                     childrenHtml += '<p class="text-sm font-semibold text-gray-700 mb-2">Children:</p>';
-                    childrenHtml += '<div class="space-y-2">';
+                    childrenHtml += '<ul class="space-y-1">';
                     parent.children.forEach(child => {
-                        const classSection = child.class_name 
-                            ? `${child.class_name}${child.academic_year ? ' (' + child.academic_year + ')' : ''} - Section ${child.section_name || 'N/A'}`
+                        const classSection = child.section_name && child.class_name 
+                            ? `${child.class_name} - Section ${child.section_name}${child.academic_year ? ` (${child.academic_year})` : ''}`
                             : 'Not assigned';
                         childrenHtml += `
-                            <div class="pl-3 border-l-2 border-blue-300">
-                                <p class="text-sm font-medium text-gray-800">${child.name || 'Unnamed'}</p>
-                                ${child.email ? `<p class="text-xs text-gray-600">${child.email}</p>` : ''}
-                                <p class="text-xs text-gray-500">${classSection}</p>
-                            </div>
+                            <li class="text-sm text-gray-600">
+                                <span class="font-medium">${child.name || 'Unnamed'}</span>
+                                ${child.email ? `<span class="text-gray-500"> (${child.email})</span>` : ''}
+                                <span class="text-gray-500"> - ${classSection}</span>
+                            </li>
                         `;
                     });
-                    childrenHtml += '</div></div>';
+                    childrenHtml += '</ul>';
+                    childrenHtml += '</div>';
                 } else {
                     childrenHtml = '<div class="mt-3 pt-3 border-t border-gray-300"><p class="text-sm text-gray-500 italic">No children registered</p></div>';
                 }
