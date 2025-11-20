@@ -555,11 +555,12 @@
             const q1 = form.q1.value;
             const q2 = form.q2.value;
             const q3 = form.q3.value;
-            console.log('Submitting reading comprehension:', {q1, q2, q3});
+            const taskId = getTaskId();
+            console.log('Submitting reading comprehension:', {q1, q2, q3, task_id: taskId});
             fetch('/api/submit-comprehension', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({q1, q2, q3, task_name: 'Reading Comprehension'})
+                body: JSON.stringify({q1, q2, q3, task_id: taskId, task_name: 'Reading Comprehension'})
             })
             .then(res => res.json())
             .then(resp => {

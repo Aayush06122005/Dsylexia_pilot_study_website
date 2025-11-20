@@ -8,10 +8,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='landing_style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-gray-50">
+<body class="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 text-gray-900">
     <!-- Header -->
-    <header class="primary-bg text-white py-4 shadow-lg">
-        <div class="content-wrapper flex justify-between items-center">
+    <header class="primary-bg text-white py-4 shadow-lg sticky top-0 z-40 backdrop-blur bg-blue-900/90">
+        <div class="content-wrapper flex justify-between items-center max-w-7xl mx-auto px-4">
             <div class="flex items-center">
                 <img src="{{ url_for('static', filename='admin.jpg') }}" alt="Research Study" class="h-12 w-12 rounded-full mr-4 object-cover">
                 <h1 class="text-xl md:text-2xl font-bold">Research Admin Portal</h1>
@@ -26,10 +26,13 @@
     </header>
 
     <!-- Main Content -->
-    <main class="content-wrapper py-8">
-        <!-- Dashboard Overview -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500">
+    <main class="py-8">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col lg:flex-row gap-6">
+            <!-- Left: KPIs + Charts in a compact scrollable column -->
+            <section class="lg:w-2/5 space-y-6">
+                <!-- Dashboard Overview -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-white/90 backdrop-blur p-4 rounded-2xl shadow border border-blue-100">
                 <div class="flex items-center">
                     <div class="p-2 bg-blue-100 rounded-lg mr-3">
                         <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -37,55 +40,55 @@
                         </svg>
                     </div>
                     <div>
-                        <h3 class="text-lg font-semibold text-gray-700">Total Schools</h3>
-                        <p class="text-3xl font-bold text-blue-600" id="totalSchools">0</p>
+                        <h3 class="text-xs font-semibold tracking-wide text-gray-500 uppercase">Total Schools</h3>
+                        <p class="mt-1 text-2xl font-bold text-blue-600" id="totalSchools">0</p>
                     </div>
                 </div>
             </div>
-            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-green-500">
+            <div class="bg-white/90 backdrop-blur p-4 rounded-2xl shadow border border-emerald-100">
                 <div class="flex items-center">
-                    <div class="p-2 bg-green-100 rounded-lg mr-3">
-                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="p-2 bg-emerald-50 rounded-lg mr-3">
+                        <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
                         </svg>
                     </div>
                     <div>
-                        <h3 class="text-lg font-semibold text-gray-700">Total Students</h3>
-                        <p class="text-3xl font-bold text-green-600" id="totalStudents">0</p>
+                        <h3 class="text-xs font-semibold tracking-wide text-gray-500 uppercase">Total Students</h3>
+                        <p class="mt-1 text-2xl font-bold text-emerald-600" id="totalStudents">0</p>
                     </div>
                 </div>
             </div>
-            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-yellow-500">
+            <div class="bg-white/90 backdrop-blur p-4 rounded-2xl shadow border border-amber-100">
                 <div class="flex items-center">
-                    <div class="p-2 bg-yellow-100 rounded-lg mr-3">
-                        <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="p-2 bg-amber-50 rounded-lg mr-3">
+                        <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                     </div>
                     <div>
-                        <h3 class="text-lg font-semibold text-gray-700">Active Students</h3>
-                        <p class="text-3xl font-bold text-yellow-600" id="activeStudents">0</p>
+                        <h3 class="text-xs font-semibold tracking-wide text-gray-500 uppercase">Active Students</h3>
+                        <p class="mt-1 text-2xl font-bold text-amber-600" id="activeStudents">0</p>
                     </div>
                 </div>
             </div>
-            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-purple-500">
+            <div class="bg-white/90 backdrop-blur p-4 rounded-2xl shadow border border-violet-100">
                 <div class="flex items-center">
-                    <div class="p-2 bg-purple-100 rounded-lg mr-3">
-                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="p-2 bg-violet-50 rounded-lg mr-3">
+                        <svg class="w-5 h-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
                         </svg>
                     </div>
                     <div>
-                        <h3 class="text-lg font-semibold text-gray-700">Avg. Completion</h3>
-                        <p class="text-3xl font-bold text-purple-600" id="avgCompletion">0%</p>
+                        <h3 class="text-xs font-semibold tracking-wide text-gray-500 uppercase">Avg. Completion</h3>
+                        <p class="mt-1 text-2xl font-bold text-violet-600" id="avgCompletion">0%</p>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Additional Statistics Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-indigo-500">
+        <div class="grid grid-cols-2 gap-4">
+            <div class="bg-white/90 backdrop-blur p-4 rounded-2xl shadow border border-indigo-100">
                 <div class="flex items-center">
                     <div class="p-2 bg-indigo-100 rounded-lg mr-3">
                         <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -93,12 +96,12 @@
                         </svg>
                     </div>
                     <div>
-                        <h3 class="text-lg font-semibold text-gray-700">Total Parents</h3>
-                        <p class="text-3xl font-bold text-indigo-600" id="totalParents">0</p>
+                        <h3 class="text-xs font-semibold tracking-wide text-gray-500 uppercase">Total Parents</h3>
+                        <p class="mt-1 text-2xl font-bold text-indigo-600" id="totalParents">0</p>
                     </div>
                 </div>
             </div>
-            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-red-500">
+            <div class="bg-white/90 backdrop-blur p-4 rounded-2xl shadow border border-rose-100">
                 <div class="flex items-center">
                     <div class="p-2 bg-red-100 rounded-lg mr-3">
                         <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -106,12 +109,12 @@
                         </svg>
                     </div>
                     <div>
-                        <h3 class="text-lg font-semibold text-gray-700">Data Quality</h3>
-                        <p class="text-3xl font-bold text-red-600" id="dataQuality">0%</p>
+                        <h3 class="text-xs font-semibold tracking-wide text-gray-500 uppercase">Data Quality</h3>
+                        <p class="mt-1 text-2xl font-bold text-rose-600" id="dataQuality">0%</p>
                     </div>
                 </div>
             </div>
-            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-teal-500">
+            <div class="bg-white/90 backdrop-blur p-4 rounded-2xl shadow border border-teal-100">
                 <div class="flex items-center">
                     <div class="p-2 bg-teal-100 rounded-lg mr-3">
                         <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -119,12 +122,12 @@
                         </svg>
                     </div>
                     <div>
-                        <h3 class="text-lg font-semibold text-gray-700">Tasks Completed</h3>
-                        <p class="text-3xl font-bold text-teal-600" id="tasksCompleted">0</p>
+                        <h3 class="text-xs font-semibold tracking-wide text-gray-500 uppercase">Tasks Completed</h3>
+                        <p class="mt-1 text-2xl font-bold text-teal-600" id="tasksCompleted">0</p>
                     </div>
                 </div>
             </div>
-            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-pink-500">
+            <div class="bg-white/90 backdrop-blur p-4 rounded-2xl shadow border border-pink-100">
                 <div class="flex items-center">
                     <div class="p-2 bg-pink-100 rounded-lg mr-3">
                         <svg class="w-6 h-6 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -132,176 +135,255 @@
                         </svg>
                     </div>
                     <div>
-                        <h3 class="text-lg font-semibold text-gray-700">Recent Activity</h3>
-                        <p class="text-3xl font-bold text-pink-600" id="recentActivity">0</p>
+                        <h3 class="text-xs font-semibold tracking-wide text-gray-500 uppercase">Recent Activity</h3>
+                        <p class="mt-1 text-2xl font-bold text-pink-600" id="recentActivity">0</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- System Overview Charts -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <h3 class="text-lg font-semibold text-gray-700 mb-4">School Performance</h3>
-                <canvas id="schoolPerformanceChart" width="400" height="200"></canvas>
+        <!-- System Overview Charts (compact, scrollable) -->
+        <div class="space-y-4 max-h-[420px] overflow-y-auto pr-2 custom-scrollbar">
+            <div class="bg-white/90 backdrop-blur p-4 rounded-2xl shadow border border-gray-200">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-semibold text-gray-800">School Performance</h3>
+                    <span class="text-[11px] uppercase tracking-wide text-gray-400">Schools vs active students</span>
+                </div>
+                <div class="h-56">
+                    <canvas id="schoolPerformanceChart" class="w-full h-full"></canvas>
+                </div>
             </div>
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <h3 class="text-lg font-semibold text-gray-700 mb-4">Task Completion Rates</h3>
-                <canvas id="taskCompletionChart" width="400" height="200"></canvas>
+            <div class="bg-white/90 backdrop-blur p-4 rounded-2xl shadow border border-gray-200">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-semibold text-gray-800">Task Completion Rates</h3>
+                    <span class="text-[11px] uppercase tracking-wide text-gray-400">Across all tasks</span>
+                </div>
+                <div class="h-56">
+                    <canvas id="taskCompletionChart" class="w-full h-full"></canvas>
+                </div>
+            </div>
+            <div class="bg-white/90 backdrop-blur p-4 rounded-2xl shadow border border-gray-200">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-semibold text-gray-800">Class Distribution</h3>
+                    <span class="text-[11px] uppercase tracking-wide text-gray-400">Students per class</span>
+                </div>
+                <div class="h-56">
+                    <canvas id="classDistributionChart" class="w-full h-full"></canvas>
+                </div>
+            </div>
+            <div class="bg-white/90 backdrop-blur p-4 rounded-2xl shadow border border-gray-200">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-semibold text-gray-800">Recent Activity (30 Days)</h3>
+                    <span class="text-[11px] uppercase tracking-wide text-gray-400">Updates & completions</span>
+                </div>
+                <div class="h-56">
+                    <canvas id="recentActivityChart" class="w-full h-full"></canvas>
+                </div>
             </div>
         </div>
+            </section>
 
-        <!-- Demographics and Class Distribution -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <h3 class="text-lg font-semibold text-gray-700 mb-4">Class Distribution</h3>
-                <canvas id="classDistributionChart" width="400" height="200"></canvas>
-            </div>
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <h3 class="text-lg font-semibold text-gray-700 mb-4">Recent Activity (30 Days)</h3>
-                <canvas id="recentActivityChart" width="400" height="200"></canvas>
-            </div>
-        </div>
-
+            <!-- Right: Tabbed management area with its own scroll -->
+            <section class="lg:w-3/5">
         <!-- Navigation Tabs -->
-        <div class="bg-white rounded-lg shadow-md mb-8">
-            <div class="border-b border-gray-200">
-                <nav class="flex space-x-8 px-6" aria-label="Tabs">
-                    <button class="tab-button active py-4 px-1 border-b-2 border-blue-500 text-blue-600 font-medium" data-tab="users">
+        <div class="bg-white rounded-2xl shadow-lg border border-gray-200">
+            <div class="border-b border-gray-200 sticky top-[4.5rem] lg:top-0 bg-white/95 z-30 rounded-t-2xl">
+                <nav class="flex flex-wrap gap-4 px-6 pt-3" aria-label="Tabs">
+                    <button class="tab-button active py-3 px-1 border-b-2 border-blue-500 text-blue-700 font-medium text-sm" data-tab="users">
                         User Management
                     </button>
-                    <button class="tab-button py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium" data-tab="data">
+                    <button class="tab-button py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-800 font-medium text-sm" data-tab="data">
                         Data Monitoring
                     </button>
-                    <button class="tab-button py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium" data-tab="export">
+                    <button class="tab-button py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-800 font-medium text-sm" data-tab="export">
                         Dataset Export
                     </button>
-                    <button class="tab-button py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium" data-tab="tasks">
+                    <button class="tab-button py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-800 font-medium text-sm" data-tab="tasks">
                         Task Management
                     </button>
-                    <button class="tab-button py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium" data-tab="suggestions">
+                    <button class="tab-button py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-800 font-medium text-sm" data-tab="suggestions">
                         School Suggestions
                     </button>
                 </nav>
             </div>
 
             <!-- Tab Content -->
-            <div class="p-6">
+            <div class="p-6 max-h-[calc(100vh-210px)] overflow-y-auto custom-scrollbar">
                 <!-- User Management Tab -->
                 <div id="users-tab" class="tab-content active">
-                    <div class="flex justify-between items-center mb-6">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+                        <div>
+                            <h2 class="text-xl font-semibold text-gray-900">User Management</h2>
+                            <p class="text-sm text-gray-500 mt-1">Quickly browse and manage participants, parents, and schools.</p>
+                        </div>
+                        <!-- Search and Filter -->
+                        <div class="flex flex-wrap gap-2">
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-3 flex items-center text-gray-400">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M5 11a6 6 0 1112 0 6 6 0 01-12 0z" />
+                                    </svg>
+                                </span>
+                                <input type="text" id="userSearch" placeholder="Search by name or email"
+                                       class="pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-sm text-gray-900 placeholder:text-gray-400">
+                            </div>
+                            <button id="searchBtn" class="inline-flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-500 shadow-sm">
+                                Search
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- User sub-tabs -->
+                    <div class="mb-4 border-b border-gray-200">
+                        <nav class="flex flex-wrap gap-4" aria-label="User subsections">
+                            <button class="user-subtab-button border-b-2 border-blue-500 text-blue-700 pb-3 text-sm font-medium"
+                                    data-subtab="children">
+                                Children
+                            </button>
+                            <button class="user-subtab-button border-b-2 border-transparent text-gray-500 hover:text-gray-800 pb-3 text-sm font-medium"
+                                    data-subtab="parents">
+                                Parents
+                            </button>
+                            <button class="user-subtab-button border-b-2 border-transparent text-gray-500 hover:text-gray-800 pb-3 text-sm font-medium"
+                                    data-subtab="schools">
+                                Schools
+                            </button>
+                            <button class="user-subtab-button border-b-2 border-transparent text-gray-500 hover:text-gray-800 pb-3 text-sm font-medium"
+                                    data-subtab="hierarchy">
+                                Hierarchy View
+                            </button>
+                        </nav>
+                    </div>
+
+                    <div class="space-y-6">
+                        <!-- Children -->
+                        <div id="users-subtab-children" class="user-subtab-content">
+                            <div class="bg-white/90 backdrop-blur rounded-xl shadow-sm border border-gray-200 p-4">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h3 class="text-base font-semibold text-gray-900">Children</h3>
+                                    <span class="text-xs text-gray-500">Progress and task status at a glance</span>
+                                </div>
+                                <div class="overflow-x-auto max-h-72 custom-scrollbar">
+                                    <table class="min-w-full bg-white border border-gray-200 rounded-lg text-xs">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                                <th class="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                                <th class="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                                <th class="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Age</th>
+                                                <th class="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Dyslexia Status</th>
+                                                <th class="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Progress</th>
+                                                <th class="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Task Status</th>
+                                                <th class="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="childrenTableBody" class="bg-white divide-y divide-gray-200">
+                                            <!-- Children data here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                         
-                        <h2 class="text-2xl font-bold text-gray-800">User Management</h2>
-                        <!-- <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700" onclick="refreshUserData()">
-                            Refresh Data
-                        </button> -->
-                    </div>
-                    
-                    <!-- Search and Filter -->
-                    <div class="mb-6 flex flex-wrap gap-4">
-                        <input type="text" id="userSearch" placeholder="Search users..." class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <button id="searchBtn" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">Search</button>
-                    </div>
-
-
-                  <!-- Children -->
-                    <div class="mb-10">
-                        <h3 class="text-xl font-semibold text-gray-800 mb-3">Children</h3>
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full bg-white border border-gray-200 rounded-lg">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Age</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dyslexia Status</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
-
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task Status</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="childrenTableBody" class="bg-white divide-y divide-gray-200">
-                                    <!-- Children data here -->
-                                </tbody>
-                            </table>
+                        <!-- Parents -->
+                        <div id="users-subtab-parents" class="user-subtab-content hidden">
+                            <div class="bg-white/90 backdrop-blur rounded-xl shadow-sm border border-gray-200 p-4">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h3 class="text-base font-semibold text-gray-900">Parents</h3>
+                                    <span class="text-xs text-gray-500">Contact and manage participating parents</span>
+                                </div>
+                                <div class="overflow-x-auto max-h-60 custom-scrollbar">
+                                    <table class="min-w-full bg-white border border-gray-200 rounded-lg text-xs">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                                <th class="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                                <th class="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                                <th class="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="parentsTableBody" class="bg-white divide-y divide-gray-200">
+                                            <!-- Parents data here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    
-                <!-- Parents -->
-                    <div class="mb-10">
-                        <h3 class="text-xl font-semibold text-gray-800 mb-3">Parents</h3>
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full bg-white border border-gray-200 rounded-lg">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="parentsTableBody" class="bg-white divide-y divide-gray-200">
-                                    <!-- Parents data here -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
 
-                    <!-- Schools -->
-                    <div class="mb-2">
-                        <h3 class="text-xl font-semibold text-gray-800 mb-3">Schools</h3>
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full bg-white border border-gray-200 rounded-lg">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"> No. of Parents</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No. of Children</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No. of Assessments Completed</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
-                                        
-                                    </tr>
-                                </thead>
-                                <tbody id="schoolsTableBody" class="bg-white divide-y divide-gray-200">
-                                    <!-- Schools data here -->
-                                </tbody>
-                            </table>
+                        <!-- Schools -->
+                        <div id="users-subtab-schools" class="user-subtab-content hidden">
+                            <div class="bg-white/90 backdrop-blur rounded-xl shadow-sm border border-gray-200 p-4">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h3 class="text-base font-semibold text-gray-900">Schools</h3>
+                                    <span class="text-xs text-gray-500">Overview of partner institutions</span>
+                                </div>
+                                <div class="overflow-x-auto max-h-72 custom-scrollbar">
+                                    <table class="min-w-full bg-white border border-gray-200 rounded-lg text-xs">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                                <th class="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                                <th class="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                                <th class="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider"> No. of Parents</th>
+                                                <th class="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">No. of Children</th>
+                                                <th class="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">No. of Assessments Completed</th>
+                                                <th class="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="schoolsTableBody" class="bg-white divide-y divide-gray-200">
+                                            <!-- Schools data here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- Hierarchy View -->
-                    <div class="mt-10">
-                        <h3 class="text-xl font-semibold text-gray-800 mb-3">Hierarchy View</h3>
-                        <div id="hierarchyContainer" class="space-y-4"></div>
-                        <h4 class="text-lg font-semibold text-gray-800 mt-6">Unassigned (Non-school)</h4>
-                        <div id="unassignedContainer" class="space-y-2"></div>
+                        <!-- Hierarchy View -->
+                        <div id="users-subtab-hierarchy" class="user-subtab-content hidden">
+                            <div class="bg-white/90 backdrop-blur rounded-xl shadow-sm border border-gray-200 p-4">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h3 class="text-base font-semibold text-gray-900">Hierarchy View</h3>
+                                    <span class="text-xs text-gray-500">Visual map of schools, classes, sections, and users</span>
+                                </div>
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 max-h-80 overflow-y-auto custom-scrollbar">
+                                    <div>
+                                        <h4 class="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Schools &amp; Classes</h4>
+                                        <div id="hierarchyContainer" class="space-y-4 max-h-[480px] overflow-y-auto pr-2 custom-scrollbar">
+                                            <!-- Hierarchy content -->
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Unassigned (Non-school)</h4>
+                                        <div id="unassignedContainer" class="space-y-2 max-h-[480px] overflow-y-auto pr-2 custom-scrollbar">
+                                            <!-- Unassigned content -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Data Monitoring Tab -->
                 <div id="data-tab" class="tab-content hidden">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Data Collection Monitoring</h2>
+                    <h2 class="text-xl font-semibold text-gray-900 mb-4">Data Collection Monitoring</h2>
                     
                     <!-- Charts Row -->
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                        <div class="bg-white p-6 rounded-lg shadow-md">
-                            <h3 class="text-lg font-semibold text-gray-700 mb-4">Task Completion Rates</h3>
-                            <canvas id="taskCompletionChart" width="400" height="200"></canvas>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+                        <div class="bg-white/90 p-4 rounded-xl shadow border border-gray-200">
+                            <h3 class="text-sm font-semibold text-gray-900 mb-3">Task Completion Rates</h3>
+                            <canvas id="taskCompletionChart" width="400" height="180"></canvas>
                         </div>
-                        <div class="bg-white p-6 rounded-lg shadow-md">
-                            <h3 class="text-lg font-semibold text-gray-700 mb-4">Data Quality Metrics</h3>
+                        <div class="bg-white/90 p-4 rounded-xl shadow border border-gray-200">
+                            <h3 class="text-sm font-semibold text-gray-900 mb-3">Data Quality Metrics</h3>
                             <canvas id="dataQualityChart" width="400" height="200"></canvas>
                         </div>
                     </div>
 
                     <!-- Data Quality Indicators -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                        <div class="bg-white p-6 rounded-lg shadow-md">
-                            <h4 class="font-semibold text-gray-700 mb-2">Audio Quality</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="bg-white/90 p-4 rounded-xl shadow border border-gray-200">
+                            <h4 class="font-semibold text-gray-900 mb-2 text-sm">Audio Quality</h4>
                             <div class="flex items-center">
                                 <div class="flex-1 bg-gray-200 rounded-full h-2 mr-3">
                                     <div class="bg-green-500 h-2 rounded-full" id="audioQualityBar" style="width: 0%"></div>
@@ -309,8 +391,8 @@
                                 <span class="text-sm font-medium text-gray-600" id="audioQualityText">0%</span>
                             </div>
                         </div>
-                        <div class="bg-white p-6 rounded-lg shadow-md">
-                            <h4 class="font-semibold text-gray-700 mb-2">Response Completeness</h4>
+                        <div class="bg-white/90 p-4 rounded-xl shadow border border-gray-200">
+                            <h4 class="font-semibold text-gray-900 mb-2 text-sm">Response Completeness</h4>
                             <div class="flex items-center">
                                 <div class="flex-1 bg-gray-200 rounded-full h-2 mr-3">
                                     <div class="bg-blue-500 h-2 rounded-full" id="responseCompletenessBar" style="width: 0%"></div>
@@ -318,8 +400,8 @@
                                 <span class="text-sm font-medium text-gray-600" id="responseCompletenessText">0%</span>
                             </div>
                         </div>
-                        <div class="bg-white p-6 rounded-lg shadow-md">
-                            <h4 class="font-semibold text-gray-700 mb-2">Data Consistency</h4>
+                        <div class="bg-white/90 p-4 rounded-xl shadow border border-gray-200">
+                            <h4 class="font-semibold text-gray-900 mb-2 text-sm">Data Consistency</h4>
                             <div class="flex items-center">
                                 <div class="flex-1 bg-gray-200 rounded-full h-2 mr-3">
                                     <div class="bg-yellow-500 h-2 rounded-full" id="dataConsistencyBar" style="width: 0%"></div>
@@ -330,9 +412,9 @@
                     </div>
 
                     <!-- Recent Activity -->
-                    <div class="bg-white p-6 rounded-lg shadow-md">
-                        <h3 class="text-lg font-semibold text-gray-700 mb-4">Recent Data Collection Activity</h3>
-                        <div id="recentActivity" class="space-y-3">
+                    <div class="bg-white/90 p-4 rounded-xl shadow border border-gray-200">
+                        <h3 class="text-sm font-semibold text-gray-900 mb-3">Recent Data Collection Activity</h3>
+                        <div id="recentActivity" class="space-y-3 max-h-72 overflow-y-auto custom-scrollbar">
                             <!-- Activity items will be populated here -->
                         </div>
                     </div>
@@ -340,76 +422,76 @@
 
                 <!-- Dataset Export Tab -->
                 <div id="export-tab" class="tab-content hidden">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Secure Dataset Export</h2>
+                    <h2 class="text-xl font-semibold text-gray-900 mb-4">Secure Dataset Export</h2>
                     
                     <!-- Export Options -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                        <div class="bg-white p-6 rounded-lg shadow-md">
-                            <h3 class="text-lg font-semibold text-gray-700 mb-4">Export Configuration</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div class="bg-white/90 p-4 rounded-xl shadow border border-gray-200">
+                            <h3 class="text-sm font-semibold text-gray-900 mb-3">Export Configuration</h3>
                             <div class="space-y-4">
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Data Format</label>
-                                    <select id="exportFormat" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <label class="block text-xs font-medium text-gray-600 mb-2 uppercase tracking-wide">Data Format</label>
+                                    <select id="exportFormat" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-sm">
                                         <option value="csv">CSV</option>
                                         <option value="json">JSON</option>
                                         <option value="excel">Excel</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Anonymization Level</label>
-                                    <select id="anonymizationLevel" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <label class="block text-xs font-medium text-gray-600 mb-2 uppercase tracking-wide">Anonymization Level</label>
+                                    <select id="anonymizationLevel" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-sm">
                                         <option value="full">Full Anonymization</option>
                                         <option value="partial">Partial Anonymization</option>
                                         <option value="none">No Anonymization (Admin Only)</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                                    <label class="block text-xs font-medium text-gray-600 mb-2 uppercase tracking-wide">Date Range</label>
                                     <div class="flex space-x-2">
-                                        <input type="date" id="startDate" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                                        <input type="date" id="endDate" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                        <input type="date" id="startDate" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-sm">
+                                        <input type="date" id="endDate" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-sm">
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="bg-white p-6 rounded-lg shadow-md">
-                            <h3 class="text-lg font-semibold text-gray-700 mb-4">Data Selection</h3>
+                        <div class="bg-white/90 p-4 rounded-xl shadow border border-gray-200">
+                            <h3 class="text-sm font-semibold text-gray-900 mb-3">Data Selection</h3>
                             <div class="space-y-3">
                                 <label class="flex items-center">
                                     <input type="checkbox" id="includeDemographics" class="mr-3" checked>
-                                    <span class="text-sm text-gray-700">Demographics Data</span>
+                                    <span class="text-sm text-gray-800">Demographics Data</span>
                                 </label>
                                 <label class="flex items-center">
                                     <input type="checkbox" id="includeAudio" class="mr-3" checked>
-                                    <span class="text-sm text-gray-700">Audio Recordings</span>
+                                    <span class="text-sm text-gray-800">Audio Recordings</span>
                                 </label>
                                 <label class="flex items-center">
                                     <input type="checkbox" id="includeTyping" class="mr-3" checked>
-                                    <span class="text-sm text-gray-700">Typing Task Data</span>
+                                    <span class="text-sm text-gray-800">Typing Task Data</span>
                                 </label>
                                 <label class="flex items-center">
                                     <input type="checkbox" id="includeComprehension" class="mr-3" checked>
-                                    <span class="text-sm text-gray-700">Comprehension Responses</span>
+                                    <span class="text-sm text-gray-800">Comprehension Responses</span>
                                 </label>
                                 <label class="flex items-center">
                                     <input type="checkbox" id="includeProgress" class="mr-3" checked>
-                                    <span class="text-sm text-gray-700">Task Progress Data</span>
+                                    <span class="text-sm text-gray-800">Task Progress Data</span>
                                 </label>
                             </div>
                         </div>
                     </div>
 
                     <!-- Export Actions -->
-                    <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="bg-white/90 p-4 rounded-xl shadow border border-gray-200">
                         <div class="flex flex-wrap gap-4">
-                            <button onclick="exportDataset()" class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-medium">
+                            <button onclick="exportDataset()" class="bg-emerald-600 text-white px-5 py-2 rounded-lg hover:bg-emerald-500 font-medium text-sm">
                                 Export Dataset
                             </button>
-                            <button onclick="previewExport()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-medium">
+                            <button onclick="previewExport()" class="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-500 font-medium text-sm">
                                 Preview Export
                             </button>
-                            <button onclick="scheduleExport()" class="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-medium">
+                            <button onclick="scheduleExport()" class="bg-violet-600 text-white px-5 py-2 rounded-lg hover:bg-violet-500 font-medium text-sm">
                                 Schedule Recurring Export
                             </button>
                         </div>
@@ -418,10 +500,19 @@
 
                 <!-- Task Management Tab -->
                 <div id="tasks-tab" class="tab-content hidden">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Task Management</h2>
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 class="text-xl font-semibold text-gray-900">Task Management</h2>
+                            <p class="text-sm text-gray-500">Review and manage all core study tasks.</p>
+                        </div>
+                        <button onclick="addNewTask()" class="hidden md:inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-500">
+                            <span class="text-lg leading-none">＋</span>
+                            <span>Add Task</span>
+                        </button>
+                    </div>
 
                     <!-- Categories Grid -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <a href="{{ url_for('admin_tasks_by_category', category_slug='reading-aloud') }}" class="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg border border-gray-200">
                             <h3 class="text-lg font-semibold text-gray-800">Reading Aloud</h3>
                             <p class="text-sm text-gray-600 mt-1">View tasks grouped by age bands</p>
@@ -450,16 +541,18 @@
                 </div>
                 <!-- School Suggestions Tab -->
                 <div id="suggestions-tab" class="tab-content hidden">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Suggested Tasks by Schools</h2>
-                    <div id="suggestionsList" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"></div>
+                    <h2 class="text-xl font-semibold text-gray-900 mb-4">Suggested Tasks by Schools</h2>
+                    <div id="suggestionsList" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
                 </div>
             </div>
+        </div>
+            </section>
         </div>
     </main>
 
    <!-- Footer -->
-    <footer class="dark-bg text-white py-12 text-lg" style="background-color: #333333;">
-        <div class="content-wrapper">
+    <footer class="dark-bg text-white py-10 text-sm mt-8 border-t border-gray-300 bg-gray-900">
+        <div class="content-wrapper max-w-7xl mx-auto px-4">
             <div class="flex flex-col md:flex-row justify-between">
                 <div class="mb-8 md:mb-0">
                     <div class="flex items-center">
@@ -608,7 +701,7 @@
         </div>
     </div>
     <script>
-        // Tab functionality
+        // Tab functionality (main top-level tabs)
         document.querySelectorAll('.tab-button').forEach(button => {
             button.addEventListener('click', () => {
                 const tabName = button.getAttribute('data-tab');
@@ -634,12 +727,51 @@
             });
         });
 
+        // User Management subtabs (Children / Parents / Schools / Hierarchy)
+        const userSubtabButtons = document.querySelectorAll('.user-subtab-button');
+        const userSubtabContents = document.querySelectorAll('.user-subtab-content');
+
+        function switchUserSubtab(target) {
+            // Hide all subtab contents
+            userSubtabContents.forEach(c => c.classList.add('hidden'));
+
+            // Remove active styles from all buttons
+            userSubtabButtons.forEach(btn => {
+                btn.classList.remove('border-blue-500', 'text-blue-700');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+
+            // Show target content
+            const content = document.getElementById(`users-subtab-${target}`);
+            if (content) content.classList.remove('hidden');
+
+            // Activate corresponding button
+            const activeBtn = Array.from(userSubtabButtons).find(
+                btn => btn.getAttribute('data-subtab') === target
+            );
+            if (activeBtn) {
+                activeBtn.classList.add('border-blue-500', 'text-blue-700');
+                activeBtn.classList.remove('border-transparent', 'text-gray-500');
+            }
+        }
+
+        userSubtabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const target = button.getAttribute('data-subtab');
+                if (target) {
+                    switchUserSubtab(target);
+                }
+            });
+        });
+
         // Load initial data
         document.addEventListener('DOMContentLoaded', function() {
             loadDashboardData();
             loadComprehensiveAdminStats(); // Load comprehensive admin statistics
             loadDataQualityMetrics(); // Load data quality metrics
             loadTabData('users');
+            // Ensure default subtab selection is Children
+            switchUserSubtab('children');
             // Attach search/filter event listeners here
             document.getElementById('searchBtn').addEventListener('click', filterAndDisplayUsers);
             document.getElementById('userSearch').addEventListener('keydown', function(e) {
@@ -979,45 +1111,102 @@
         function renderHierarchy(hierarchy, unassigned){
             const container = document.getElementById('hierarchyContainer');
             const unassignedContainer = document.getElementById('unassignedContainer');
-            if(!container || !unassignedContainer) return;
+            if (!container || !unassignedContainer) return;
             container.innerHTML = '';
             unassignedContainer.innerHTML = '';
 
+            // Hierarchy flow: School → Classes → Sections → Students (with parents)
             (hierarchy || []).forEach(school => {
                 const schoolDiv = document.createElement('div');
-                schoolDiv.className = 'border rounded p-4 bg-white';
+                schoolDiv.className = 'border border-gray-200 rounded-xl p-4 bg-white shadow-sm';
+
                 const classesHtml = (school.classes || []).map(cls => {
                     const sectionsHtml = (cls.sections || []).map(sec => {
-                        const parents = (sec.parents || []).map(p => `<li class="ml-6 list-disc text-sm">Parent: ${p.name} <span class=\"text-gray-500\">(${p.email})</span></li>`).join('');
-                        const students = (sec.students || []).map(st => `<li class="ml-6 list-disc text-sm">Student: ${st.name} <span class=\"text-gray-500\">(${st.email})</span></li>`).join('');
+                        const parents = sec.parents || [];
+                        const students = sec.students || [];
+
+                        const studentsHtml = students.map(st => {
+                            // Best-effort lookup for this student's parent in the same section
+                            let parentMatch = null;
+                            if (parents.length) {
+                                parentMatch = parents.find(p =>
+                                    (st.parent_id && p.id === st.parent_id) ||
+                                    (st.parent_email && p.email === st.parent_email)
+                                ) || (parents.length === 1 ? parents[0] : null);
+                            }
+
+                            const parentLabel = parentMatch
+                                ? `${parentMatch.name} (${parentMatch.email || 'no email'})`
+                                : (st.parent_email ? st.parent_email : 'Unknown parent');
+
+                            return `
+                                <li class="pl-4 border-l border-gray-200 text-sm py-1">
+                                    <div class="font-medium text-gray-800">${st.name || 'Unnamed student'}
+                                        ${st.email ? `<span class="text-gray-500 text-xs ml-1">(${st.email})</span>` : ''}
+                                    </div>
+                                    <div class="text-xs text-gray-500">
+                                        Parent: ${parentLabel}
+                                    </div>
+                                </li>
+                            `;
+                        }).join('');
+
                         return `
-                            <div class="ml-4 mt-2">
-                                <div class="font-medium">Section: ${sec.name}</div>
-                                <ul class="ml-4">${parents}${students}</ul>
+                            <div class="mt-2 ml-3">
+                                <div class="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                                    Section ${sec.name}
+                                </div>
+                                <ul class="mt-1 space-y-1">
+                                    ${studentsHtml || '<li class="text-xs text-gray-400 italic pl-1">No students in this section</li>'}
+                                </ul>
                             </div>
                         `;
                     }).join('');
+
                     return `
-                        <div class="ml-3 mt-2">
-                            <div class="font-semibold">Class: ${cls.name}</div>
-                            ${sectionsHtml}
+                        <div class="mt-3">
+                            <div class="text-sm font-semibold text-gray-700">
+                                Class ${cls.name}${cls.academic_year ? ` <span class="text-gray-400 text-xs">(AY ${cls.academic_year})</span>` : ''}
+                            </div>
+                            ${sectionsHtml || '<div class="text-xs text-gray-400 italic ml-1 mt-1">No sections for this class</div>'}
                         </div>
                     `;
                 }).join('');
+
                 schoolDiv.innerHTML = `
-                    <div class="text-lg font-semibold">School: ${school.name}</div>
-                    ${classesHtml || '<div class="ml-3 text-sm text-gray-500">No classes</div>'}
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <div class="text-sm font-bold text-gray-900">
+                                ${school.name || 'Unnamed school'}
+                            </div>
+                            ${school.email ? `<div class="text-xs text-gray-500">${school.email}</div>` : ''}
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        ${classesHtml || '<div class="text-xs text-gray-400 italic mt-1">No classes configured for this school</div>'}
+                    </div>
                 `;
                 container.appendChild(schoolDiv);
             });
 
+            // Unassigned parents and their students (non-school)
             (unassigned?.parents || []).forEach(p => {
                 const row = document.createElement('div');
-                row.className = 'border rounded p-3 bg-white';
-                const kids = (p.children || []).map(st => `<li class="ml-6 list-disc text-sm">Student: ${st.name} <span class=\"text-gray-500\">(${st.email})</span></li>`).join('');
+                row.className = 'border border-dashed border-gray-300 rounded-xl p-3 bg-white/80';
+                const kids = (p.children || []).map(st => `
+                    <li class="ml-4 list-disc text-sm">
+                        ${st.name || 'Unnamed student'}
+                        ${st.email ? `<span class="text-gray-500 text-xs ml-1">(${st.email})</span>` : ''}
+                    </li>
+                `).join('');
                 row.innerHTML = `
-                    <div class="font-medium">Parent: ${p.name} <span class="text-gray-500">(${p.email})</span></div>
-                    <ul class="ml-3">${kids || '<li class="ml-6 list-disc text-sm text-gray-500">No students</li>'}</ul>
+                    <div class="font-medium text-gray-800">
+                        Parent: ${p.name}
+                        <span class="text-gray-500 text-xs">(${p.email})</span>
+                    </div>
+                    <ul class="mt-1">
+                        ${kids || '<li class="ml-4 list-disc text-sm text-gray-400 italic">No students</li>'}
+                    </ul>
                 `;
                 unassignedContainer.appendChild(row);
             });

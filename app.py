@@ -3997,60 +3997,46 @@ def submit_comprehension():
         score = 0
         max_score = 2  # Reading comprehension has 2 questions with correct answers
         
-        # Get all tasks for this user's class level and find the one that matches
+        # Get the specific task by task_id from the request
+        reading_task_id = data.get('task_id')
+        if not reading_task_id:
+            print(f"Reading Comprehension - No task_id provided in request")
+            return jsonify({'success': False, 'message': 'Task ID is required'}), 400
+        
+        print(f"Reading Comprehension - Looking up task_id: {reading_task_id}")
+        
+        # Get correct answers directly using task_id
         cursor.execute("""
-            SELECT id, answer1, answer2 FROM reading_comprehension_tasks 
-            WHERE class_level = (
-                SELECT d.education_level FROM demographics d 
-                WHERE d.user_id = %s
-            )
-        """, (session['user_id'],))
+            SELECT answer1, answer2 FROM reading_comprehension_tasks 
+            WHERE id = %s
+        """, (reading_task_id,))
         
-        all_tasks = cursor.fetchall()
-        print(f"Reading Comprehension - Found {len(all_tasks)} tasks for class level")
-        for i, task in enumerate(all_tasks):
-            print(f"Reading Comprehension - Task {i+1}: answer1='{task['answer1']}', answer2='{task['answer2']}'")
-        matching_task = None
+        task_row = cursor.fetchone()
+        if not task_row:
+            print(f"Reading Comprehension - Task not found with id: {reading_task_id}")
+            return jsonify({'success': False, 'message': 'Task not found'}), 404
         
-        # Find the task that matches the user's answers
-        for task in all_tasks:
-            correct_answer1, correct_answer2 = task['answer1'], task['answer2']
-            q1_match = q1 and q1.strip().lower() == correct_answer1.lower()
-            q2_match = q2 and q2.strip().lower() == correct_answer2.lower()
-            
-            # If both answers match, this is the task the user worked on
-            if q1_match and q2_match:
-                matching_task = task
-                break
+        correct_answer1 = task_row[0]
+        correct_answer2 = task_row[1]
         
-        # If no exact match found, try partial matching (at least 1 answer matches)
-        if not matching_task:
-            for task in all_tasks:
-                correct_answer1, correct_answer2 = task['answer1'], task['answer2']
-                q1_match = q1 and q1.strip().lower() == correct_answer1.lower()
-                q2_match = q2 and q2.strip().lower() == correct_answer2.lower()
-                
-                # If at least one answer matches, use this task
-                if q1_match or q2_match:
-                    matching_task = task
-                    break
+        print(f"Reading Comprehension - User answers: q1='{q1}', q2='{q2}'")
+        print(f"Reading Comprehension - Correct answers: answer1='{correct_answer1}', answer2='{correct_answer2}'")
         
-        # Calculate score based on matching task
-        if matching_task:
-            correct_answer1, correct_answer2 = matching_task['answer1'], matching_task['answer2']
-            print(f"Reading Comprehension - User answers: q1='{q1}', q2='{q2}'")
-            print(f"Reading Comprehension - Correct answers: answer1='{correct_answer1}', answer2='{correct_answer2}'")
-            # Check q1 answer (text input)
-            if q1 and q1.strip().lower() == correct_answer1.lower():
-                score += 1
-                print(f"Reading Comprehension - Q1 correct!")
-            # Check q2 answer (multiple choice)
-            if q2 and q2.strip().lower() == correct_answer2.lower():
-                score += 1
-                print(f"Reading Comprehension - Q2 correct!")
-            print(f"Reading Comprehension - Final score: {score}/{max_score}")
+        # Check q1 answer (text input or multiple choice)
+        if q1 and q1.strip().lower() == correct_answer1.lower():
+            score += 1
+            print(f"Reading Comprehension - Q1 correct!")
         else:
-            print(f"Reading Comprehension - No matching task found for user answers: q1='{q1}', q2='{q2}'")
+            print(f"Reading Comprehension - Q1 incorrect")
+        
+        # Check q2 answer (multiple choice)
+        if q2 and q2.strip().lower() == correct_answer2.lower():
+            score += 1
+            print(f"Reading Comprehension - Q2 correct!")
+        else:
+            print(f"Reading Comprehension - Q2 incorrect")
+        
+        print(f"Reading Comprehension - Final score: {score}/{max_score}")
         
         # Save final progress to comprehension_progress table with score
         cursor.execute('''
@@ -7204,12 +7190,13 @@ def submit_mathematical_comprehension():
     q2 = data.get('q2', '')
     q3 = data.get('q3', '')
     task_name = data.get('task_name', 'Mathematical Comprehension')
+    math_task_id = data.get('task_id')  # ID of the specific mathematical_comprehension_tasks row
     
     try:
         conn = connect_db()
         cursor = conn.cursor(dictionary=True)
         
-        # Get task_id
+        # Get task_id from tasks table
         cursor.execute("SELECT id FROM tasks WHERE task_name = %s", (task_name,))
         task_row = cursor.fetchone()
         if not task_row:
@@ -7248,67 +7235,49 @@ def submit_mathematical_comprehension():
         score = 0
         max_score = 3  # Mathematical comprehension has 3 questions
         
-        # Get all tasks for this user's class level and find the one that matches
-        cursor.execute("""
-            SELECT id, answer1, answer2, answer3 FROM mathematical_comprehension_tasks 
-            WHERE class_level = (
-                SELECT d.education_level FROM demographics d 
-                WHERE d.user_id = %s
-            )
-        """, (session['user_id'],))
-        
-        all_tasks = cursor.fetchall()
-        print(f"Mathematical Comprehension - Found {len(all_tasks)} tasks for class level")
-        for i, task in enumerate(all_tasks):
-            print(f"Mathematical Comprehension - Task {i+1}: answer1='{task['answer1']}', answer2='{task['answer2']}', answer3='{task['answer3']}'")
-        matching_task = None
-        
-        # Find the task that matches the user's answers
-        for task in all_tasks:
-            correct_answer1, correct_answer2, correct_answer3 = task['answer1'], task['answer2'], task['answer3']
-            q1_match = q1 and q1.strip().lower() == correct_answer1.lower()
-            q2_match = q2 and q2.strip().lower() == correct_answer2.lower()
-            q3_match = q3 and q3.strip().lower() == correct_answer3.lower()
+        # Get the correct answers from the specific mathematical_comprehension_tasks row
+        if math_task_id:
+            cursor.execute("""
+                SELECT id, answer1, answer2, answer3 
+                FROM mathematical_comprehension_tasks 
+                WHERE id = %s
+            """, (math_task_id,))
+            matching_task = cursor.fetchone()
             
-            # If all answers match, this is the task the user worked on
-            if q1_match and q2_match and q3_match:
-                matching_task = task
-                break
-        
-        # If no exact match found, try partial matching (at least 2 answers match)
-        if not matching_task:
-            for task in all_tasks:
-                correct_answer1, correct_answer2, correct_answer3 = task['answer1'], task['answer2'], task['answer3']
-                q1_match = q1 and q1.strip().lower() == correct_answer1.lower()
-                q2_match = q2 and q2.strip().lower() == correct_answer2.lower()
-                q3_match = q3 and q3.strip().lower() == correct_answer3.lower()
+            if matching_task:
+                correct_answer1 = matching_task['answer1']
+                correct_answer2 = matching_task['answer2']
+                correct_answer3 = matching_task['answer3']
                 
-                # If at least 2 answers match, use this task
-                match_count = sum([q1_match, q2_match, q3_match])
-                if match_count >= 2:
-                    matching_task = task
-                    break
-        
-        # Calculate score based on matching task
-        if matching_task:
-            correct_answer1, correct_answer2, correct_answer3 = matching_task['answer1'], matching_task['answer2'], matching_task['answer3']
-            print(f"Mathematical Comprehension - User answers: q1='{q1}', q2='{q2}', q3='{q3}'")
-            print(f"Mathematical Comprehension - Correct answers: answer1='{correct_answer1}', answer2='{correct_answer2}', answer3='{correct_answer3}'")
-            # Check q1 answer (multiple choice)
-            if q1 and q1.strip().lower() == correct_answer1.lower():
-                score += 1
-                print(f"Mathematical Comprehension - Q1 correct!")
-            # Check q2 answer (multiple choice)
-            if q2 and q2.strip().lower() == correct_answer2.lower():
-                score += 1
-                print(f"Mathematical Comprehension - Q2 correct!")
-            # Check q3 answer (number/text)
-            if q3 and q3.strip().lower() == correct_answer3.lower():
-                score += 1
-                print(f"Mathematical Comprehension - Q3 correct!")
-            print(f"Mathematical Comprehension - Final score: {score}/{max_score}")
+                print(f"Mathematical Comprehension - User answers: q1='{q1}', q2='{q2}', q3='{q3}'")
+                print(f"Mathematical Comprehension - Correct answers: answer1='{correct_answer1}', answer2='{correct_answer2}', answer3='{correct_answer3}'")
+                
+                # Check q1 answer
+                if q1 and q1.strip().lower() == correct_answer1.lower():
+                    score += 1
+                    print(f"Mathematical Comprehension - Q1 correct!")
+                else:
+                    print(f"Mathematical Comprehension - Q1 incorrect: '{q1.strip().lower()}' != '{correct_answer1.lower()}'")
+                
+                # Check q2 answer
+                if q2 and q2.strip().lower() == correct_answer2.lower():
+                    score += 1
+                    print(f"Mathematical Comprehension - Q2 correct!")
+                else:
+                    print(f"Mathematical Comprehension - Q2 incorrect: '{q2.strip().lower()}' != '{correct_answer2.lower()}'")
+                
+                # Check q3 answer
+                if q3 and q3.strip().lower() == correct_answer3.lower():
+                    score += 1
+                    print(f"Mathematical Comprehension - Q3 correct!")
+                else:
+                    print(f"Mathematical Comprehension - Q3 incorrect: '{q3.strip().lower()}' != '{correct_answer3.lower()}'")
+                
+                print(f"Mathematical Comprehension - Final score: {score}/{max_score}")
+            else:
+                print(f"Mathematical Comprehension - Task not found for task_id: {math_task_id}")
         else:
-            print(f"Mathematical Comprehension - No matching task found for user answers: q1='{q1}', q2='{q2}', q3='{q3}'")
+            print(f"Mathematical Comprehension - No task_id provided in request")
         
         # Save progress as completed with score
         cursor.execute('''
