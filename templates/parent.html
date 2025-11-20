@@ -97,33 +97,48 @@
     <!--  parents dashboard -->
     <main class="content-wrapper py-8">
         <div class="max-w-6xl mx-auto">
-            <!-- Welcome Section -->
-            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-                <h2 class="text-2xl font-bold text-gray-800 mb-4">Welcome to Your Parent Dashboard</h2>
-                <p class="text-gray-600 mb-6">
-                    Manage your children's participation in the dyslexia research study. You can add new children, 
-                    monitor their progress, and access their study results.
-                </p>
+            <!-- Welcome + Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                <!-- Compact Welcome Card -->
+                <div class="bg-white rounded-lg shadow-md p-4">
+                    <h2 class="text-xl font-bold text-gray-800 mb-2">Welcome</h2>
+                    <p class="text-gray-600 text-sm mb-3">Manage your children's participation, monitor progress, and access results.</p>
+                    <div class="flex gap-3">
+                        <button id="addChildBtn" 
+                                class="primary-bg hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition flex items-center justify-center"
+                                style="background-color: #1A237E;">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                            Add Child
+                        </button>
+                        <button id="refreshChildrenBtn" 
+                                class="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg transition flex items-center justify-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
 
-                
-                
-                <!-- Add Child Button -->
-                <div class="flex flex-col sm:flex-row gap-4">
-                    <button id="addChildBtn" 
-                            class="primary-bg hover:bg-blue-600 text-white font-medium py-3 px-6 rounded-lg transition flex items-center justify-center"
-                            style="background-color: #1A237E;">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                        </svg>
-                        Add a Child
-                    </button>
-                    <button id="refreshChildrenBtn" 
-                            class="bg-gray-500 hover:bg-gray-600 text-white font-medium py-3 px-6 rounded-lg transition flex items-center justify-center">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                        </svg>
-                        Refresh
-                    </button>
+                <!-- Student Count Card -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center gap-4">
+                        <!-- Icon -->
+                        <div class="flex-shrink-0 w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center">
+                            <svg class="w-8 h-8 text-[#1A237E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                            </svg>
+                        </div>
+                        <!-- Text and Count -->
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold text-gray-800">Total Students</h3>
+                            <p class="text-sm text-gray-500">Students associated with your account</p>
+                        </div>
+                        <!-- Count -->
+                        <div class="text-4xl font-bold text-[#1A237E] pr-4" id="totalStudentsCount">—</div>
+                    </div>
                 </div>
             </div>
 
@@ -464,7 +479,11 @@
             .then(res => res.json())
             .then(data => {
                 loadingState.classList.add('hidden');
-                
+                // Update total students count
+                const total = (data && data.children && data.children.length) ? data.children.length : 0;
+                const totalEl = document.getElementById('totalStudentsCount');
+                if (totalEl) totalEl.textContent = total;
+
                 if (data.success) {
                     if (data.children && data.children.length > 0) {
                         displayChildren(data.children);
@@ -490,58 +509,51 @@ function displayChildren(children) {
     childrenList.innerHTML = '';
     children.forEach(child => {
         const childCard = document.createElement('div');
-        childCard.className = 'bg-gray-50 rounded-lg p-4 border border-gray-200';
-        const createdDate = new Date(child.created_at).toLocaleDateString();
-        
-        // Get progress percentage for this child
-        const progressPercentage = child.progress_percentage || 0;
-        const progressColor = progressPercentage >= 80 ? 'bg-green-500' : 
-                             progressPercentage >= 50 ? 'bg-yellow-500' : 'bg-red-500';
-        
+        childCard.className = 'bg-white rounded-xl p-4 border border-gray-200 shadow-sm';
+
+        const schoolLabel = child.school_name || 'Not assigned';
+        const classLabel = child.class_name || child.class || 'Not assigned';
+        const sectionLabel = child.section_name || 'Not assigned';
+        const ageLabel = child.age ? `${child.age} yrs` : 'Age not set';
+        //const emailLabel = child.email || 'No email on file';
+        const initials = (child.name || '?').charAt(0).toUpperCase();
+
         childCard.innerHTML = `
-            <div class="flex justify-between items-start">
-                <div class="flex-1">
-                    <div class="flex items-center justify-between mb-2">
-                        <h4 class="text-lg font-semibold text-gray-800">${child.name}</h4>
-                        <span class="px-2 py-1 text-xs rounded-full ${child.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
-                            ${child.is_active ? 'Active' : 'Inactive'}
-                        </span>
+            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div class="flex items-start gap-3">
+                    <div class="w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg font-semibold">
+                        ${initials}
                     </div>
-                    <p class="text-gray-600 mb-1">${child.email}</p>
-                    <p class="text-sm text-gray-500 mb-2">Added: ${createdDate}</p>
-                    
-                    <!-- Progress Bar -->
-                    <div class="mb-2">
-                        <div class="flex justify-between text-sm text-gray-600 mb-1">
-                            <span>Progress</span>
-                            <span>${progressPercentage}%</span>
+                    <div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h4 class="text-lg font-semibold text-gray-900">${child.name}</h4>
+                            <span class="px-2 py-0.5 text-xs rounded-full ${child.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}">
+                                ${child.is_active ? 'Active' : 'Inactive'}
+                            </span>
                         </div>
-                        <div class="w-full bg-gray-200 rounded-full h-2">
-                            <div class="${progressColor} h-2 rounded-full transition-all duration-300" style="width: ${progressPercentage}%"></div>
-                        </div>
-                    </div>
-                    
-                    <!-- Quick Stats -->
-                    <div class="flex space-x-4 text-sm text-gray-600">
-                        <span>Class: ${child.class || 'N/A'}</span>
-                        <span>Age: ${child.age || 'N/A'}</span>
-                        <span>School: ${child.school_name || 'N/A'}</span>
+                       
                     </div>
                 </div>
-                <div class="flex flex-col space-y-2 ml-4">
+                <div class="flex flex-wrap gap-2 text-xs font-medium">
+                    <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full">School: <span class="font-semibold text-gray-700 ml-1">${schoolLabel}</span></span>
+                    <span class="px-3 py-1 bg-purple-50 text-purple-700 rounded-full">Class: <span class="font-semibold text-gray-700 ml-1">${classLabel}</span></span>
+                    <span class="px-3 py-1 bg-pink-50 text-pink-700 rounded-full">Section: <span class="font-semibold text-gray-700 ml-1">${sectionLabel}</span></span>
+                    <span class="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full">Age: <span class="font-semibold text-gray-700 ml-1">${ageLabel}</span></span>
+                </div>
+            </div>
+            <div class="mt-4 flex flex-wrap gap-2">
                     <button onclick="viewChildDetails(${child.id})"
-                            class="px-3 py-1 bg-indigo-500 text-white text-sm rounded hover:bg-indigo-600 transition">
-                        View Details
-                    </button>
-                    <button onclick="viewChildProgress(${child.id})" 
-                            class="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition">
-                        View Progress
-                    </button>
-                    <button onclick="loginChildDirectly(${child.id})"
-                            class="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600 transition">
-                        Student Sign In
-                    </button>
-                </div>
+                        class="px-4 py-2 bg-[#1A237E] text-white text-sm rounded-lg hover:bg-indigo-600 transition">
+                    View Details
+                </button>
+                <button onclick="viewChildProgress(event, ${child.id})" 
+                        class="px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition">
+                    View Progress
+                </button>
+                <button onclick="loginChildDirectly(event, ${child.id})"
+                        class="px-4 py-2 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 transition">
+                    Student Sign In
+                </button>
             </div>
         `;
         childrenList.appendChild(childCard);
@@ -585,12 +597,14 @@ function closeChildDetails(){
 }
 
 // Function to directly login child without requiring credentials
-function loginChildDirectly(childId) {
+function loginChildDirectly(evt, childId) {
     // Show loading state on the button
-    const button = event.target;
-    const originalText = button.textContent;
-    button.textContent = 'Signing in...';
-    button.disabled = true;
+    const button = evt?.currentTarget;
+    const originalText = button ? button.textContent : null;
+    if (button) {
+        button.textContent = 'Signing in...';
+        button.disabled = true;
+    }
     
     fetch('/api/parent-login-child', {
         method: 'POST',
@@ -622,16 +636,20 @@ function loginChildDirectly(childId) {
             // Show error message
             alert('Error: ' + data.message);
             // Reset button state
-            button.textContent = originalText;
-            button.disabled = false;
+            if (button) {
+                button.textContent = originalText;
+                button.disabled = false;
+            }
         }
     })
     .catch(error => {
         console.error('Login child error:', error);
         alert('An error occurred while signing in the child');
         // Reset button state
-        button.textContent = originalText;
-        button.disabled = false;
+        if (button) {
+            button.textContent = originalText;
+            button.disabled = false;
+        }
     });
 }
 
@@ -679,10 +697,51 @@ function showBackToParentButton() {
 
 // ...existing code...
 
-        // View Child Progress (placeholder function)
-        function viewChildProgress(childId) {
-            // alert('View progress functionality will be implemented here for child ID: ' + childId);
-            window.location.href = `/stats?child_id=${childId}`;
+        // View Child Progress by temporarily switching session to the child
+        function viewChildProgress(evt, childId) {
+            const button = evt?.currentTarget;
+            const originalText = button ? button.textContent : null;
+            if (button) {
+                button.textContent = 'Loading...';
+                button.disabled = true;
+            }
+
+            fetch('/api/parent-login-child', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ child_id: childId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    sessionStorage.setItem('viewing_as_child', 'true');
+
+                    if (data.needs_consent) {
+                        window.location.href = `/consent?child_id=${childId}`;
+                        return;
+                    }
+                    if (data.needs_profile_setup) {
+                        window.location.href = '/profile-setup';
+                        return;
+                    }
+
+                    window.location.href = '/stats';
+                } else {
+                    alert('Error: ' + (data.message || 'Unable to load progress'));
+                    if (button) {
+                        button.textContent = originalText;
+                        button.disabled = false;
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('View child progress error:', error);
+                alert('An error occurred while loading progress');
+                if (button) {
+                    button.textContent = originalText;
+                    button.disabled = false;
+                }
+            });
         }
 
         // Manage Child (placeholder function)

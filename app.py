@@ -1029,8 +1029,23 @@ def get_parent_children():
         if conn:
             cursor = conn.cursor(dictionary=True)
             query = """
-            SELECT u.id, u.name, u.email, u.created_at, u.user_type
+            SELECT 
+                u.id,
+                u.name,
+                u.email,
+                u.created_at,
+                u.user_type,
+                u.is_active,
+                d.age,
+                d.education_level,
+                cls.name AS class_name,
+                sec.name AS section_name,
+                sch.name AS school_name
             FROM users u
+            LEFT JOIN demographics d ON d.user_id = u.id
+            LEFT JOIN class_sections sec ON sec.id = u.section_id
+            LEFT JOIN school_classes cls ON cls.id = sec.class_id
+            LEFT JOIN schools sch ON sch.id = u.school_id
             WHERE u.parent_id = %s AND u.user_type = 'child'
             ORDER BY u.created_at DESC
             """
@@ -5819,6 +5834,79 @@ def admin_user_detail(user_id):
     except Exception as e:
         print(f"Error fetching user detail: {e}")
         return jsonify({'success': False, 'message': 'Error fetching user detail'}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/api/admin/parents/<int:parent_id>', methods=['GET'])
+def admin_parent_detail(parent_id: int):
+    if not session.get('is_admin'):
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+
+    conn = connect_db()
+    if not conn:
+        return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            """
+            SELECT 
+                u.id,
+                u.name,
+                u.email,
+                u.created_at,
+                u.school_id,
+                s.name AS school_name
+            FROM users u
+            LEFT JOIN schools s ON s.id = u.school_id
+            WHERE u.id = %s AND u.user_type = 'parent'
+            """,
+            (parent_id,)
+        )
+        parent = cursor.fetchone()
+        if not parent:
+            return jsonify({'success': False, 'message': 'Parent not found'}), 404
+
+        cursor.execute(
+            """
+            SELECT 
+                c.id,
+                c.name,
+                c.email,
+                c.is_active,
+                c.created_at,
+                d.age,
+                cls.name AS class_name,
+                sec.name AS section_name,
+                sch.name AS school_name
+            FROM users c
+            LEFT JOIN demographics d ON d.user_id = c.id
+            LEFT JOIN class_sections sec ON sec.id = c.section_id
+            LEFT JOIN school_classes cls ON cls.id = sec.class_id
+            LEFT JOIN schools sch ON sch.id = c.school_id
+            WHERE c.user_type = 'child'
+              AND (
+                    c.parent_id = %s OR EXISTS (
+                        SELECT 1 FROM parent_children pc
+                        WHERE pc.child_id = c.id AND pc.parent_id = %s
+                    )
+                  )
+            ORDER BY c.created_at DESC
+            """,
+            (parent_id, parent_id)
+        )
+        children = cursor.fetchall()
+        parent['total_children'] = len(children)
+
+        return jsonify({
+            'success': True,
+            'parent': parent,
+            'children': children
+        })
+    except Exception as e:
+        print(f"Error fetching parent detail: {e}")
+        return jsonify({'success': False, 'message': 'Error fetching parent detail'}), 500
     finally:
         cursor.close()
         conn.close()

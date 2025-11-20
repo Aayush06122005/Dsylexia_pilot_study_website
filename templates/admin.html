@@ -10,7 +10,7 @@
 </head>
 <body class="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 text-gray-900">
     <!-- Header -->
-    <header class="primary-bg text-white py-4 shadow-lg sticky top-0 z-40 backdrop-blur bg-blue-900/90">
+    <header class="primary-bg text-white py-4 shadow-lg sticky top-0 z-40 backdrop-blur bg-[#1A237E]">
         <div class="content-wrapper flex justify-between items-center max-w-7xl mx-auto px-4">
             <div class="flex items-center">
                 <img src="{{ url_for('static', filename='admin.jpg') }}" alt="Research Study" class="h-12 w-12 rounded-full mr-4 object-cover">
@@ -71,7 +71,7 @@
                     </div>
                 </div>
             </div>
-            <div class="bg-white/90 backdrop-blur p-4 rounded-2xl shadow border border-violet-100">
+            <!-- <div class="bg-white/90 backdrop-blur p-4 rounded-2xl shadow border border-violet-100">
                 <div class="flex items-center">
                     <div class="p-2 bg-violet-50 rounded-lg mr-3">
                         <svg class="w-5 h-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -83,11 +83,7 @@
                         <p class="mt-1 text-2xl font-bold text-violet-600" id="avgCompletion">0%</p>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Additional Statistics Cards -->
-        <div class="grid grid-cols-2 gap-4">
+            </div> -->
             <div class="bg-white/90 backdrop-blur p-4 rounded-2xl shadow border border-indigo-100">
                 <div class="flex items-center">
                     <div class="p-2 bg-indigo-100 rounded-lg mr-3">
@@ -101,19 +97,7 @@
                     </div>
                 </div>
             </div>
-            <div class="bg-white/90 backdrop-blur p-4 rounded-2xl shadow border border-rose-100">
-                <div class="flex items-center">
-                    <div class="p-2 bg-red-100 rounded-lg mr-3">
-                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                        </svg>
-                    </div>
-                    <div>
-                        <h3 class="text-xs font-semibold tracking-wide text-gray-500 uppercase">Data Quality</h3>
-                        <p class="mt-1 text-2xl font-bold text-rose-600" id="dataQuality">0%</p>
-                    </div>
-                </div>
-            </div>
+
             <div class="bg-white/90 backdrop-blur p-4 rounded-2xl shadow border border-teal-100">
                 <div class="flex items-center">
                     <div class="p-2 bg-teal-100 rounded-lg mr-3">
@@ -127,7 +111,38 @@
                     </div>
                 </div>
             </div>
-            <div class="bg-white/90 backdrop-blur p-4 rounded-2xl shadow border border-pink-100">
+        </div>
+
+        <!-- Additional Statistics Cards -->
+        <div class="grid grid-cols-2 gap-4">
+            <!-- <div class="bg-white/90 backdrop-blur p-4 rounded-2xl shadow border border-indigo-100">
+                <div class="flex items-center">
+                    <div class="p-2 bg-indigo-100 rounded-lg mr-3">
+                        <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-xs font-semibold tracking-wide text-gray-500 uppercase">Total Parents</h3>
+                        <p class="mt-1 text-2xl font-bold text-indigo-600" id="totalParents">0</p>
+                    </div>
+                </div>
+            </div> -->
+<!-- 
+            <div class="bg-white/90 backdrop-blur p-4 rounded-2xl shadow border border-teal-100">
+                <div class="flex items-center">
+                    <div class="p-2 bg-teal-100 rounded-lg mr-3">
+                        <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-xs font-semibold tracking-wide text-gray-500 uppercase">Tasks Completed</h3>
+                        <p class="mt-1 text-2xl font-bold text-teal-600" id="tasksCompleted">0</p>
+                    </div>
+                </div>
+            </div> -->
+            <!-- <div class="bg-white/90 backdrop-blur p-4 rounded-2xl shadow border border-pink-100">
                 <div class="flex items-center">
                     <div class="p-2 bg-pink-100 rounded-lg mr-3">
                         <svg class="w-6 h-6 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -139,7 +154,7 @@
                         <p class="mt-1 text-2xl font-bold text-pink-600" id="recentActivity">0</p>
                     </div>
                 </div>
-            </div>
+            </div> -->
         </div>
 
         <!-- System Overview Charts (compact, scrollable) -->
@@ -162,7 +177,7 @@
                     <canvas id="taskCompletionChart" class="w-full h-full"></canvas>
                 </div>
             </div>
-            <div class="bg-white/90 backdrop-blur p-4 rounded-2xl shadow border border-gray-200">
+            <!-- <div class="bg-white/90 backdrop-blur p-4 rounded-2xl shadow border border-gray-200">
                 <div class="flex items-center justify-between mb-2">
                     <h3 class="text-sm font-semibold text-gray-800">Class Distribution</h3>
                     <span class="text-[11px] uppercase tracking-wide text-gray-400">Students per class</span>
@@ -170,8 +185,8 @@
                 <div class="h-56">
                     <canvas id="classDistributionChart" class="w-full h-full"></canvas>
                 </div>
-            </div>
-            <div class="bg-white/90 backdrop-blur p-4 rounded-2xl shadow border border-gray-200">
+            </div> -->
+            <!-- <div class="bg-white/90 backdrop-blur p-4 rounded-2xl shadow border border-gray-200">
                 <div class="flex items-center justify-between mb-2">
                     <h3 class="text-sm font-semibold text-gray-800">Recent Activity (30 Days)</h3>
                     <span class="text-[11px] uppercase tracking-wide text-gray-400">Updates & completions</span>
@@ -179,7 +194,7 @@
                 <div class="h-56">
                     <canvas id="recentActivityChart" class="w-full h-full"></canvas>
                 </div>
-            </div>
+            </div> -->
         </div>
             </section>
 
@@ -192,9 +207,9 @@
                     <button class="tab-button active py-3 px-1 border-b-2 border-blue-500 text-blue-700 font-medium text-sm" data-tab="users">
                         User Management
                     </button>
-                    <button class="tab-button py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-800 font-medium text-sm" data-tab="data">
+                    <!-- <button class="tab-button py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-800 font-medium text-sm" data-tab="data">
                         Data Monitoring
-                    </button>
+                    </button> -->
                     <button class="tab-button py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-800 font-medium text-sm" data-tab="export">
                         Dataset Export
                     </button>
@@ -280,6 +295,16 @@
                                         <tbody id="childrenTableBody" class="bg-white divide-y divide-gray-200">
                                             <!-- Children data here -->
                                         </tbody>
+                                        <tbody id="childrenLoadingState" class="bg-white">
+                                            <tr>
+                                                <td colspan="8" class="px-6 py-8 text-center">
+                                                    <div class="flex flex-col items-center justify-center">
+                                                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+                                                        <p class="text-sm text-gray-500">Loading children...</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
                                     </table>
                                 </div>
                             </div>
@@ -304,6 +329,16 @@
                                         </thead>
                                         <tbody id="parentsTableBody" class="bg-white divide-y divide-gray-200">
                                             <!-- Parents data here -->
+                                        </tbody>
+                                        <tbody id="parentsLoadingState" class="bg-white">
+                                            <tr>
+                                                <td colspan="4" class="px-6 py-8 text-center">
+                                                    <div class="flex flex-col items-center justify-center">
+                                                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+                                                        <p class="text-sm text-gray-500">Loading parents...</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
                                         </tbody>
                                     </table>
                                 </div>
@@ -333,6 +368,16 @@
                                         <tbody id="schoolsTableBody" class="bg-white divide-y divide-gray-200">
                                             <!-- Schools data here -->
                                         </tbody>
+                                        <tbody id="schoolsLoadingState" class="bg-white">
+                                            <tr>
+                                                <td colspan="8" class="px-6 py-8 text-center">
+                                                    <div class="flex flex-col items-center justify-center">
+                                                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+                                                        <p class="text-sm text-gray-500">Loading schools...</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
                                     </table>
                                 </div>
                             </div>
@@ -350,6 +395,10 @@
                                         <h4 class="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Schools &amp; Classes</h4>
                                         <div id="hierarchyContainer" class="space-y-4 max-h-[480px] overflow-y-auto pr-2 custom-scrollbar">
                                             <!-- Hierarchy content -->
+                                        </div>
+                                        <div id="hierarchyLoadingState" class="hidden flex flex-col items-center justify-center py-12">
+                                            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-3"></div>
+                                            <p class="text-sm text-gray-500">Loading hierarchy...</p>
                                         </div>
                                     </div>
                                     <div>
@@ -543,6 +592,15 @@
                 <div id="suggestions-tab" class="tab-content hidden">
                     <h2 class="text-xl font-semibold text-gray-900 mb-4">Suggested Tasks by Schools</h2>
                     <div id="suggestionsList" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+                    <!-- Empty state message -->
+                    <div id="noSuggestionsMessage" class="hidden bg-white/90 backdrop-blur rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+                        <svg class="mx-auto h-16 w-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                        </svg>
+                        <h3 class="text-lg font-semibold text-gray-700 mb-2">No Task Suggestions Yet</h3>
+                        <p class="text-gray-500 mb-4">Schools haven't submitted any task suggestions at this time.</p>
+                        <p class="text-sm text-gray-400">Check back later or encourage schools to share their task recommendations.</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -768,7 +826,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadDashboardData();
             loadComprehensiveAdminStats(); // Load comprehensive admin statistics
-            loadDataQualityMetrics(); // Load data quality metrics
             loadTabData('users');
             // Ensure default subtab selection is Children
             switchUserSubtab('children');
@@ -789,7 +846,6 @@
                     document.getElementById('totalParticipants').textContent = data.stats.totalParticipants;
                     document.getElementById('activeStudies').textContent = data.stats.activeStudies; 
                     document.getElementById('completionRate').textContent = data.stats.completionRate + '%';
-                    document.getElementById('dataQuality').textContent = data.stats.dataQuality + '%';
                 }
             } catch (error) {
                 console.error('Error loading dashboard data:', error);
@@ -816,38 +872,6 @@
             }
         }
 
-        // Load data quality metrics
-        async function loadDataQualityMetrics() {
-            try {
-                const response = await fetch('/api/admin/data-quality-metrics');
-                const data = await response.json();
-                
-                if (data.success) {
-                    displayDataQualityMetrics(data.data);
-                } else {
-                    console.error('Failed to load data quality metrics:', data.message);
-                }
-            } catch (error) {
-                console.error('Error loading data quality metrics:', error);
-            }
-        }
-
-        function displayDataQualityMetrics(metrics) {
-            // Update audio quality
-            const audioQuality = metrics.audio_quality || 0;
-            document.getElementById('audioQualityBar').style.width = audioQuality + '%';
-            document.getElementById('audioQualityText').textContent = audioQuality + '%';
-
-            // Update response completeness
-            const responseCompleteness = metrics.response_completeness || 0;
-            document.getElementById('responseCompletenessBar').style.width = responseCompleteness + '%';
-            document.getElementById('responseCompletenessText').textContent = responseCompleteness + '%';
-
-            // Update data consistency
-            const dataConsistency = metrics.data_consistency || 0;
-            document.getElementById('dataConsistencyBar').style.width = dataConsistency + '%';
-            document.getElementById('dataConsistencyText').textContent = dataConsistency + '%';
-        }
 
         function displayAdminOverview(data) {
             const overview = data.system_overview;
@@ -860,23 +884,22 @@
             
             // Calculate average completion rate
             const taskStats = data.task_completion_stats || [];
-            const avgCompletion = taskStats.length > 0 
-                ? (taskStats.reduce((sum, task) => sum + (task.completion_rate || 0), 0) / taskStats.length).toFixed(1)
-                : 0;
-            document.getElementById('avgCompletion').textContent = avgCompletion + '%';
+            // const avgCompletion = taskStats.length > 0 
+            //     ? (taskStats.reduce((sum, task) => sum + (task.completion_rate || 0), 0) / taskStats.length).toFixed(1)
+            //     : 0;
+            // document.getElementById('avgCompletion').textContent = avgCompletion + '%';
             
             // Update data quality
-            const dataQuality = data.data_quality;
-            document.getElementById('dataQuality').textContent = dataQuality.demographics_completion_rate + '%';
+        
             
             // Calculate total tasks completed
             const totalTasksCompleted = taskStats.reduce((sum, task) => sum + (task.completed_count || 0), 0);
             document.getElementById('tasksCompleted').textContent = totalTasksCompleted;
             
             // Calculate recent activity (last 7 days)
-            const recentActivity = data.recent_activity.slice(0, 7);
-            const totalRecentActivity = recentActivity.reduce((sum, activity) => sum + (activity.total_updates || 0), 0);
-            document.getElementById('recentActivity').textContent = totalRecentActivity;
+            // const recentActivity = data.recent_activity.slice(0, 7);
+            // const totalRecentActivity = recentActivity.reduce((sum, activity) => sum + (activity.total_updates || 0), 0);
+            // document.getElementById('recentActivity').textContent = totalRecentActivity;
         }
 
         function displaySchoolPerformanceChart(schoolStats) {
@@ -1080,6 +1103,9 @@
         let allUsers = [];
 
         async function loadUserData() {
+            // Show loading states
+            showLoadingStates();
+            
             try {
                 const response = await fetch('/api/admin/users-grouped', {credentials: 'same-origin', cache: 'no-store'});
                 if(!response.ok){
@@ -1101,11 +1127,61 @@
                     filterAndDisplayUsers();
                     renderHierarchy(groupedUsers.hierarchy, groupedUsers.unassigned);
                 } else{
+                    hideLoadingStates();
                     alert('Failed to load. Please try again.');
                 }
             } catch (error) {
+                hideLoadingStates();
                 alert('Error loading user data:', error);
             }
+        }
+
+        function showLoadingStates() {
+            // Show loading indicators
+            const childrenLoading = document.getElementById('childrenLoadingState');
+            const parentsLoading = document.getElementById('parentsLoadingState');
+            const schoolsLoading = document.getElementById('schoolsLoadingState');
+            const hierarchyLoading = document.getElementById('hierarchyLoadingState');
+            
+            if (childrenLoading) childrenLoading.classList.remove('hidden');
+            if (parentsLoading) parentsLoading.classList.remove('hidden');
+            if (schoolsLoading) schoolsLoading.classList.remove('hidden');
+            if (hierarchyLoading) hierarchyLoading.classList.remove('hidden');
+            
+            // Hide table bodies
+            const childrenTable = document.getElementById('childrenTableBody');
+            const parentsTable = document.getElementById('parentsTableBody');
+            const schoolsTable = document.getElementById('schoolsTableBody');
+            const hierarchyContainer = document.getElementById('hierarchyContainer');
+            
+            if (childrenTable) childrenTable.style.display = 'none';
+            if (parentsTable) parentsTable.style.display = 'none';
+            if (schoolsTable) schoolsTable.style.display = 'none';
+            if (hierarchyContainer) hierarchyContainer.style.display = 'none';
+        }
+        
+        function hideLoadingStates() {
+            // Hide loading indicators
+            const childrenLoading = document.getElementById('childrenLoadingState');
+            const parentsLoading = document.getElementById('parentsLoadingState');
+            const schoolsLoading = document.getElementById('schoolsLoadingState');
+            const hierarchyLoading = document.getElementById('hierarchyLoadingState');
+            
+            if (childrenLoading) childrenLoading.classList.add('hidden');
+            if (parentsLoading) parentsLoading.classList.add('hidden');
+            if (schoolsLoading) schoolsLoading.classList.add('hidden');
+            if (hierarchyLoading) hierarchyLoading.classList.add('hidden');
+            
+            // Show table bodies
+            const childrenTable = document.getElementById('childrenTableBody');
+            const parentsTable = document.getElementById('parentsTableBody');
+            const schoolsTable = document.getElementById('schoolsTableBody');
+            const hierarchyContainer = document.getElementById('hierarchyContainer');
+            
+            if (childrenTable) childrenTable.style.display = '';
+            if (parentsTable) parentsTable.style.display = '';
+            if (schoolsTable) schoolsTable.style.display = '';
+            if (hierarchyContainer) hierarchyContainer.style.display = '';
         }
 
         function renderHierarchy(hierarchy, unassigned){
@@ -1114,6 +1190,9 @@
             if (!container || !unassignedContainer) return;
             container.innerHTML = '';
             unassignedContainer.innerHTML = '';
+            
+            // Hide loading state after rendering
+            hideLoadingStates();
 
             // Hierarchy flow: School → Classes → Sections → Students (with parents)
             (hierarchy || []).forEach(school => {
@@ -1241,7 +1320,7 @@
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.name}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.email}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button onclick="viewUserDetails(${user.id})" class="text-blue-600 hover:text-blue-900 mr-3">View Details</button>
+                    <button onclick="viewParentDetails(${user.id})" class="text-blue-600 hover:text-blue-900 mr-3">View Details</button>
                   
                 </td>
             `;
@@ -1349,6 +1428,90 @@
             }
         }
 
+        async function viewParentDetails(parentId) {
+            try {
+                const response = await fetch(`/api/admin/parents/${parentId}`);
+                const data = await response.json();
+                if (!data.success) {
+                    alert(data.message || 'Failed to load parent details');
+                    return;
+                }
+
+                const parent = data.parent || {};
+                const children = data.children || [];
+
+                const childrenRows = children.map(child => `
+                    <tr class="border-b border-gray-100">
+                        <td class="px-3 py-2 text-xs text-gray-900 whitespace-nowrap">${child.name || 'Unnamed'}</td>
+                        <td class="px-3 py-2 text-xs text-gray-500 whitespace-nowrap">${child.email || 'NA'}</td>
+                        <td class="px-3 py-2 text-xs text-gray-900 whitespace-nowrap">${child.class_name || 'NA'}</td>
+                        <td class="px-3 py-2 text-xs text-gray-900 whitespace-nowrap">${child.section_name || 'NA'}</td>
+                        <td class="px-3 py-2 text-xs text-gray-900 whitespace-nowrap">${child.school_name || 'NA'}</td>
+                        <td class="px-3 py-2 text-xs text-gray-500 whitespace-nowrap">${child.age || 'NA'}</td>
+                        <td class="px-3 py-2 text-xs whitespace-nowrap">
+                            <span class="px-2 py-0.5 rounded-full ${child.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'} text-[11px] font-semibold">
+                                ${child.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                        </td>
+                    </tr>
+                `).join('');
+
+                const modalContent = document.getElementById('userModalContent');
+                modalContent.innerHTML = `
+                    <div class="space-y-4 text-sm text-gray-700">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="border border-gray-200 rounded-lg p-4">
+                                <h4 class="font-semibold text-gray-800 mb-2">Parent Information</h4>
+                                <p><span class="font-medium">Name:</span> ${parent.name || 'NA'}</p>
+                                <p><span class="font-medium">Email:</span> ${parent.email || 'NA'}</p>
+                                <p><span class="font-medium">Associated School:</span> ${parent.school_name || 'Unassigned'}</p>
+                                <p><span class="font-medium">Joined:</span> ${parent.created_at ? new Date(parent.created_at).toLocaleString() : 'NA'}</p>
+                                <p><span class="font-medium">Total Children:</span> ${parent.total_children || children.length}</p>
+                            </div>
+                            <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                                <h4 class="font-semibold text-gray-800 mb-2">Contact & Notes</h4>
+                                <p class="text-sm text-gray-600">Use the email specified to reach out to the parent. You can  their children from the table below.</p>
+                            </div>
+                        </div>
+                        <div class="border border-gray-200 rounded-lg">
+                            <div class="flex items-center justify-between px-4 py-2 border-b border-gray-200">
+                                <h4 class="font-semibold text-gray-800">Children (${children.length})</h4>
+                            </div>
+                            ${children.length ? `
+                                <div class="max-h-56 overflow-y-auto">
+                                    <table class="min-w-full text-xs">
+                                        <thead class="bg-gray-50 text-[11px] uppercase text-gray-500 tracking-wide">
+                                            <tr>
+                                                <th class="px-3 py-2 text-left">Name</th>
+                                                <th class="px-3 py-2 text-left">Email</th>
+                                                <th class="px-3 py-2 text-left">Class</th>
+                                                <th class="px-3 py-2 text-left">Section</th>
+                                                <th class="px-3 py-2 text-left">School</th>
+                                                <th class="px-3 py-2 text-left">Age</th>
+                                                <th class="px-3 py-2 text-left">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white">
+                                            ${childrenRows}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ` : `
+                                <div class="px-4 py-3 text-sm text-gray-500">
+                                    No children are currently linked to this parent.
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('userModal').classList.remove('hidden');
+            } catch (error) {
+                console.error('Error loading parent details:', error);
+                alert('Failed to load parent details');
+            }
+        }
+
         function closeUserModal() {
             document.getElementById('userModal').classList.add('hidden');
         }
@@ -1361,7 +1524,7 @@
             initializeTaskAnalyticsChart();
             
             // Load recent activity
-            await loadRecentActivity();
+            // await loadRecentActivity();
         }
 
         async function initializeTaskCompletionChart() {
@@ -1447,26 +1610,26 @@
             });
         }
 
-        async function loadRecentActivity() {
-            try {
-                const response = await fetch('/api/admin/recent-activity');
-                const data = await response.json();
-                if (data.success) {
-                    const container = document.getElementById('recentActivity');
-                    container.innerHTML = data.activities.map(activity => `
-                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded">
-                            <div>
-                                <p class="text-sm font-medium text-gray-700">${activity.description}</p>
-                                <p class="text-xs text-gray-500">${activity.timestamp}</p>
-                            </div>
-                            <span class="px-2 py-1 text-xs rounded ${activity.type === 'completion' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}">${activity.type}</span>
-                        </div>
-                    `).join('');
-                }
-            } catch (error) {
-                console.error('Error loading recent activity:', error);
-            }
-        }
+        // async function loadRecentActivity() {
+        //     try {
+        //         const response = await fetch('/api/admin/recent-activity');
+        //         const data = await response.json();
+        //         if (data.success) {
+        //             const container = document.getElementById('recentActivity');
+        //             container.innerHTML = data.activities.map(activity => `
+        //                 <div class="flex items-center justify-between p-3 bg-gray-50 rounded">
+        //                     <div>
+        //                         <p class="text-sm font-medium text-gray-700">${activity.description}</p>
+        //                         <p class="text-xs text-gray-500">${activity.timestamp}</p>
+        //                     </div>
+        //                     <span class="px-2 py-1 text-xs rounded ${activity.type === 'completion' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}">${activity.type}</span>
+        //                 </div>
+        //             `).join('');
+        //         }
+        //     } catch (error) {
+        //         console.error('Error loading recent activity:', error);
+        //     }
+        // }
 
         // Export functions
         async function exportDataset() {
@@ -1784,7 +1947,19 @@ Example: ${task.example || 'N/A'}
                 }
                 const data = await resp.json();
                 const container = document.getElementById('suggestionsList');
+                const noSuggestionsMsg = document.getElementById('noSuggestionsMessage');
                 container.innerHTML = '';
+                
+                // Show/hide empty state message
+                if (!data.suggestions || data.suggestions.length === 0) {
+                    container.classList.add('hidden');
+                    noSuggestionsMsg.classList.remove('hidden');
+                    return;
+                } else {
+                    container.classList.remove('hidden');
+                    noSuggestionsMsg.classList.add('hidden');
+                }
+                
                 (data.suggestions || []).forEach(row => {
                     const card = document.createElement('div');
                     card.className = 'bg-white shadow-md rounded-lg border border-gray-200 p-5 flex flex-col';
