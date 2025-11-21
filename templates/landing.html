@@ -10,14 +10,22 @@
 </head>
 <body>
     <!-- Header -->
-    <header class="primary-bg text-white py-6">
-        <div class="content-wrapper flex justify-between items-center">
-            <div class="flex items-center">
-                
-                <h1 class="text-xl md:text-2xl font-bold">Leveraging NLP for Dyslexia Identification</h1>
+    <header class="primary-bg text-white py-4 md:py-6">
+        <div class="content-wrapper flex justify-between items-center px-4 md:px-6">
+            <div class="flex items-center flex-1 min-w-0">
+                <h1 class="text-sm sm:text-base md:text-xl lg:text-2xl font-bold truncate">Leveraging NLP for Dyslexia Identification</h1>
             </div>
-            <nav>
-                <ul class="flex space-x-6 text-lg md:text-xl">
+            
+            <!-- Mobile menu button -->
+            <button id="mobileMenuBtn" class="lg:hidden ml-2 p-2 rounded-md bg-white/10 hover:bg-white/20 focus:outline-none flex-shrink-0" aria-label="Toggle menu">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            </button>
+            
+            <!-- Desktop navigation -->
+            <nav class="hidden lg:block flex-shrink-0">
+                <ul class="flex space-x-4 xl:space-x-6 text-base xl:text-lg">
                     <li><a href="#about" class="hover:text-yellow-100 transition">About</a></li>
                     <li><a href="#eligibility" class="hover:text-yellow-100 transition">Eligibility</a></li>
                     <li><a href="#contact" class="hover:text-yellow-100 transition">Contact</a></li>
@@ -29,9 +37,30 @@
                     {% else %}
                     <li><a href="{{ url_for('signin') }}" class="hover:text-yellow-100 transition" id="signinBtn">Sign In</a></li>
                     {% endif %}
-                    
                     <li>
                         <a href="/admin/login" class="hover:text-yellow-100 transition bg-yellow-500 text-blue-900 px-3 py-1 rounded">Admin</a>
+                    </li>
+                </ul> 
+            </nav>
+        </div>
+        
+        <!-- Mobile menu dropdown -->
+        <div id="mobileMenu" class="hidden lg:hidden border-t border-white/20 mt-4">
+            <nav class="content-wrapper px-4 py-4">
+                <ul class="space-y-3 text-base">
+                    <li><a href="#about" class="block hover:text-yellow-100 transition py-2">About</a></li>
+                    <li><a href="#eligibility" class="block hover:text-yellow-100 transition py-2">Eligibility</a></li>
+                    <li><a href="#contact" class="block hover:text-yellow-100 transition py-2">Contact</a></li>
+                    {% if session.get('user_type') %}
+                    <li>
+                        <a href="{% if session.get('user_type') == 'parent' %}/parent{% elif session.get('user_type') == 'school' %}/school.html{% else %}/participant-dashboard{% endif %}" 
+                           class="block hover:text-yellow-100 transition py-2">Dashboard</a>
+                    </li>
+                    {% else %}
+                    <li><a href="{{ url_for('signin') }}" class="block hover:text-yellow-100 transition py-2" id="signinBtnMobile">Sign In</a></li>
+                    {% endif %}
+                    <li>
+                        <a href="/admin/login" class="inline-block bg-yellow-500 text-blue-900 px-4 py-2 rounded hover:bg-yellow-400 transition">Admin Portal</a>
                     </li>
                 </ul> 
             </nav>
@@ -115,37 +144,36 @@
     </div>
 
     <!-- Hero Section -->
-    <section class="relative pt-16 pb-24 md:pt-24 md:pb-32">
-        <div class="content-wrapper flex flex-col md:flex-row items-center">
-            <div class="md:w-1/2 mb-10 md:mb-0 md:pr-10">
-                <h1 class="text-3xl md:text-4xl lg:text-5xl font-bold mb-6" style="color: #1a1a1a;">
+    <section class="relative pt-8 pb-12 sm:pt-12 sm:pb-16 md:pt-16 md:pb-24 lg:pt-24 lg:pb-32">
+        <div class="content-wrapper flex flex-col md:flex-row items-center px-4 md:px-6">
+            <div class="w-full md:w-1/2 mb-8 md:mb-0 md:pr-8 lg:pr-10">
+                <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-6" style="color: #1a1a1a;">
                     Leveraging NLP for Dyslexia Identification
                 </h1>
-                <h2 class="text-xl md:text-2xl font-semibold mb-6" style="color: #003366;">
+                <h2 class="text-lg sm:text-xl md:text-2xl font-semibold mb-4 md:mb-6" style="color: #003366;">
                     Personalized Multimodal Language Assistance - Research Study
                 </h2>
-                <p class="text-gray-800 text-lg mb-8" style="COLOR: #333;">
+                <p class="text-gray-800 text-base sm:text-lg mb-6 md:mb-8" style="COLOR: #333;">
                     Join our groundbreaking research to develop innovative tools that can help identify dyslexia earlier and create personalized learning solutions. Your participation could make a significant difference in how we understand and support individuals with dyslexia.
                 </p>
-                <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-                    <button id="learnMoreBtn" class="primary-bg hover:bg-blue-600 text-white font-medium py-3 px-6 rounded-lg transition" style="background-color: #1A237E;">
+                <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
+                    <button id="learnMoreBtn" class="primary-bg hover:bg-blue-600 text-white font-medium py-3 px-6 rounded-lg transition text-center" style="background-color: #1A237E;">
                         Learn More
                     </button>
                 </div>
             </div>
-            <div class="md:w-1/2">
+            <div class="w-full md:w-1/2">
                 <img src="{{ url_for('static', filename='img1.jpg') }}" alt="Illustration related to dyslexia and NLP" class="w-full h-auto rounded-lg shadow-lg">
             </div>
-            
         </div>
     </section>
 
     <!-- About Section -->
-    <section id="about" class="py-16 text-lg" style="background-color: #ffffff;">
-        <div class="content-wrapper">
-            <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">About the Research</h2>
+    <section id="about" class="py-12 sm:py-16 text-base sm:text-lg" style="background-color: #ffffff;">
+        <div class="content-wrapper px-4 md:px-6">
+            <h2 class="text-2xl sm:text-3xl font-bold text-center text-gray-800 mb-8 sm:mb-12">About the Research</h2>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
                 <div class="card bg-gradient-to-br from-blue-50 to-white p-6 rounded-xl shadow-md">
                     <div class="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mb-6">
                         <svg class="w-8 h-8" style="color: #1A237E;" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
@@ -184,11 +212,11 @@
                 </div>
             </div>
             
-            <div class="mt-16 highlight-bg p-8 rounded-xl bg-gradient-to-br from-blue-50 to-white" >
+            <div class="mt-12 sm:mt-16 highlight-bg p-6 sm:p-8 rounded-xl bg-gradient-to-br from-blue-50 to-white" >
                 <!-- style="background-color: #f5f5dc rgba(255, 255, 0, 0.1);" -->
-                <h3 class="text-2xl font-semibold text-gray-800 mb-4">Data Privacy & Ethics</h3>
+                <h3 class="text-xl sm:text-2xl font-semibold text-gray-800 mb-4">Data Privacy & Ethics</h3>
                 <div class="flex flex-col md:flex-row">
-                    <div class="md:w-2/3 md:pr-8">
+                    <div class="w-full md:w-2/3 md:pr-8">
                         <p class="text-gray-600 mb-4">
                             We take your privacy seriously. All data collected during this study will be:
                         </p>
@@ -198,11 +226,10 @@
                             <li>Used only for research purposes</li>
                             <li>Handled according to IRB (Institutional Review Board) approved protocols</li>
                         </ul>
-                        
                     </div>
                     
-                    <div class="md:w-1/2 flex justify-center items-start">
-                        <img src="{{ url_for('static', filename='shield.jpg') }}" alt="Illustration related to dyslexia and NLP" class="w-1/3 h-auto rounded-lg shadow-lg">
+                    <div class="w-full md:w-1/3 flex justify-center items-start mt-6 md:mt-0">
+                        <img src="{{ url_for('static', filename='shield.jpg') }}" alt="Data Privacy Shield" class="w-1/2 md:w-2/3 h-auto rounded-lg shadow-lg">
                     </div>
                 </div>
             </div>
@@ -210,11 +237,11 @@
     </section>
 
     <!-- Eligibility Section -->
-    <section id="eligibility" class="py-16 beige-bg text-lg" style="background-color: #f5f5dc;">
-        <div class="content-wrapper">
-            <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">Who Can Participate?</h2>
+    <section id="eligibility" class="py-12 sm:py-16 beige-bg text-base sm:text-lg" style="background-color: #f5f5dc;">
+        <div class="content-wrapper px-4 md:px-6">
+            <h2 class="text-2xl sm:text-3xl font-bold text-center text-gray-800 mb-8 sm:mb-12">Who Can Participate?</h2>
             
-            <div class="flex flex-col md:flex-row gap-8">
+            <div class="flex flex-col md:flex-row gap-6 sm:gap-8">
                 <div class="md:w-1/2 bg-white p-8 rounded-xl shadow-md">
                     <h3 class="text-2xl font-semibold mb-6 flex items-center" style="color: #1A237E;">
                         <svg class="w-8 h-8 mr-3" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
@@ -286,9 +313,9 @@
                 </div>
             </div>
             
-            <div class="mt-12 bg-white p-8 rounded-xl shadow-md">
-                <h3 class="text-2xl font-semibold text-gray-800 mb-6">What Participation Involves</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="mt-8 sm:mt-12 bg-white p-6 sm:p-8 rounded-xl shadow-md">
+                <h3 class="text-xl sm:text-2xl font-semibold text-gray-800 mb-6">What Participation Involves</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div class="border border-blue-100 rounded-lg p-5">
                         <div class="flex items-center mb-4">
                             <div class="rounded-full w-10 h-10 flex items-center justify-center mr-3" style="background-color: rgba(74, 144, 226, 0.1);">
@@ -339,12 +366,12 @@
     </section>
 
     <!-- Contact Section -->
-    <section id="contact" class="py-16 bg-white text-lg">
-        <div class="content-wrapper">
-            <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">Contact Us</h2>
+    <section id="contact" class="py-12 sm:py-16 bg-white text-base sm:text-lg">
+        <div class="content-wrapper px-4 md:px-6">
+            <h2 class="text-2xl sm:text-3xl font-bold text-center text-gray-800 mb-8 sm:mb-12">Contact Us</h2>
             
-            <div class="w-full max-w-6xl mx-auto bg-beige rounded-xl overflow-hidden shadow-md px-4" style="background-color: #f5f5dc;">
-                <div class="md:flex">
+            <div class="w-full max-w-6xl mx-auto bg-beige rounded-xl overflow-hidden shadow-md" style="background-color: #f5f5dc;">
+                <div class="flex flex-col md:flex-row">
                     <div class="md:w-1/3 p-8 text-white" style="background-color: #1A237E;">
                         <h3 class="text-xl font-semibold mb-6">Research Team</h3>
                         <div class="space-y-4">
@@ -405,10 +432,10 @@
     </section>
 
     <!-- CTA Section -->
-    <section class="py-16 text-white" style="background-color: #1A237E;">
-        <div class="content-wrapper text-center">
-            <h2 class="text-3xl font-bold mb-6">Ready to Make a Difference?</h2>
-            <p class="text-xl mb-8 max-w-2xl mx-auto">
+    <section class="py-12 sm:py-16 text-white" style="background-color: #1A237E;">
+        <div class="content-wrapper text-center px-4 md:px-6">
+            <h2 class="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">Ready to Make a Difference?</h2>
+            <p class="text-lg sm:text-xl mb-6 sm:mb-8 max-w-2xl mx-auto">
                 Join our research study today and help us develop better tools for identifying and supporting individuals with dyslexia.
             </p>
             <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
@@ -492,23 +519,47 @@
     </footer>
     <script src="{{ url_for('static', filename='landing_script.js') }}"></script>
     <script>
-// document.getElementById('signinBtn').addEventListener('click', function(e) {
-//     e.preventDefault();
-//     // Show a prompt (replace with a modal for better UI if you want)
-//     const choice = prompt("Login as:\n1. Student\n2. Parent/School\n\nEnter 1 or 2:");
-//     if (choice === "1") {
-//         window.location.href = "/student-signin";
-//     } else if (choice === "2") {
-//         window.location.href = "/signin";
-//     }
-//     // else do nothing if cancelled or invalid input
-// });
+// Mobile menu toggle
+const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+const mobileMenu = document.getElementById('mobileMenu');
+
+if (mobileMenuBtn && mobileMenu) {
+    mobileMenuBtn.addEventListener('click', () => {
+        mobileMenu.classList.toggle('hidden');
+    });
+    
+    // Close mobile menu when clicking on a link
+    const mobileMenuLinks = mobileMenu.querySelectorAll('a');
+    mobileMenuLinks.forEach(link => {
+        link.addEventListener('click', () => {
+            mobileMenu.classList.add('hidden');
+        });
+    });
+    
+    // Close mobile menu on window resize to desktop
+    window.addEventListener('resize', () => {
+        if (window.innerWidth >= 1024) {
+            mobileMenu.classList.add('hidden');
+        }
+    });
+}
 
 // Direct redirect to unified signin page
-document.getElementById('signinBtn').addEventListener('click', function(e) {
-  e.preventDefault();
-  window.location.href = '/signin';
-});
+const signinBtn = document.getElementById('signinBtn');
+if (signinBtn) {
+    signinBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        window.location.href = '/signin';
+    });
+}
+
+const signinBtnMobile = document.getElementById('signinBtnMobile');
+if (signinBtnMobile) {
+    signinBtnMobile.addEventListener('click', function(e) {
+        e.preventDefault();
+        window.location.href = '/signin';
+    });
+}
 
 document.getElementById('contactForm').addEventListener('submit', function(e) {
     e.preventDefault();

@@ -9,14 +9,24 @@
 </head>
 <body>
     <!-- Header -->
-    <header class="primary-bg text-white py-6">
+    <header class="primary-bg text-white py-4 md:py-6">
         <div class="content-wrapper flex justify-between items-center">
             <div class="flex items-center">
-                <img src="{{ url_for('static', filename='write.jpg') }}" alt="Writing Task" class="h-12 w-12 rounded-full mr-4 hidden md:block">
-                <h1 class="text-xl md:text-2xl font-bold">Writing Task</h1>
+                <img src="{{ url_for('static', filename='write.jpg') }}" alt="Writing Task" class="h-10 w-10 md:h-12 md:w-12 rounded-full mr-2 md:mr-4">
+                <h1 class="text-lg md:text-xl lg:text-2xl font-bold">Writing Task</h1>
             </div>
-            <nav>
-                <ul class="flex space-x-6 text-lg md:text-xl items-center">
+            
+            <!-- Mobile Menu Button -->
+            <button id="mobileMenuBtn" class="md:hidden text-white p-2">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path id="menuIcon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    <path id="closeIcon" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+            
+            <!-- Desktop Navigation -->
+            <nav class="hidden md:block">
+                <ul class="flex space-x-4 lg:space-x-6 text-base lg:text-lg items-center">
                     <li><a href="{{ url_for('landing') }}#about" class="hover:text-yellow-100 transition">About</a></li>
                     <li><a href="{{ url_for('landing') }}#contact" class="hover:text-yellow-100 transition">Contact</a></li>
                     <li><a href="/participant-dashboard" class="hover:text-yellow-100 transition">Dashboard</a></li>
@@ -24,20 +34,30 @@
                 </ul>
             </nav>
         </div>
+        
+        <!-- Mobile Navigation Menu -->
+        <nav id="mobileMenu" class="hidden md:hidden mt-4">
+            <ul class="flex flex-col space-y-3 text-base">
+                <li><a href="{{ url_for('landing') }}#about" class="block py-2 px-4 hover:bg-blue-700 transition rounded">About</a></li>
+                <li><a href="{{ url_for('landing') }}#contact" class="block py-2 px-4 hover:bg-blue-700 transition rounded">Contact</a></li>
+                <li><a href="/participant-dashboard" class="block py-2 px-4 hover:bg-blue-700 transition rounded">Dashboard</a></li>
+                <li><a href="#" id="logoutBtnMobile" class="block py-2 px-4 hover:bg-blue-700 transition rounded">Logout</a></li>
+            </ul>
+        </nav>
     </header>
 
     <!-- Accessibility Button with Label -->
-    <div class="fixed bottom-4 left-4 z-50 flex flex-col items-center space-y-1">
+    <div class="fixed bottom-4 left-2 md:left-4 z-50 flex flex-col items-center space-y-1">
         <button id="togglePanel"
-            class="bg-[#1A237E] text-white p-3 rounded-full shadow-lg hover:bg-[#3a74cc] transition border border-white"
+            class="bg-[#1A237E] text-white p-2 md:p-3 rounded-full shadow-lg hover:bg-[#3a74cc] transition border border-white"
             aria-label="Toggle Accessibility Panel">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6" fill="none"
                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round"
                     d="M12 4.5c.828 0 1.5-.672 1.5-1.5S12.828 1.5 12 1.5 10.5 2.172 10.5 3s.672 1.5 1.5 1.5zM4.75 9.25l3.625.75M19.25 9.25l-3.625.75M8.375 10l.625 9m6-9l-.625 9M5.5 21.25h13"/>
             </svg>
         </button>
-        <span class="text-sm text-white bg-[#1A237E] px-2 py-1 rounded shadow border border-white">
+        <span class="text-xs md:text-sm text-white bg-[#1A237E] px-2 py-1 rounded shadow border border-white">
             Accessibility
         </span>
     </div>
@@ -48,7 +68,7 @@
     
     <!-- Accessibility Panel -->
     <div id="accessibilityPanel"
-        class="hidden fixed top-0 left-0 h-screen w-80 bg-white shadow-lg z-50 border-l border-gray-300 overflow-y-auto p-4 space-y-6">
+        class="hidden fixed top-0 left-0 h-screen w-full sm:w-80 bg-white shadow-lg z-50 border-l border-gray-300 overflow-y-auto p-4 space-y-6">
         <div class="flex justify-between items-center mb-4">
             <h2 class="text-lg font-semibold text-[#1A237E]">Accessibility Menu</h2>
             <button id="closePanel" class="text-2xl font-bold text-gray-500 hover:text-gray-700">&times;</button>
@@ -93,28 +113,28 @@
     </div>
 
     <!-- Main Content -->
-    <main class="flex justify-center items-center min-h-[60vh] bg-transparent my-16">
-        <div class="w-full max-w-4xl bg-white rounded-2xl shadow-lg p-8 flex flex-col items-center border border-gray-200">
-            <div class="flex items-center gap-4 mb-6">
-                <img src="{{ url_for('static', filename='write.jpg') }}" alt="Writing Task" class="w-16 h-16 object-cover rounded-xl shadow-md">
-                <h2 class="text-2xl font-bold text-[#1A237E]" id="taskTitle">Writing Task</h2>
+    <main class="flex justify-center items-center min-h-[60vh] bg-transparent my-4 md:my-8 lg:my-16 px-4">
+        <div class="w-full max-w-4xl bg-white rounded-xl md:rounded-2xl shadow-lg p-4 md:p-6 lg:p-8 flex flex-col items-center border border-gray-200">
+            <div class="flex items-center gap-2 md:gap-4 mb-4 md:mb-6">
+                <img src="{{ url_for('static', filename='write.jpg') }}" alt="Writing Task" class="w-12 h-12 md:w-16 md:h-16 object-cover rounded-lg md:rounded-xl shadow-md">
+                <h2 class="text-xl md:text-2xl font-bold text-[#1A237E]" id="taskTitle">Writing Task</h2>
             </div>
             
             <!-- Task Instructions -->
-            <div class="w-full mb-6">
-                <div class="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4">
-                    <h3 class="font-semibold text-blue-800 mb-2">Instructions:</h3>
-                    <p id="taskInstructions" class="text-blue-700">Loading instructions...</p>
+            <div class="w-full mb-4 md:mb-6">
+                <div class="bg-blue-50 p-3 md:p-4 rounded-lg border border-blue-200 mb-3 md:mb-4">
+                    <h3 class="font-semibold text-sm md:text-base text-blue-800 mb-2">Instructions:</h3>
+                    <p id="taskInstructions" class="text-sm md:text-base text-blue-700">Loading instructions...</p>
                 </div>
                 
-                <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-4">
-                    <h3 class="font-semibold text-gray-800 mb-2">Writing Prompt:</h3>
-                    <div id="writingPrompt" class="text-gray-700 text-lg leading-relaxed whitespace-pre-wrap">Loading prompt...</div>
+                <div class="bg-gray-50 p-3 md:p-4 rounded-lg border border-gray-200 mb-3 md:mb-4">
+                    <h3 class="font-semibold text-sm md:text-base text-gray-800 mb-2">Writing Prompt:</h3>
+                    <div id="writingPrompt" class="text-gray-700 text-base md:text-lg leading-relaxed whitespace-pre-wrap">Loading prompt...</div>
                 </div>
                 
-                <div class="bg-green-50 p-4 rounded-lg border border-green-200">
-                    <h3 class="font-semibold text-green-800 mb-2">Task Details:</h3>
-                    <div id="taskDetails" class="space-y-1 text-green-700">
+                <div class="bg-green-50 p-3 md:p-4 rounded-lg border border-green-200">
+                    <h3 class="font-semibold text-sm md:text-base text-green-800 mb-2">Task Details:</h3>
+                    <div id="taskDetails" class="space-y-1 text-sm md:text-base text-green-700">
                         <p><strong>Word Limit:</strong> <span id="wordLimit">Loading...</span></p>
                         <p><strong>Estimated Time:</strong> <span id="estimatedTime">Loading...</span> minutes</p>
                         <p><strong>Difficulty:</strong> <span id="difficulty">Loading...</span></p>
@@ -123,15 +143,15 @@
             </div>
 
             <!-- Writing Steps -->
-            <div class="w-full mb-6">
-                <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+            <div class="w-full mb-4 md:mb-6">
+                <div class="bg-yellow-50 p-3 md:p-4 rounded-lg border border-yellow-200">
                     <div class="flex items-start">
                         <svg class="w-5 h-5 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
                         </svg>
                         <div>
-                            <p class="text-yellow-800 font-semibold mb-2">Steps to Complete:</p>
-                            <ol class="text-yellow-700 text-sm space-y-1 list-decimal list-inside">
+                            <p class="text-yellow-800 font-semibold text-sm md:text-base mb-2">Steps to Complete:</p>
+                            <ol class="text-yellow-700 text-xs md:text-sm space-y-1 list-decimal list-inside">
                                 <li>Read the writing prompt carefully</li>
                                 <li>Write your response by hand on paper</li>
                                 <li>Take a clear photo of your writing</li>
@@ -144,13 +164,13 @@
             </div>
 
             <!-- Image Upload Section -->
-            <div class="w-full mb-6">
-                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+            <div class="w-full mb-4 md:mb-6">
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 md:p-6 text-center">
                     <div id="uploadArea" class="cursor-pointer">
-                        <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                        <svg class="mx-auto h-10 w-10 md:h-12 md:w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                             <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                         </svg>
-                        <p class="mt-2 text-sm text-gray-600">
+                        <p class="mt-2 text-xs md:text-sm text-gray-600">
                             <span class="font-medium text-blue-600 hover:text-blue-500">Click to upload</span> or drag and drop
                         </p>
                         <p class="text-xs text-gray-500">PNG, JPG, GIF, BMP, TIFF, WEBP up to 10MB</p>
@@ -159,8 +179,8 @@
                     <input type="file" id="imageInput" accept="image/*" class="hidden">
                     
                     <div id="imagePreview" class="hidden mt-4">
-                        <img id="previewImg" class="mx-auto max-h-64 rounded-lg shadow-md" alt="Writing sample preview">
-                        <button id="removeImage" class="mt-2 text-red-600 hover:text-red-800 text-sm font-medium">
+                        <img id="previewImg" class="mx-auto max-h-48 md:max-h-64 rounded-lg shadow-md w-full object-contain" alt="Writing sample preview">
+                        <button id="removeImage" class="mt-2 text-red-600 hover:text-red-800 text-xs md:text-sm font-medium">
                             Remove image
                         </button>
                     </div>
@@ -168,21 +188,21 @@
             </div>
 
             <!-- Action Buttons -->
-            <div class="flex gap-4 w-full">
-                <button id="saveProgressBtn" class="bg-gray-600 text-white px-8 py-3 rounded-lg font-semibold transition hover:bg-gray-700 flex-1" disabled>
+            <div class="flex flex-col sm:flex-row gap-3 md:gap-4 w-full">
+                <button id="saveProgressBtn" class="bg-gray-600 text-white px-4 md:px-8 py-2.5 md:py-3 rounded-lg text-sm md:text-base font-semibold transition hover:bg-gray-700 flex-1" disabled>
                     Save Progress
                 </button>
-                <button id="submitBtn" class="primary-bg text-white px-8 py-3 rounded-lg font-semibold transition hover:bg-blue-700 flex-1" disabled>
+                <button id="submitBtn" class="primary-bg text-white px-4 md:px-8 py-2.5 md:py-3 rounded-lg text-sm md:text-base font-semibold transition hover:bg-blue-700 flex-1" disabled>
                     Submit Writing
                 </button>
             </div>
 
             <!-- Status Messages -->
-            <div id="statusMsg" class="mt-4 text-center font-semibold hidden"></div>
+            <div id="statusMsg" class="mt-4 text-center text-sm md:text-base font-semibold hidden"></div>
 
             <!-- Completion Buttons -->
-            <div id="completionButtons" class="mt-6 flex gap-4 w-full hidden">
-                <button id="dashboardBtn" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold transition flex-1">
+            <div id="completionButtons" class="mt-4 md:mt-6 flex flex-col sm:flex-row gap-3 md:gap-4 w-full hidden">
+                <button id="dashboardBtn" class="bg-blue-600 text-white px-4 md:px-6 py-2.5 md:py-3 rounded-lg text-sm md:text-base font-semibold transition flex-1">
                     Return to Dashboard
                 </button>
                 
@@ -191,21 +211,21 @@
     </main>
 
     <!-- Footer -->
-    <footer class="dark-bg text-white py-12 text-lg" style="background-color: #333333;">
-        <div class="content-wrapper">
+    <footer class="dark-bg text-white py-8 md:py-12 text-sm md:text-base lg:text-lg" style="background-color: #333333;">
+        <div class="content-wrapper px-4">
             <div class="flex flex-col md:flex-row justify-between">
-                <div class="mb-8 md:mb-0">
+                <div class="mb-6 md:mb-8">
                     <div class="flex items-center">
-                        <h2 class="text-xl font-bold">Dyslexia Research Initiative</h2>
+                        <h2 class="text-lg md:text-xl font-bold">Dyslexia Research Initiative</h2>
                     </div>
                     <p class="mt-4 text-gray-400 max-w-md">
                         Advancing our understanding of dyslexia through innovative research and technology to create better support systems for everyone.
                     </p>
                 </div>
                 
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-8">
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
                     <div>
-                        <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+                        <h3 class="text-base md:text-lg font-semibold mb-3 md:mb-4">Quick Links</h3>
                         <ul class="space-y-2">
                             <li><a href="landing.html#about" class="text-gray-400 hover:text-white transition">About</a></li>
                             <li><a href="landing.html#contact" class="text-gray-400 hover:text-white transition">Contact</a></li>
@@ -213,7 +233,7 @@
                     </div>
                     
                     <div>
-                        <h3 class="text-lg font-semibold mb-4">Resources</h3>
+                        <h3 class="text-base md:text-lg font-semibold mb-3 md:mb-4">Resources</h3>
                         <ul class="space-y-2">
                             <li><a href="learn_more.html#faq" class="text-gray-400 hover:text-white transition">FAQs</a></li>
                             <li><a href="#" class="text-gray-400 hover:text-white transition">Privacy Policy</a></li>
@@ -221,15 +241,15 @@
                     </div>
                     
                     <div>
-                        <h3 class="text-lg font-semibold mb-4">Connect</h3>
-                        <div class="flex space-x-4">
+                        <h3 class="text-base md:text-lg font-semibold mb-3 md:mb-4">Connect</h3>
+                        <div class="flex space-x-3 md:space-x-4">
                             <a href="#" class="text-gray-400 hover:text-white transition">
-                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <svg class="w-5 h-5 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"></path>
                                 </svg>
                             </a>
                             <a href="#" class="text-gray-400 hover:text-white transition">
-                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <svg class="w-5 h-5 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                     <path fill-rule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z" clip-rule="evenodd"></path>
                                 </svg>
                             </a>
@@ -238,7 +258,7 @@
                 </div>
             </div>
             
-            <div class="mt-12 pt-8 border-t border-gray-700 text-center text-gray-400">
+            <div class="mt-8 md:mt-12 pt-6 md:pt-8 border-t border-gray-700 text-center text-xs md:text-sm text-gray-400">
                 <p>&copy; 2025 Leveraging NLP for Dyslexia Identification. All rights reserved.</p>
             </div>
         </div>
@@ -340,8 +360,48 @@
             root.style.fontSize = `${currentFontSize}px`;
         }
 
+        // Mobile menu toggle
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const menuIcon = document.getElementById('menuIcon');
+        const closeIcon = document.getElementById('closeIcon');
+        
+        mobileMenuBtn.addEventListener('click', function() {
+            mobileMenu.classList.toggle('hidden');
+            menuIcon.classList.toggle('hidden');
+            closeIcon.classList.toggle('hidden');
+        });
+        
+        // Close mobile menu when clicking a link
+        const mobileMenuLinks = mobileMenu.querySelectorAll('a');
+        mobileMenuLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.add('hidden');
+                menuIcon.classList.remove('hidden');
+                closeIcon.classList.add('hidden');
+            });
+        });
+
         // Logout functionality
         document.getElementById('logoutBtn').addEventListener('click', function() {
+            fetch('/api/logout', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                localStorage.clear();
+                window.location.href = '/';
+            })
+            .catch(() => {
+                localStorage.clear();
+                window.location.href = '/';
+            });
+        });
+        
+        // Mobile logout functionality
+        document.getElementById('logoutBtnMobile').addEventListener('click', function() {
             fetch('/api/logout', {
                 method: 'POST',
                 credentials: 'same-origin',

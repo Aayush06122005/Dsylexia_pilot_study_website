@@ -11,14 +11,22 @@
 </head>
 <body>
     <!-- Header -->
-    <header class="primary-bg text-white py-6">
-        <div class="content-wrapper flex justify-between items-left">
-            <div class="flex items-left">
-                
-                <h1 class="text-xl md:text-2xl font-bold">Leveraging NLP for Dyslexia Identification</h1>
+    <header class="primary-bg text-white py-4 md:py-6">
+        <div class="content-wrapper flex justify-between items-center px-3 sm:px-4">
+            <div class="flex items-center flex-1 min-w-0">
+                <h1 class="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl font-bold truncate">Leveraging NLP for Dyslexia Identification</h1>
             </div>
-            <nav>
-                <ul class="flex space-x-6 text-lg md:text-xl">
+            
+            <!-- Hamburger Menu Button (visible on small screens) -->
+            <button id="hamburgerBtn" class="md:hidden text-white p-2 hover:bg-blue-700 rounded transition" aria-label="Toggle menu">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            </button>
+            
+            <!-- Desktop Navigation (hidden on small screens) -->
+            <nav class="hidden md:block">
+                <ul class="flex space-x-2 sm:space-x-3 md:space-x-4 lg:space-x-6 text-xs sm:text-sm md:text-base lg:text-lg items-center">
                     <li><a href="#research-team" class="hover:text-yellow-100 transition">Research Team</a></li>
                     <li><a href="#data-security" class="hover:text-yellow-100 transition">Data Security</a></li>
                     <li><a href="#faq" class="hover:text-yellow-100 transition">FAQs</a></li>
@@ -31,16 +39,42 @@
             </nav>
         </div>    
     </header>
+    
+    <!-- Mobile Navigation Menu (slide-out) -->
+    <div id="mobileMenu" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div id="mobileMenuContent" class="fixed right-0 top-0 h-full w-64 bg-[#1A237E] text-white transform translate-x-full transition-transform duration-300 ease-in-out shadow-lg">
+            <div class="flex justify-between items-center p-4 border-b border-blue-700">
+                <h2 class="text-lg font-bold">Menu</h2>
+                <button id="closeMobileMenu" class="text-white p-2 hover:bg-blue-700 rounded transition" aria-label="Close menu">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <nav class="p-4">
+                <ul class="space-y-4">
+                    <li><a href="#research-team" class="block py-2 px-4 hover:bg-blue-700 rounded transition">Research Team</a></li>
+                    <li><a href="#data-security" class="block py-2 px-4 hover:bg-blue-700 rounded transition">Data Security</a></li>
+                    <li><a href="#faq" class="block py-2 px-4 hover:bg-blue-700 rounded transition">FAQs</a></li>
+                    {% if session.get('user_id') %}
+                    <li><a href="/participant-dashboard" class="block py-2 px-4 hover:bg-blue-700 rounded transition">Dashboard</a></li>
+                    {% else %}
+                    <li><a href="{{ url_for('signin') }}" class="block py-2 px-4 hover:bg-blue-700 rounded transition">Sign In</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
 
     <!-- Accessibility Button with Label -->
-    <div class="fixed bottom-4 left-4 z-50 flex flex-col items-center space-y-1">
+    <div class="fixed bottom-3 left-3 sm:bottom-4 sm:left-4 z-50 flex flex-col items-center space-y-1">
 
     <!-- Button -->
     <button id="togglePanel"
-        class="bg-[#1A237E] text-white p-3 rounded-full shadow-lg hover:bg-[#3a74cc] transition border border-white"
+        class="bg-[#1A237E] text-white p-2 sm:p-3 rounded-full shadow-lg hover:bg-[#3a74cc] transition border border-white"
         aria-label="Toggle Accessibility Panel">
         <!-- Accessibility SVG Icon -->
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none"
             viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round"
                 d="M12 4.5c.828 0 1.5-.672 1.5-1.5S12.828 1.5 12 1.5 10.5 2.172 10.5 3s.672 1.5 1.5 1.5zM4.75 9.25l3.625.75M19.25 9.25l-3.625.75M8.375 10l.625 9m6-9l-.625 9M5.5 21.25h13"/>
@@ -48,7 +82,7 @@
     </button>
 
     <!-- Label -->
-    <span class="text-sm text-white bg-[#1A237E] px-2 py-1 rounded shadow border border-white">
+    <span class="text-xs sm:text-sm text-white bg-[#1A237E] px-1.5 sm:px-2 py-0.5 sm:py-1 rounded shadow border border-white">
         Accessibility
     </span>
     </div>
@@ -59,12 +93,12 @@
     
     <!-- Accessibility Panel -->
     <div id="accessibilityPanel"
-        class="hidden fixed top-0 left-0 h-screen w-80 bg-white shadow-lg z-50 border-l border-gray-300 overflow-y-auto p-4 space-y-6">
+        class="hidden fixed top-0 left-0 h-screen w-full sm:w-80 bg-white shadow-lg z-50 border-l border-gray-300 overflow-y-auto p-3 sm:p-4 space-y-4 sm:space-y-6">
 
     <!-- Panel Header -->
-    <div class="flex justify-between items-center mb-4">
-        <h2 class="text-lg font-semibold text-[#1A237E]">Accessibility Menu</h2>
-        <button id="closePanel" class="text-2xl font-bold text-gray-500 hover:text-gray-700">&times;</button>
+    <div class="flex justify-between items-center mb-3 sm:mb-4">
+        <h2 class="text-base sm:text-lg font-semibold text-[#1A237E]">Accessibility Menu</h2>
+        <button id="closePanel" class="text-xl sm:text-2xl font-bold text-gray-500 hover:text-gray-700">&times;</button>
     </div>
 
         <!-- Font Size -->
@@ -109,37 +143,37 @@
     </div>
 
     <!-- Research Team Section -->
-    <section id="research-team" class="py-16 beige-bg text-lg ">
-        <div class="content-wrapper">
+    <section id="research-team" class="py-8 sm:py-12 md:py-16 beige-bg text-sm sm:text-base md:text-lg">
+        <div class="content-wrapper px-3 sm:px-4">
             <div class="flex flex-col items-center text-center">
-                <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-6">About the Research</h1>
+                <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-4 sm:mb-6">About the Research</h1>
                 
-                <p class="text-gray-600 max-w-3xl">
-                    Thank you for your interest in our research study.<br> This page provides detailed information about our research team, data security practices, and answers to frequently asked questions.
+                <p class="text-gray-600 max-w-3xl text-sm sm:text-base">
+                    Thank you for your interest in our research study.<br class="hidden sm:inline"> This page provides detailed information about our research team, data security practices, and answers to frequently asked questions.
                 </p>
             </div>
         </div>
-        <div class="w-24 h-1 bg-primary-blue mb-8"></div>
+        <div class="w-16 sm:w-24 h-1 bg-primary-blue mb-6 sm:mb-8 mx-auto"></div>
 
-        <div class="content-wrapper">
-            <h2 class="text-3xl font-bold text-center text-gray-800 mb-4">Our Research Team</h2>
-            <p class="text-center text-gray-600 mb-12 max-w-3xl mx-auto">
+        <div class="content-wrapper px-3 sm:px-4">
+            <h2 class="text-2xl sm:text-3xl font-bold text-center text-gray-800 mb-3 sm:mb-4">Our Research Team</h2>
+            <p class="text-center text-gray-600 mb-8 sm:mb-12 max-w-3xl mx-auto text-sm sm:text-base">
                 Our interdisciplinary team brings together expertise from cognitive science, linguistics, computer science, and education to develop innovative approaches for dyslexia identification and support.
             </p>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
                 <!-- Team Member 1 -->
-                <div class="team-card bg-white rounded-xl overflow-hidden shadow-md">
-                    <div class="h-48 bg-gray-200 flex items-center justify-center">
+                <div class="team-card bg-white rounded-lg sm:rounded-xl overflow-hidden shadow-md">
+                    <div class="h-40 sm:h-48 bg-gray-200 flex items-center justify-center">
                         <img src="{{ url_for('static', filename='p3.jpg') }}" alt="Photo of Dr. [name1]" class="h-full w-full object-cover"/>
                     </div>
-                    <div class="p-6">
-                        <h3 class="text-xl font-semibold text-gray-800 mb-2">Dr. [name1]</h3>
-                        <p class="text-primary-blue font-medium mb-3">Principal Investigator</p>
-                        <p class="text-gray-600 mb-4">
+                    <div class="p-4 sm:p-6">
+                        <h3 class="text-lg sm:text-xl font-semibold text-gray-800 mb-2">Dr. [name1]</h3>
+                        <p class="text-primary-blue font-medium mb-2 sm:mb-3 text-sm sm:text-base">Principal Investigator</p>
+                        <p class="text-gray-600 mb-3 sm:mb-4 text-xs sm:text-sm md:text-base">
                             Ph.D. in Cognitive Neuroscience with [] years of experience researching language processing and reading disabilities.
                         </p>
-                        <p class="text-gray-500 text-sm">
+                        <p class="text-gray-500 text-xs sm:text-sm">
                             IIITD Research Center, Department of []
                         </p>
                     </div>
@@ -182,22 +216,22 @@
             </div>
             
             <!-- Institution Information -->
-            <div class="mt-16 bg-white p-8 rounded-xl shadow-md">
-                <h3 class="text-2xl font-semibold text-gray-800 mb-6">About Our Institution</h3>
-                <div class="flex flex-col md:flex-row">
-                    <div class="md:w-2/3 md:pr-8">
-                        <p class="text-gray-600 mb-4">
+            <div class="mt-8 sm:mt-12 md:mt-16 bg-white p-4 sm:p-6 md:p-8 rounded-lg sm:rounded-xl shadow-md">
+                <h3 class="text-xl sm:text-2xl font-semibold text-gray-800 mb-4 sm:mb-6">About Our Institution</h3>
+                <div class="flex flex-col md:flex-row gap-4 sm:gap-6 md:gap-8">
+                    <div class="md:w-2/3">
+                        <p class="text-gray-600 mb-3 sm:mb-4 text-sm sm:text-base">
                             The IIITD Research Center is a leading institution dedicated to advancing knowledge and developing innovative solutions to complex problems through interdisciplinary research.
                         </p>
-                        <p class="text-gray-600 mb-4">
+                        <p class="text-gray-600 mb-3 sm:mb-4 text-sm sm:text-base">
                             Our Dyslexia Research Initiative is funded by the [] (Grant #[]) and has received ethical approval from the IIITD Institutional Review Board (IRB #[]).
                         </p>
-                        <p class="text-gray-600">
+                        <p class="text-gray-600 text-sm sm:text-base">
                             The initiative collaborates with educational institutions, clinicians, and technology partners to ensure our research has real-world applications and benefits.
                         </p>
                     </div>
-                    <div class="md:w-1/3 mt-6 md:mt-0 flex justify-center">
-                        <img src="{{ url_for('static', filename='iiitdrndblock.jpeg') }}" alt="iiitd research" class="w-full h-auto rounded-lg shadow-lg">
+                    <div class="md:w-1/3 flex justify-center items-start">
+                        <img src="{{ url_for('static', filename='iiitdrndblock.jpeg') }}" alt="iiitd research" class="w-full max-w-sm h-auto rounded-lg shadow-lg">
                     </div>
                 </div>
             </div>
@@ -205,14 +239,14 @@
     </section>
 
     <!-- Data Security Section -->
-    <section id="data-security" class="py-16 bg-white text-lg ">
-        <div class="content-wrapper">
-            <h2 class="text-3xl font-bold text-center text-gray-800 mb-4">Data Security & Privacy</h2>
-            <p class="text-center text-gray-600 mb-12 max-w-3xl mx-auto">
+    <section id="data-security" class="py-8 sm:py-12 md:py-16 bg-white text-sm sm:text-base md:text-lg">
+        <div class="content-wrapper px-3 sm:px-4">
+            <h2 class="text-2xl sm:text-3xl font-bold text-center text-gray-800 mb-3 sm:mb-4">Data Security & Privacy</h2>
+            <p class="text-center text-gray-600 mb-8 sm:mb-12 max-w-3xl mx-auto text-sm sm:text-base">
                 We are committed to maintaining the highest standards of data security and privacy protection in compliance with GDPR and other relevant regulations.
             </p>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
                 <!-- Data Collection -->
                 <div class="bg-gradient-to-br from-blue-50 to-white p-8 rounded-xl shadow-md">
                     <div class="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mb-6">
@@ -364,24 +398,24 @@
     </section>
 
     <!-- FAQ Section -->
-    <section id="faq" class="py-16 beige-bg ">
-        <div class="content-wrapper">
-            <h2 class="text-3xl font-bold text-center text-gray-800 mb-4">Frequently Asked Questions</h2>
-            <p class="text-center text-gray-600 mb-12 max-w-3xl mx-auto text-lg ">
+    <section id="faq" class="py-8 sm:py-12 md:py-16 beige-bg">
+        <div class="content-wrapper px-3 sm:px-4">
+            <h2 class="text-2xl sm:text-3xl font-bold text-center text-gray-800 mb-3 sm:mb-4">Frequently Asked Questions</h2>
+            <p class="text-center text-gray-600 mb-8 sm:mb-12 max-w-3xl mx-auto text-sm sm:text-base md:text-lg">
                 Find answers to common questions about our research study. If you don't see your question here, please contact us directly.
             </p>
             
-            <div class="max-w-3xl mx-auto bg-white rounded-xl shadow-md overflow-hidden">
+            <div class="max-w-3xl mx-auto bg-white rounded-lg sm:rounded-xl shadow-md overflow-hidden">
                 <!-- FAQ Item 1 -->
                 <div class="faq-item">
                     <div class="faq-question">
-                        <h3 class="text-lg font-medium text-gray-800">What exactly will I be doing as a participant?</h3>
-                        <svg class="w-6 h-6 text-primary-blue faq-icon" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <h3 class="text-sm sm:text-base md:text-lg font-medium text-gray-800">What exactly will I be doing as a participant?</h3>
+                        <svg class="w-5 h-5 sm:w-6 sm:h-6 text-primary-blue faq-icon flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                             <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"></path>
                         </svg>
                     </div>
-                    <div class="faq-answer px-6">
-                        <p class="text-gray-600">
+                    <div class="faq-answer px-4 sm:px-6">
+                        <p class="text-gray-600 text-xs sm:text-sm md:text-base">
                             Participants will complete 2-3 sessions of approximately 45-60 minutes each. Activities include reading exercises, writing samples, interactive digital tasks on a computer, and brief questionnaires about your experiences. All sessions can be scheduled at your convenience over a 2-week period, and can be conducted remotely.
                         </p>
                     </div>
@@ -463,10 +497,10 @@
                 </div>
             </div>
         </div>
-        <br><br>
+        <br class="hidden sm:block"><br class="hidden sm:block">
 
-        <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
-            <button id="contactBtn" class="bg-[#1A237E] text-white hover:bg-blue-50 font-medium py-3 px-8 rounded-lg transition" onclick="window.location.href='/#contact';" >
+        <div class="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4 px-3 sm:px-0">
+            <button id="contactBtn" class="bg-[#1A237E] text-white hover:bg-blue-50 font-medium py-2 sm:py-3 px-6 sm:px-8 rounded-lg transition text-sm sm:text-base w-full sm:w-auto" onclick="window.location.href='/#contact';" >
                 Contact Us
             </button>
         </div>
@@ -474,14 +508,14 @@
 
 
     <!-- Testimonials Section -->
-    <section class="py-16 bg-white">
-        <div class="content-wrapper">
-            <h2 class="text-3xl font-bold text-center text-gray-800 mb-4">Participant Experiences</h2>
-            <p class="text-center text-gray-600 mb-12 max-w-3xl mx-auto text-lg ">
+    <section class="py-8 sm:py-12 md:py-16 bg-white">
+        <div class="content-wrapper px-3 sm:px-4">
+            <h2 class="text-2xl sm:text-3xl font-bold text-center text-gray-800 mb-3 sm:mb-4">Participant Experiences</h2>
+            <p class="text-center text-gray-600 mb-8 sm:mb-12 max-w-3xl mx-auto text-sm sm:text-base md:text-lg">
                 Hear from previous research participants about their experiences with our studies.
             </p>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
                 <!-- Testimonial 1 -->
                 <div class="bg-gradient-to-br from-blue-50 to-white p-6 rounded-xl shadow-md">
                     <div class="flex items-center mb-4">
@@ -556,14 +590,14 @@
     </section>
 
     <!-- CTA Section -->
-    <section class="py-16 text-white" style="background-color: #1A237E;">
-        <div class="content-wrapper text-center">
-            <h2 class="text-3xl font-bold mb-6">Ready to Participate?</h2>
-            <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
-                <button id="signupBtn" class="bg-white text-blue-600 hover:bg-blue-50 font-medium py-3 px-8 rounded-lg transition" style="color: #1A237E;">
+    <section class="py-8 sm:py-12 md:py-16 text-white" style="background-color: #1A237E;">
+        <div class="content-wrapper text-center px-3 sm:px-4">
+            <h2 class="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">Ready to Participate?</h2>
+            <div class="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
+                <button id="signupBtn" class="bg-white text-blue-600 hover:bg-blue-50 font-medium py-2 sm:py-3 px-6 sm:px-8 rounded-lg transition text-sm sm:text-base w-full sm:w-auto" style="color: #1A237E;">
                     Sign Up
                 </button>
-                <button id="signinBtn" class="border-2 border-white text-white hover:bg-white hover:bg-opacity-10 font-medium py-3 px-8 rounded-lg transition">
+                <button id="signinBtn" class="border-2 border-white text-white hover:bg-white hover:bg-opacity-10 font-medium py-2 sm:py-3 px-6 sm:px-8 rounded-lg transition text-sm sm:text-base w-full sm:w-auto">
                     Sign In
                 </button>
             </div>
@@ -572,23 +606,23 @@
     </section>
 
    <!-- Footer -->
-    <footer class="dark-bg text-white py-12 text-lg" style="background-color: #333333;">
-        <div class="content-wrapper">
+    <footer class="dark-bg text-white py-8 sm:py-10 md:py-12 text-xs sm:text-sm md:text-base" style="background-color: #333333;">
+        <div class="content-wrapper px-3 sm:px-4">
             <div class="flex flex-col md:flex-row justify-between">
-                <div class="mb-8 md:mb-0">
+                <div class="mb-6 sm:mb-8 md:mb-0">
                     <div class="flex items-center">
                         
-                        <h2 class="text-xl font-bold">Dyslexia Research Initiative</h2>
+                        <h2 class="text-lg sm:text-xl font-bold">Dyslexia Research Initiative</h2>
                     </div>
-                    <p class="mt-4 text-gray-400 max-w-md">
+                    <p class="mt-3 sm:mt-4 text-gray-400 max-w-md text-sm sm:text-base">
                         Advancing our understanding of dyslexia through innovative research and technology to create better support systems for everyone.
                     </p>
                 </div>
                 
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-8">
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
                     <div>
-                        <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
-                        <ul class="space-y-2">
+                        <h3 class="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Quick Links</h3>
+                        <ul class="space-y-2 text-sm sm:text-base">
                             <li><a href="#research-team" class="text-gray-400 hover:text-white transition">Research Team</a></li>
                             <li><a href="#data-security" class="text-gray-400 hover:text-white transition">Data Security</a></li>
                             <li><a href="#faq" class="text-gray-400 hover:text-white transition">FAQs</a></li>
@@ -597,10 +631,10 @@
 
                     
                     <div>
-                        <h3 class="text-lg font-semibold mb-4">Connect</h3>
-                        <div class="flex space-x-4">
+                        <h3 class="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Connect</h3>
+                        <div class="flex space-x-3 sm:space-x-4">
                             <a href="#" class="text-gray-400 hover:text-white transition">
-                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"></path>
                                 </svg>
                             </a>
@@ -614,12 +648,64 @@
                 </div>
             </div>
             
-            <div class="mt-12 pt-8 border-t border-gray-700 text-center text-gray-400">
+            <div class="mt-8 sm:mt-10 md:mt-12 pt-6 sm:pt-8 border-t border-gray-700 text-center text-gray-400 text-xs sm:text-sm">
                 <p>&copy; 2025 Leveraging NLP for Dyslexia Identification. All rights reserved.</p>
             </div>
         </div>
     </footer>
     <script>
+        // Mobile menu functionality
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const mobileMenuContent = document.getElementById('mobileMenuContent');
+        const closeMobileMenu = document.getElementById('closeMobileMenu');
+        
+        function openMobileMenu() {
+            mobileMenu.classList.remove('hidden');
+            setTimeout(() => {
+                mobileMenuContent.classList.remove('translate-x-full');
+            }, 10);
+        }
+        
+        function closeMobileMenuFunc() {
+            mobileMenuContent.classList.add('translate-x-full');
+            setTimeout(() => {
+                mobileMenu.classList.add('hidden');
+            }, 300);
+        }
+        
+        if (hamburgerBtn) {
+            hamburgerBtn.addEventListener('click', openMobileMenu);
+        }
+        
+        if (closeMobileMenu) {
+            closeMobileMenu.addEventListener('click', closeMobileMenuFunc);
+        }
+        
+        // Close menu when clicking outside
+        if (mobileMenu) {
+            mobileMenu.addEventListener('click', function(e) {
+                if (e.target === mobileMenu) {
+                    closeMobileMenuFunc();
+                }
+            });
+        }
+        
+        // Close menu when clicking nav links
+        document.querySelectorAll('#mobileMenuContent a').forEach(link => {
+            link.addEventListener('click', function() {
+                closeMobileMenuFunc();
+            });
+        });
+        
+        // Close menu on window resize to desktop size
+        window.addEventListener('resize', function() {
+            if (window.innerWidth >= 768) {
+                closeMobileMenuFunc();
+            }
+        });
+        
+        // Accessibility functionality
         const root = document.documentElement;
         const panel = document.getElementById('accessibilityPanel');
         const panelToggle = document.getElementById('togglePanel');

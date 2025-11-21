@@ -10,37 +10,70 @@
 </head>
 <body>
     <!-- Header -->
-    <header class="primary-bg text-white py-6">
-        <div class="content-wrapper flex justify-between items-center">
-            <div class="flex items-center">
-                <img src="{{ url_for('static', filename='gauge.png') }}" alt="Dashboard Graphic" class="h-12 w-12 rounded-full mr-4 hidden md:block">
-                <h1 class="text-xl md:text-2xl font-bold">Welcome to Your Stats, Captain!</h1>
+    <header class="primary-bg text-white py-4 md:py-6">
+        <div class="content-wrapper flex justify-between items-center px-3 sm:px-4">
+            <div class="flex items-center flex-1 min-w-0">
+                <img src="{{ url_for('static', filename='gauge.png') }}" alt="Dashboard Graphic" class="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 rounded-full mr-2 sm:mr-3 md:mr-4">
+                <h1 class="text-sm sm:text-base md:text-xl lg:text-2xl font-bold truncate">Welcome to Your Stats, Captain!</h1>
             </div>
-            <nav>
-                <ul class="flex space-x-6 text-lg md:text-xl items-center">
+            
+            <!-- Hamburger Menu Button (visible on small screens) -->
+            <button id="hamburgerBtn" class="md:hidden text-white p-2 hover:bg-blue-700 rounded transition" aria-label="Toggle menu">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            </button>
+            
+            <!-- Desktop Navigation (hidden on small screens) -->
+            <nav class="hidden md:block">
+                <ul class="flex space-x-2 lg:space-x-4 xl:space-x-6 text-sm lg:text-base xl:text-lg items-center">
                     <li><a href="{{ url_for('landing') }}#about" class="hover:text-yellow-100 transition">About</a></li>
                     <li><a href="{{ url_for('landing') }}#contact" class="hover:text-yellow-100 transition">Contact</a></li>
-                    <li><a href="/profile" class="hover:text-yellow-100 transition ">Profile</a></li>
+                    <li><a href="/profile" class="hover:text-yellow-100 transition">Profile</a></li>
                     <li><a href="/participant-dashboard" class="hover:text-yellow-100 transition">Dashboard</a></li>
                     <li><a href="/stats" class="hover:text-yellow-100 transition">Stats</a></li>
-                    <li><a href="#" id="logoutBtn" class="hover:text-yellow-100 transition ">Logout</a></li>
+                    <li><a href="#" id="logoutBtnDesktop" class="hover:text-yellow-100 transition">Logout</a></li>
                 </ul>
             </nav>
         </div>
     </header>
+    
+    <!-- Mobile Navigation Menu (slide-out) -->
+    <div id="mobileMenu" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div id="mobileMenuContent" class="fixed right-0 top-0 h-full w-64 bg-[#1A237E] text-white transform translate-x-full transition-transform duration-300 ease-in-out shadow-lg">
+            <div class="flex justify-between items-center p-4 border-b border-blue-700">
+                <h2 class="text-lg font-bold">Menu</h2>
+                <button id="closeMobileMenu" class="text-white p-2 hover:bg-blue-700 rounded transition" aria-label="Close menu">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <nav class="p-4">
+                <ul class="space-y-4">
+                    <li><a href="{{ url_for('landing') }}#about" class="block py-2 px-4 hover:bg-blue-700 rounded transition">About</a></li>
+                    <li><a href="{{ url_for('landing') }}#contact" class="block py-2 px-4 hover:bg-blue-700 rounded transition">Contact</a></li>
+                    <li><a href="/profile" class="block py-2 px-4 hover:bg-blue-700 rounded transition">Profile</a></li>
+                    <li><a href="/participant-dashboard" class="block py-2 px-4 hover:bg-blue-700 rounded transition">Dashboard</a></li>
+                    <li><a href="/stats" class="block py-2 px-4 hover:bg-blue-700 rounded transition">Stats</a></li>
+                    <li><a href="#" id="logoutBtnMobile" class="block py-2 px-4 hover:bg-blue-700 rounded transition">Logout</a></li>
+                </ul>
+            </nav>
+        </div>
+    </div>
 
     <!-- Accessibility Button with Label -->
-    <div class="fixed bottom-4 left-4 z-50 flex flex-col items-center space-y-1">
+    <div class="fixed bottom-3 left-3 sm:bottom-4 sm:left-4 z-50 flex flex-col items-center space-y-1">
         <button id="togglePanel"
-            class="bg-[#1A237E] text-white p-3 rounded-full shadow-lg hover:bg-[#3a74cc] transition border border-white"
+            class="bg-[#1A237E] text-white p-2 sm:p-3 rounded-full shadow-lg hover:bg-[#3a74cc] transition border border-white"
             aria-label="Toggle Accessibility Panel">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none"
                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round"
                     d="M12 4.5c.828 0 1.5-.672 1.5-1.5S12.828 1.5 12 1.5 10.5 2.172 10.5 3s.672 1.5 1.5 1.5zM4.75 9.25l3.625.75M19.25 9.25l-3.625.75M8.375 10l.625 9m6-9l-.625 9M5.5 21.25h13"/>
             </svg>
         </button>
-        <span class="text-sm text-white bg-[#1A237E] px-2 py-1 rounded shadow border border-white">
+        <span class="text-xs sm:text-sm text-white bg-[#1A237E] px-1.5 sm:px-2 py-0.5 sm:py-1 rounded shadow border border-white">
             Accessibility
         </span>
     </div>
@@ -51,10 +84,10 @@
     
     <!-- Accessibility Panel -->
     <div id="accessibilityPanel"
-        class="hidden fixed top-0 left-0 h-screen w-80 bg-white shadow-lg z-50 border-l border-gray-300 overflow-y-auto p-4 space-y-6">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-lg font-semibold text-[#1A237E]">Accessibility Menu</h2>
-            <button id="closePanel" class="text-2xl font-bold text-gray-500 hover:text-gray-700">&times;</button>
+        class="hidden fixed top-0 left-0 h-screen w-full sm:w-80 bg-white shadow-lg z-50 border-l border-gray-300 overflow-y-auto p-3 sm:p-4 space-y-4 sm:space-y-6">
+        <div class="flex justify-between items-center mb-3 sm:mb-4">
+            <h2 class="text-base sm:text-lg font-semibold text-[#1A237E]">Accessibility Menu</h2>
+            <button id="closePanel" class="text-xl sm:text-2xl font-bold text-gray-500 hover:text-gray-700">&times;</button>
         </div>
 
         <div class="flex items-center justify-between">
@@ -96,24 +129,24 @@
     </div>
 
 
-    <main class="max-w-4xl mx-auto py-10 px-4">
+    <main class="max-w-4xl mx-auto py-4 sm:py-6 md:py-10 px-3 sm:px-4">
         <!-- Progress Overview Section -->
-        <div class="bg-white rounded-xl shadow p-6 mb-8 animate-fade-in">
-            <h3 class="text-2xl font-bold mb-6 text-blue-900 text-center">Progress Overview</h3>
-            <div class="text-center mb-6">
-                <div class="text-4xl font-bold text-blue-600 mb-2" id="progressPercentage">0%</div>
-                <div class="text-lg text-gray-600 mb-4">Tasks Completed</div>
-                <div class="w-full bg-gray-200 rounded-full h-6 mb-2">
-                    <div class="bg-blue-600 h-6 rounded-full transition-all duration-1000 ease-in-out" id="progressBar" style="width: 0%"></div>
+        <div class="bg-white rounded-lg sm:rounded-xl shadow p-4 sm:p-5 md:p-6 mb-4 sm:mb-6 md:mb-8 animate-fade-in">
+            <h3 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-blue-900 text-center">Progress Overview</h3>
+            <div class="text-center mb-4 sm:mb-6">
+                <div class="text-3xl sm:text-4xl font-bold text-blue-600 mb-2" id="progressPercentage">0%</div>
+                <div class="text-base sm:text-lg text-gray-600 mb-3 sm:mb-4">Tasks Completed</div>
+                <div class="w-full bg-gray-200 rounded-full h-5 sm:h-6 mb-2">
+                    <div class="bg-blue-600 h-5 sm:h-6 rounded-full transition-all duration-1000 ease-in-out" id="progressBar" style="width: 0%"></div>
                 </div>
-                <div class="text-sm text-gray-500" id="progressText">0 of 6 tasks completed</div>
+                <div class="text-xs sm:text-sm text-gray-500" id="progressText">0 of 6 tasks completed</div>
             </div>
         </div>
 
         <!-- Task Scores Section -->
-        <div class="bg-white rounded-xl shadow p-6 mb-8 animate-fade-in">
-            <h3 class="text-2xl font-bold mb-6 text-blue-900 text-center">Your Task Scores</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="scoresContainer">
+        <div class="bg-white rounded-lg sm:rounded-xl shadow p-4 sm:p-5 md:p-6 mb-4 sm:mb-6 md:mb-8 animate-fade-in">
+            <h3 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-blue-900 text-center">Your Task Scores</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6" id="scoresContainer">
                 <!-- Scores will be loaded dynamically -->
                 <div class="text-center">
                     <div class="animate-pulse bg-gray-200 h-32 rounded-lg"></div>
@@ -128,59 +161,59 @@
         </div>
 
         <!-- Time Spent Section -->
-        <div class="bg-white rounded-xl shadow p-6 mb-8 animate-fade-in">
-            <h3 class="text-2xl font-bold mb-6 text-green-900 text-center">Time Spent on Tasks</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="timeSpentContainer">
+        <div class="bg-white rounded-lg sm:rounded-xl shadow p-4 sm:p-5 md:p-6 mb-4 sm:mb-6 md:mb-8 animate-fade-in">
+            <h3 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-green-900 text-center">Time Spent on Tasks</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4" id="timeSpentContainer">
                 <!-- Time data will be loaded dynamically -->
             </div>
         </div>
 
         <!-- Class Comparison Section -->
-        <div class="bg-white rounded-xl shadow p-6 mb-8 animate-fade-in">
-            <h3 class="text-2xl font-bold mb-6 text-purple-900 text-center">Class Comparison</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="classComparisonContainer">
+        <div class="bg-white rounded-lg sm:rounded-xl shadow p-4 sm:p-5 md:p-6 mb-4 sm:mb-6 md:mb-8 animate-fade-in">
+            <h3 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-purple-900 text-center">Class Comparison</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6" id="classComparisonContainer">
                 <!-- Class averages will be loaded dynamically -->
             </div>
         </div>
 
         <!-- Personal Bests Section -->
-        <div class="bg-white rounded-xl shadow p-6 mb-8 animate-fade-in">
-            <h3 class="text-2xl font-bold mb-6 text-orange-900 text-center">Personal Bests</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="personalBestsContainer">
+        <div class="bg-white rounded-lg sm:rounded-xl shadow p-4 sm:p-5 md:p-6 mb-4 sm:mb-6 md:mb-8 animate-fade-in">
+            <h3 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-orange-900 text-center">Personal Bests</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6" id="personalBestsContainer">
                 <!-- Personal bests will be loaded dynamically -->
             </div>
         </div>
 
         <!-- Most Improved Section -->
-        <div class="bg-white rounded-xl shadow p-6 mb-8 animate-fade-in">
-            <h3 class="text-2xl font-bold mb-6 text-indigo-900 text-center">Most Improved</h3>
+        <div class="bg-white rounded-lg sm:rounded-xl shadow p-4 sm:p-5 md:p-6 mb-4 sm:mb-6 md:mb-8 animate-fade-in">
+            <h3 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-indigo-900 text-center">Most Improved</h3>
             <div class="text-center" id="mostImprovedContainer">
                 <!-- Most improved data will be loaded dynamically -->
             </div>
         </div>
 
         <!-- Badges Section -->
-        <div class="bg-white rounded-xl shadow p-6 mb-8 animate-fade-in">
-            <h3 class="text-2xl font-bold mb-6 text-yellow-900 text-center">Badges Earned</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="badgesContainer">
+        <div class="bg-white rounded-lg sm:rounded-xl shadow p-4 sm:p-5 md:p-6 mb-4 sm:mb-6 md:mb-8 animate-fade-in">
+            <h3 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-yellow-900 text-center">Badges Earned</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4" id="badgesContainer">
                 <!-- Badges will be loaded dynamically -->
             </div>
         </div>
 
         
         <!-- Motivational Statement -->
-        <div id="motivationalStatement" class="bg-yellow-100 rounded-xl shadow p-6 flex flex-col items-center animate-fade-in">
-            <span class="text-2xl font-bold text-yellow-800 mb-2" id="motivationTitle">"You're doing great!"</span>
-            <p class="text-lg text-gray-700 text-center" id="motivationMessage">Loading your personalized message...</p>
+        <div id="motivationalStatement" class="bg-yellow-100 rounded-lg sm:rounded-xl shadow p-4 sm:p-5 md:p-6 flex flex-col items-center animate-fade-in">
+            <span class="text-lg sm:text-xl md:text-2xl font-bold text-yellow-800 mb-2" id="motivationTitle">"You're doing great!"</span>
+            <p class="text-sm sm:text-base md:text-lg text-gray-700 text-center" id="motivationMessage">Loading your personalized message...</p>
         </div>
     </main>
 
  
     <!-- Footer -->
-    <footer class="dark-bg text-white py-12 text-lg" style="background-color: #333333;">
-        <div class="content-wrapper">
+    <footer class="dark-bg text-white py-8 sm:py-10 md:py-12 text-xs sm:text-sm md:text-base" style="background-color: #333333;">
+        <div class="content-wrapper px-3 sm:px-4">
             <div class="flex flex-col md:flex-row justify-between">
-                <div class="mb-8 md:mb-0">
+                <div class="mb-6 sm:mb-8 md:mb-0">
                     <div class="flex items-center">
                         
                         <h2 class="text-xl font-bold">Dyslexia Research Initiative</h2>
@@ -190,7 +223,7 @@
                     </p>
                 </div>
                 
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-8">
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
                     <div>
                         <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
                         <ul class="space-y-2">
@@ -226,13 +259,64 @@
                 </div>
             </div>
             
-            <div class="mt-12 pt-8 border-t border-gray-700 text-center text-gray-400">
+            <div class="mt-8 sm:mt-10 md:mt-12 pt-6 sm:pt-8 border-t border-gray-700 text-center text-gray-400 text-xs sm:text-sm">
                 <p>&copy; 2025 Leveraging NLP for Dyslexia Identification. All rights reserved.</p>
             </div>
         </div>
     </footer>
 
     <script>
+        // Mobile menu functionality
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const mobileMenuContent = document.getElementById('mobileMenuContent');
+        const closeMobileMenu = document.getElementById('closeMobileMenu');
+        
+        function openMobileMenu() {
+            mobileMenu.classList.remove('hidden');
+            setTimeout(() => {
+                mobileMenuContent.classList.remove('translate-x-full');
+            }, 10);
+        }
+        
+        function closeMobileMenuFunc() {
+            mobileMenuContent.classList.add('translate-x-full');
+            setTimeout(() => {
+                mobileMenu.classList.add('hidden');
+            }, 300);
+        }
+        
+        if (hamburgerBtn) {
+            hamburgerBtn.addEventListener('click', openMobileMenu);
+        }
+        
+        if (closeMobileMenu) {
+            closeMobileMenu.addEventListener('click', closeMobileMenuFunc);
+        }
+        
+        // Close menu when clicking outside
+        if (mobileMenu) {
+            mobileMenu.addEventListener('click', function(e) {
+                if (e.target === mobileMenu) {
+                    closeMobileMenuFunc();
+                }
+            });
+        }
+        
+        // Close menu when clicking nav links
+        document.querySelectorAll('#mobileMenuContent a').forEach(link => {
+            link.addEventListener('click', function() {
+                closeMobileMenuFunc();
+            });
+        });
+        
+        // Close menu on window resize to desktop size
+        window.addEventListener('resize', function() {
+            if (window.innerWidth >= 768) {
+                closeMobileMenuFunc();
+            }
+        });
+        
         // Accessibility functionality
         const root = document.documentElement;
         const panel = document.getElementById('accessibilityPanel');
@@ -383,12 +467,12 @@
                 const percentage = taskScore.max_score > 0 ? Math.round((displayScore / taskScore.max_score) * 100) : 0;
                 
                 const scoreCard = document.createElement('div');
-                scoreCard.className = `bg-${config.color}-50 rounded-xl p-6 text-center border-2 border-${config.color}-200`;
+                scoreCard.className = `bg-${config.color}-50 rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 text-center border-2 border-${config.color}-200`;
                 
                 scoreCard.innerHTML = `
-                    <div class="text-4xl mb-3">${config.icon}</div>
-                    <h4 class="text-lg font-semibold text-${config.color}-900 mb-2">${config.title}</h4>
-                    <div class="text-3xl font-bold text-${config.color}-700 mb-1">
+                    <div class="text-3xl sm:text-4xl mb-2 sm:mb-3">${config.icon}</div>
+                    <h4 class="text-base sm:text-lg font-semibold text-${config.color}-900 mb-2">${config.title}</h4>
+                    <div class="text-2xl sm:text-3xl font-bold text-${config.color}-700 mb-1">
                         ${displayScore}/${taskScore.max_score}
                     </div>
                     <div class="text-sm text-${config.color}-600 mb-2">
@@ -469,7 +553,7 @@
             
             Object.entries(timeSpent).forEach(([taskName, data]) => {
                 const timeCard = document.createElement('div');
-                timeCard.className = 'bg-green-50 rounded-lg p-4 text-center border border-green-200';
+                timeCard.className = 'bg-green-50 rounded-lg p-3 sm:p-4 text-center border border-green-200';
                 
                 // Convert seconds to appropriate format
                 const totalSeconds = Math.round(data.time_seconds);
@@ -487,9 +571,9 @@
                 }
                 
                 timeCard.innerHTML = `
-                    <div class="text-2xl mb-2">⏱️</div>
-                    <h4 class="font-semibold text-green-900 mb-1">${taskName}</h4>
-                    <div class="text-lg font-bold text-green-700">${timeText}</div>
+                    <div class="text-xl sm:text-2xl mb-2">⏱️</div>
+                    <h4 class="font-semibold text-green-900 mb-1 text-sm sm:text-base">${taskName}</h4>
+                    <div class="text-base sm:text-lg font-bold text-green-700">${timeText}</div>
                     <div class="text-xs text-green-600">Time spent</div>
                     <div class="text-xs text-gray-500 mt-1">${data.attempts} attempt${data.attempts !== 1 ? 's' : ''}</div>
                 `;
@@ -517,14 +601,14 @@
             taskConfigs.forEach(config => {
                 const classData = classAverages[config.key];
                 const classCard = document.createElement('div');
-                classCard.className = `bg-${config.color}-50 rounded-xl p-6 text-center border-2 border-${config.color}-200`;
+                classCard.className = `bg-${config.color}-50 rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 text-center border-2 border-${config.color}-200`;
                 
                 if (classData) {
                     const percentage = classData.max_score > 0 ? Math.round((classData.avg_score / classData.max_score) * 100) : 0;
                     classCard.innerHTML = `
-                        <div class="text-4xl mb-3">${config.icon}</div>
-                        <h4 class="text-lg font-semibold text-${config.color}-900 mb-2">${config.key}</h4>
-                        <div class="text-3xl font-bold text-${config.color}-700 mb-1">
+                        <div class="text-3xl sm:text-4xl mb-2 sm:mb-3">${config.icon}</div>
+                        <h4 class="text-base sm:text-lg font-semibold text-${config.color}-900 mb-2">${config.key}</h4>
+                        <div class="text-2xl sm:text-3xl font-bold text-${config.color}-700 mb-1">
                             ${classData.avg_score}/${classData.max_score}
                         </div>
                         <div class="text-sm text-${config.color}-600 mb-2">
@@ -565,14 +649,14 @@
             taskConfigs.forEach(config => {
                 const personalBest = personalBests[config.key];
                 const bestCard = document.createElement('div');
-                bestCard.className = `bg-${config.color}-50 rounded-xl p-6 text-center border-2 border-${config.color}-200`;
+                bestCard.className = `bg-${config.color}-50 rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 text-center border-2 border-${config.color}-200`;
                 
                 if (personalBest) {
                     const percentage = personalBest.max_score > 0 ? Math.round((personalBest.best_score / personalBest.max_score) * 100) : 0;
                     bestCard.innerHTML = `
-                        <div class="text-4xl mb-3">${config.icon}</div>
-                        <h4 class="text-lg font-semibold text-${config.color}-900 mb-2">${config.key}</h4>
-                        <div class="text-3xl font-bold text-${config.color}-700 mb-1">
+                        <div class="text-3xl sm:text-4xl mb-2 sm:mb-3">${config.icon}</div>
+                        <h4 class="text-base sm:text-lg font-semibold text-${config.color}-900 mb-2">${config.key}</h4>
+                        <div class="text-2xl sm:text-3xl font-bold text-${config.color}-700 mb-1">
                             ${personalBest.best_score}/${personalBest.max_score}
                         </div>
                         <div class="text-sm text-${config.color}-600 mb-2">
@@ -600,19 +684,19 @@
             if (!mostImproved.task || mostImproved.improvement <= 0) {
                 container.innerHTML = `
                     <div class="text-center text-gray-500">
-                        <div class="text-4xl mb-2">📊</div>
-                        <div class="text-lg">Keep practicing to see improvements!</div>
+                        <div class="text-3xl sm:text-4xl mb-2">📊</div>
+                        <div class="text-base sm:text-lg">Keep practicing to see improvements!</div>
                     </div>
                 `;
                 return;
             }
             
             container.innerHTML = `
-                <div class="bg-indigo-50 rounded-xl p-8 text-center border-2 border-indigo-200 max-w-md mx-auto">
-                    <div class="text-6xl mb-4">📈</div>
-                    <h4 class="text-2xl font-bold text-indigo-900 mb-2">Most Improved</h4>
-                    <div class="text-3xl font-bold text-indigo-700 mb-2">+${mostImproved.improvement}</div>
-                    <div class="text-lg text-indigo-600 mb-2">points improvement</div>
+                <div class="bg-indigo-50 rounded-lg sm:rounded-xl p-6 sm:p-8 text-center border-2 border-indigo-200 max-w-md mx-auto">
+                    <div class="text-5xl sm:text-6xl mb-3 sm:mb-4">📈</div>
+                    <h4 class="text-xl sm:text-2xl font-bold text-indigo-900 mb-2">Most Improved</h4>
+                    <div class="text-2xl sm:text-3xl font-bold text-indigo-700 mb-2">+${mostImproved.improvement}</div>
+                    <div class="text-base sm:text-lg text-indigo-600 mb-2">points improvement</div>
                     <div class="text-sm text-indigo-500">on ${mostImproved.task}</div>
                 </div>
             `;
@@ -630,12 +714,12 @@
             
             badges.forEach(badge => {
                 const badgeCard = document.createElement('div');
-                badgeCard.className = 'bg-yellow-50 rounded-lg p-4 text-center border border-yellow-200 hover:shadow-md transition-shadow';
+                badgeCard.className = 'bg-yellow-50 rounded-lg p-3 sm:p-4 text-center border border-yellow-200 hover:shadow-md transition-shadow';
                 
                 badgeCard.innerHTML = `
-                    <div class="text-4xl mb-3">${badge.icon}</div>
-                    <h4 class="font-semibold text-yellow-900 mb-2">${badge.name}</h4>
-                    <div class="text-sm text-yellow-700">${badge.description}</div>
+                    <div class="text-3xl sm:text-4xl mb-2 sm:mb-3">${badge.icon}</div>
+                    <h4 class="font-semibold text-yellow-900 mb-2 text-sm sm:text-base">${badge.name}</h4>
+                    <div class="text-xs sm:text-sm text-yellow-700">${badge.description}</div>
                 `;
                 
                 container.appendChild(badgeCard);
@@ -696,7 +780,7 @@
             
             // Update background color
             if (containerEl) {
-                containerEl.className = `${bgColor} rounded-xl shadow p-6 flex flex-col items-center animate-fade-in`;
+                containerEl.className = `${bgColor} rounded-lg sm:rounded-xl shadow p-4 sm:p-5 md:p-6 flex flex-col items-center animate-fade-in`;
             }
         }
         
@@ -775,8 +859,8 @@
             }, 500);
         });
 
-        // Logout functionality
-        document.getElementById('logoutBtn').addEventListener('click', function() {
+        // Logout functionality for both desktop and mobile
+        function handleLogout() {
             fetch('/api/logout', {
                 method: 'POST',
                 credentials: 'same-origin',
@@ -791,7 +875,18 @@
                 localStorage.clear();
                 window.location.href = '/';
             });
-        });
+        }
+        
+        const logoutBtnDesktop = document.getElementById('logoutBtnDesktop');
+        const logoutBtnMobile = document.getElementById('logoutBtnMobile');
+        
+        if (logoutBtnDesktop) {
+            logoutBtnDesktop.addEventListener('click', handleLogout);
+        }
+        
+        if (logoutBtnMobile) {
+            logoutBtnMobile.addEventListener('click', handleLogout);
+        }
 
  
     </script>

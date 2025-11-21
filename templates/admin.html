@@ -10,29 +10,29 @@
 </head>
 <body class="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 text-gray-900">
     <!-- Header -->
-    <header class="primary-bg text-white py-4 shadow-lg sticky top-0 z-40 backdrop-blur bg-[#1A237E]">
-        <div class="content-wrapper flex justify-between items-center max-w-7xl mx-auto px-4">
-            <div class="flex items-center">
-                <img src="{{ url_for('static', filename='admin.jpg') }}" alt="Research Study" class="h-12 w-12 rounded-full mr-4 object-cover">
-                <h1 class="text-xl md:text-2xl font-bold">Research Admin Portal</h1>
+    <header class="primary-bg text-white py-4 md:py-5 shadow-lg sticky top-0 z-40 backdrop-blur bg-[#1A237E]">
+        <div class="content-wrapper flex justify-between items-center max-w-7xl mx-auto px-4 md:px-6">
+            <div class="flex items-center flex-1 min-w-0">
+                <img src="{{ url_for('static', filename='admin.jpg') }}" alt="Research Study" class="h-10 w-10 md:h-12 md:w-12 rounded-full mr-2 md:mr-4 object-cover flex-shrink-0">
+                <h1 class="text-base sm:text-lg md:text-xl lg:text-2xl font-bold truncate">Research Admin Portal</h1>
             </div>
             <nav>
-                <ul class="flex space-x-6 text-lg items-center">
-                    <li><a href="{{ url_for('landing') }}" class="hover:text-yellow-100 transition">Home</a></li>
-                    <li><a href="#" id="logoutBtn" class="hover:text-yellow-100 transition bg-red-600 px-4 py-2 rounded">Logout</a></li>
+                <ul class="flex space-x-2 sm:space-x-4 md:space-x-6 text-sm sm:text-base md:text-lg items-center">
+                    <li class="hidden sm:block"><a href="{{ url_for('landing') }}" class="hover:text-yellow-100 transition">Home</a></li>
+                    <li><a href="#" id="logoutBtn" class="hover:text-yellow-100 transition bg-red-600 px-2 py-1 sm:px-3 sm:py-2 md:px-4 md:py-2 rounded text-sm sm:text-base">Logout</a></li>
                 </ul>
             </nav>
         </div>
     </header>
 
     <!-- Main Content -->
-    <main class="py-8">
-        <div class="max-w-7xl mx-auto px-4 flex flex-col lg:flex-row gap-6">
+    <main class="py-4 sm:py-6 md:py-8">
+        <div class="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 flex flex-col lg:flex-row gap-4 sm:gap-5 md:gap-6">
             <!-- Left: KPIs + Charts in a compact scrollable column -->
             <section class="lg:w-2/5 space-y-6">
                 <!-- Dashboard Overview -->
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-white/90 backdrop-blur p-4 rounded-2xl shadow border border-blue-100">
+                <div class="grid grid-cols-2 gap-3 sm:gap-4">
+                    <div class="bg-white/90 backdrop-blur p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow border border-blue-100">
                 <div class="flex items-center">
                     <div class="p-2 bg-blue-100 rounded-lg mr-3">
                         <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -158,22 +158,22 @@
         </div>
 
         <!-- System Overview Charts (compact, scrollable) -->
-        <div class="space-y-4 max-h-[420px] overflow-y-auto pr-2 custom-scrollbar">
-            <div class="bg-white/90 backdrop-blur p-4 rounded-2xl shadow border border-gray-200">
-                <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-sm font-semibold text-gray-800">School Performance</h3>
-                    <span class="text-[11px] uppercase tracking-wide text-gray-400">Schools vs active students</span>
+        <div class="space-y-3 sm:space-y-4 max-h-[420px] overflow-y-auto pr-1 sm:pr-2 custom-scrollbar">
+            <div class="bg-white/90 backdrop-blur p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow border border-gray-200">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0 mb-2">
+                    <h3 class="text-xs sm:text-sm font-semibold text-gray-800">School Performance</h3>
+                    <span class="text-[10px] sm:text-[11px] uppercase tracking-wide text-gray-400">Schools vs active students</span>
                 </div>
-                <div class="h-56">
+                <div class="h-48 sm:h-52 md:h-56">
                     <canvas id="schoolPerformanceChart" class="w-full h-full"></canvas>
                 </div>
             </div>
-            <div class="bg-white/90 backdrop-blur p-4 rounded-2xl shadow border border-gray-200">
-                <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-sm font-semibold text-gray-800">Task Completion Rates</h3>
-                    <span class="text-[11px] uppercase tracking-wide text-gray-400">Across all tasks</span>
+            <div class="bg-white/90 backdrop-blur p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow border border-gray-200">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0 mb-2">
+                    <h3 class="text-xs sm:text-sm font-semibold text-gray-800">Task Completion Rates</h3>
+                    <span class="text-[10px] sm:text-[11px] uppercase tracking-wide text-gray-400">Across all tasks</span>
                 </div>
-                <div class="h-56">
+                <div class="h-48 sm:h-52 md:h-56">
                     <canvas id="taskCompletionChart" class="w-full h-full"></canvas>
                 </div>
             </div>
@@ -201,48 +201,48 @@
             <!-- Right: Tabbed management area with its own scroll -->
             <section class="lg:w-3/5">
         <!-- Navigation Tabs -->
-        <div class="bg-white rounded-2xl shadow-lg border border-gray-200">
-            <div class="border-b border-gray-200 sticky top-[4.5rem] lg:top-0 bg-white/95 z-30 rounded-t-2xl">
-                <nav class="flex flex-wrap gap-4 px-6 pt-3" aria-label="Tabs">
-                    <button class="tab-button active py-3 px-1 border-b-2 border-blue-500 text-blue-700 font-medium text-sm" data-tab="users">
+        <div class="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-200">
+            <div class="border-b border-gray-200 sticky top-[4.5rem] lg:top-0 bg-white/95 z-30 rounded-t-xl sm:rounded-t-2xl">
+                <nav class="flex flex-wrap gap-2 sm:gap-3 md:gap-4 px-3 sm:px-4 md:px-6 pt-2 sm:pt-3" aria-label="Tabs">
+                    <button class="tab-button active py-2 sm:py-3 px-1 border-b-2 border-blue-500 text-blue-700 font-medium text-xs sm:text-sm" data-tab="users">
                         User Management
                     </button>
-                    <!-- <button class="tab-button py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-800 font-medium text-sm" data-tab="data">
+                    <!-- <button class="tab-button py-2 sm:py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-800 font-medium text-xs sm:text-sm" data-tab="data">
                         Data Monitoring
                     </button> -->
-                    <button class="tab-button py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-800 font-medium text-sm" data-tab="export">
-                        Dataset Export
+                    <button class="tab-button py-2 sm:py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-800 font-medium text-xs sm:text-sm" data-tab="export">
+                        <span class="hidden sm:inline">Dataset </span>Export
                     </button>
-                    <button class="tab-button py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-800 font-medium text-sm" data-tab="tasks">
-                        Task Management
+                    <button class="tab-button py-2 sm:py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-800 font-medium text-xs sm:text-sm" data-tab="tasks">
+                        <span class="hidden sm:inline">Task </span>Management
                     </button>
-                    <button class="tab-button py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-800 font-medium text-sm" data-tab="suggestions">
+                    <button class="tab-button py-2 sm:py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-800 font-medium text-xs sm:text-sm" data-tab="suggestions">
                         School Suggestions
                     </button>
                 </nav>
             </div>
 
             <!-- Tab Content -->
-            <div class="p-6 max-h-[calc(100vh-210px)] overflow-y-auto custom-scrollbar">
+            <div class="p-3 sm:p-4 md:p-6 max-h-[calc(100vh-210px)] overflow-y-auto custom-scrollbar">
                 <!-- User Management Tab -->
                 <div id="users-tab" class="tab-content active">
-                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                         <div>
-                            <h2 class="text-xl font-semibold text-gray-900">User Management</h2>
-                            <p class="text-sm text-gray-500 mt-1">Quickly browse and manage participants, parents, and schools.</p>
+                            <h2 class="text-lg sm:text-xl font-semibold text-gray-900">User Management</h2>
+                            <p class="text-xs sm:text-sm text-gray-500 mt-1">Quickly browse and manage participants, parents, and schools.</p>
                         </div>
                         <!-- Search and Filter -->
-                        <div class="flex flex-wrap gap-2">
-                            <div class="relative">
+                        <div class="flex flex-col sm:flex-row flex-wrap gap-2 w-full sm:w-auto">
+                            <div class="relative w-full sm:w-auto">
                                 <span class="absolute inset-y-0 left-3 flex items-center text-gray-400">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M5 11a6 6 0 1112 0 6 6 0 01-12 0z" />
                                     </svg>
                                 </span>
                                 <input type="text" id="userSearch" placeholder="Search by name or email"
-                                       class="pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-sm text-gray-900 placeholder:text-gray-400">
+                                       class="pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-sm text-gray-900 placeholder:text-gray-400 w-full">
                             </div>
-                            <button id="searchBtn" class="inline-flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-500 shadow-sm">
+                            <button id="searchBtn" class="inline-flex items-center justify-center bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-500 shadow-sm w-full sm:w-auto">
                                 Search
                             </button>
                         </div>
@@ -250,20 +250,20 @@
 
                     <!-- User sub-tabs -->
                     <div class="mb-4 border-b border-gray-200">
-                        <nav class="flex flex-wrap gap-4" aria-label="User subsections">
-                            <button class="user-subtab-button border-b-2 border-blue-500 text-blue-700 pb-3 text-sm font-medium"
+                        <nav class="flex flex-wrap gap-2 sm:gap-3 md:gap-4" aria-label="User subsections">
+                            <button class="user-subtab-button border-b-2 border-blue-500 text-blue-700 pb-2 sm:pb-3 text-xs sm:text-sm font-medium"
                                     data-subtab="children">
                                 Children
                             </button>
-                            <button class="user-subtab-button border-b-2 border-transparent text-gray-500 hover:text-gray-800 pb-3 text-sm font-medium"
+                            <button class="user-subtab-button border-b-2 border-transparent text-gray-500 hover:text-gray-800 pb-2 sm:pb-3 text-xs sm:text-sm font-medium"
                                     data-subtab="parents">
                                 Parents
                             </button>
-                            <button class="user-subtab-button border-b-2 border-transparent text-gray-500 hover:text-gray-800 pb-3 text-sm font-medium"
+                            <button class="user-subtab-button border-b-2 border-transparent text-gray-500 hover:text-gray-800 pb-2 sm:pb-3 text-xs sm:text-sm font-medium"
                                     data-subtab="schools">
                                 Schools
                             </button>
-                            <button class="user-subtab-button border-b-2 border-transparent text-gray-500 hover:text-gray-800 pb-3 text-sm font-medium"
+                            <button class="user-subtab-button border-b-2 border-transparent text-gray-500 hover:text-gray-800 pb-2 sm:pb-3 text-xs sm:text-sm font-medium"
                                     data-subtab="hierarchy">
                                 Hierarchy View
                             </button>
@@ -549,10 +549,10 @@
 
                 <!-- Task Management Tab -->
                 <div id="tasks-tab" class="tab-content hidden">
-                    <div class="flex items-center justify-between mb-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                         <div>
-                            <h2 class="text-xl font-semibold text-gray-900">Task Management</h2>
-                            <p class="text-sm text-gray-500">Review and manage all core study tasks.</p>
+                            <h2 class="text-lg sm:text-xl font-semibold text-gray-900">Task Management</h2>
+                            <p class="text-xs sm:text-sm text-gray-500">Review and manage all core study tasks.</p>
                         </div>
                         <button onclick="addNewTask()" class="hidden md:inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-500">
                             <span class="text-lg leading-none">＋</span>
@@ -561,28 +561,28 @@
                     </div>
 
                     <!-- Categories Grid -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <a href="{{ url_for('admin_tasks_by_category', category_slug='reading-aloud') }}" class="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg border border-gray-200">
-                            <h3 class="text-lg font-semibold text-gray-800">Reading Aloud</h3>
-                            <p class="text-sm text-gray-600 mt-1">View tasks grouped by age bands</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                        <a href="{{ url_for('admin_tasks_by_category', category_slug='reading-aloud') }}" class="block bg-white p-4 sm:p-5 md:p-6 rounded-lg shadow-md hover:shadow-lg border border-gray-200 transition">
+                            <h3 class="text-base sm:text-lg font-semibold text-gray-800">Reading Aloud</h3>
+                            <p class="text-xs sm:text-sm text-gray-600 mt-1">View tasks grouped by age bands</p>
                         </a>
-                        <a href="{{ url_for('admin_tasks_by_category', category_slug='typing') }}" class="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg border border-gray-200">
-                            <h3 class="text-lg font-semibold text-gray-800">Typing Task</h3>
-                            <p class="text-sm text-gray-600 mt-1">View tasks grouped by age bands</p>
+                        <a href="{{ url_for('admin_tasks_by_category', category_slug='typing') }}" class="block bg-white p-4 sm:p-5 md:p-6 rounded-lg shadow-md hover:shadow-lg border border-gray-200 transition">
+                            <h3 class="text-base sm:text-lg font-semibold text-gray-800">Typing Task</h3>
+                            <p class="text-xs sm:text-sm text-gray-600 mt-1">View tasks grouped by age bands</p>
                         </a>
-                        <a href="{{ url_for('admin_tasks_by_category', category_slug='writing') }}" class="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg border border-gray-200">
-                            <h3 class="text-lg font-semibold text-gray-800">Writing Task</h3>
-                            <p class="text-sm text-gray-600 mt-1">View tasks grouped by age bands</p>
+                        <a href="{{ url_for('admin_tasks_by_category', category_slug='writing') }}" class="block bg-white p-4 sm:p-5 md:p-6 rounded-lg shadow-md hover:shadow-lg border border-gray-200 transition">
+                            <h3 class="text-base sm:text-lg font-semibold text-gray-800">Writing Task</h3>
+                            <p class="text-xs sm:text-sm text-gray-600 mt-1">View tasks grouped by age bands</p>
                         </a>
-                        <a href="{{ url_for('admin_tasks_by_category', category_slug='reading-comprehension') }}" class="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg border border-gray-200">
-                            <h3 class="text-lg font-semibold text-gray-800">Reading Comprehension</h3>
-                            <p class="text-sm text-gray-600 mt-1">View tasks grouped by age bands</p>
+                        <a href="{{ url_for('admin_tasks_by_category', category_slug='reading-comprehension') }}" class="block bg-white p-4 sm:p-5 md:p-6 rounded-lg shadow-md hover:shadow-lg border border-gray-200 transition">
+                            <h3 class="text-base sm:text-lg font-semibold text-gray-800">Reading Comprehension</h3>
+                            <p class="text-xs sm:text-sm text-gray-600 mt-1">View tasks grouped by age bands</p>
                         </a>
-                        <a href="{{ url_for('admin_tasks_by_category', category_slug='mathematical-comprehension') }}" class="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg border border-gray-200">
-                            <h3 class="text-lg font-semibold text-gray-800">Mathematical Comprehension</h3>
-                            <p class="text-sm text-gray-600 mt-1">View tasks grouped by age bands</p>
+                        <a href="{{ url_for('admin_tasks_by_category', category_slug='mathematical-comprehension') }}" class="block bg-white p-4 sm:p-5 md:p-6 rounded-lg shadow-md hover:shadow-lg border border-gray-200 transition">
+                            <h3 class="text-base sm:text-lg font-semibold text-gray-800">Mathematical Comprehension</h3>
+                            <p class="text-xs sm:text-sm text-gray-600 mt-1">View tasks grouped by age bands</p>
                         </a>
-                        <a href="{{ url_for('admin_tasks_by_category', category_slug='aptitude') }}" class="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg border border-gray-200">
+                        <a href="{{ url_for('admin_tasks_by_category', category_slug='aptitude') }}" class="block bg-white p-4 sm:p-5 md:p-6 rounded-lg shadow-md hover:shadow-lg border border-gray-200 transition">
                             <h3 class="text-lg font-semibold text-gray-800">Aptitude Test</h3>
                             <p class="text-sm text-gray-600 mt-1">View and edit aptitude task</p>
                         </a>
@@ -590,8 +590,8 @@
                 </div>
                 <!-- School Suggestions Tab -->
                 <div id="suggestions-tab" class="tab-content hidden">
-                    <h2 class="text-xl font-semibold text-gray-900 mb-4">Suggested Tasks by Schools</h2>
-                    <div id="suggestionsList" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+                    <h2 class="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Suggested Tasks by Schools</h2>
+                    <div id="suggestionsList" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4"></div>
                     <!-- Empty state message -->
                     <div id="noSuggestionsMessage" class="hidden bg-white/90 backdrop-blur rounded-xl shadow-sm border border-gray-200 p-8 text-center">
                         <svg class="mx-auto h-16 w-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -609,8 +609,8 @@
     </main>
 
    <!-- Footer -->
-    <footer class="dark-bg text-white py-10 text-sm mt-8 border-t border-gray-300 bg-gray-900">
-        <div class="content-wrapper max-w-7xl mx-auto px-4">
+    <footer class="dark-bg text-white py-8 sm:py-10 md:py-12 text-xs sm:text-sm md:text-base mt-6 sm:mt-8 border-t border-gray-300 bg-gray-900">
+        <div class="content-wrapper max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
             <div class="flex flex-col md:flex-row justify-between">
                 <div class="mb-8 md:mb-0">
                     <div class="flex items-center">
@@ -621,7 +621,7 @@
                     </p>
                 </div>
                 
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-8">
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
                     <div>
                         <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
                         <ul class="space-y-2">
@@ -656,7 +656,7 @@
                 </div>
             </div>
             
-            <div class="mt-12 pt-8 border-t border-gray-700 text-center text-gray-400">
+            <div class="mt-8 sm:mt-10 md:mt-12 pt-6 sm:pt-8 border-t border-gray-700 text-center text-gray-400 text-xs sm:text-sm">
                 <p>&copy; 2025 Leveraging NLP for Dyslexia Identification. All rights reserved.</p>
             </div>
         </div>
@@ -665,8 +665,8 @@
 
     <!-- Modal for User Details -->
     <div id="userModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
-        <div class="flex items-center justify-center min-h-screen p-4">
-            <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-screen overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen p-3 sm:p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                 <div class="p-6">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-semibold text-gray-800">Participant Details</h3>
@@ -686,8 +686,8 @@
 
 <!-- Add this modal at the end of your admin.html body -->
 <div id="addTaskModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
-    <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[80vh] overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen p-3 sm:p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[85vh] overflow-y-auto">
             <div class="p-6">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-semibold text-gray-800">Add New Task</h3>
@@ -740,8 +740,8 @@
 
 <!-- Task Management Modal for Children -->
     <div id="taskManagementModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
-        <div class="flex items-center justify-center min-h-screen p-4">
-            <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-screen overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen p-3 sm:p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
                 <div class="p-6">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-semibold text-gray-800">Task Management for <span id="childName"></span></h3>

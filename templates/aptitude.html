@@ -31,35 +31,66 @@
 </head>
 <body>
     <!-- Header -->
-    <header class="primary-bg text-white py-6">
-        <div class="content-wrapper flex justify-between items-center">
-            <div class="flex items-center">
-                <img src="{{ url_for('static', filename='type.jpg') }}" alt="Dashboard Graphic" class="h-12 w-12 rounded-full mr-4 hidden md:block">
-                <h1 class="text-xl md:text-2xl font-bold">Welcome to Aptitude Test</h1>
+    <header class="primary-bg text-white py-4 md:py-6">
+        <div class="content-wrapper flex justify-between items-center px-3 sm:px-4">
+            <div class="flex items-center flex-1 min-w-0">
+                <img src="{{ url_for('static', filename='type.jpg') }}" alt="Dashboard Graphic" class="h-10 w-10 md:h-12 md:w-12 rounded-full mr-2 md:mr-4 hidden sm:block flex-shrink-0">
+                <h1 class="text-sm sm:text-base md:text-xl lg:text-2xl font-bold truncate">Welcome to Aptitude Test</h1>
             </div>
-            <nav>
-                <ul class="flex space-x-6 text-lg md:text-xl items-center">
+            
+            <!-- Hamburger Menu Button (visible on small screens) -->
+            <button id="hamburgerBtn" class="md:hidden text-white p-2 hover:bg-blue-700 rounded transition" aria-label="Toggle menu">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            </button>
+            
+            <!-- Desktop Navigation (hidden on small screens) -->
+            <nav class="hidden md:block">
+                <ul class="flex space-x-2 sm:space-x-3 md:space-x-6 text-xs sm:text-sm md:text-base lg:text-lg items-center">
                     <li><a href="{{ url_for('landing') }}#about" class="hover:text-yellow-100 transition">About</a></li>
                     <li><a href="{{ url_for('landing') }}#contact" class="hover:text-yellow-100 transition">Contact</a></li>
-                    <li><a href="/participant-dashboard" class="hover:text-yellow-100 transition ">Dashboard</a></li>
-                    <li><a href="#" id="logoutBtn" class="hover:text-yellow-100 transition ">Logout</a></li>
+                    <li><a href="/participant-dashboard" class="hover:text-yellow-100 transition">Dashboard</a></li>
+                    <li><a href="#" id="logoutBtn" class="hover:text-yellow-100 transition">Logout</a></li>
                 </ul>
             </nav>
         </div>
     </header>
+    
+    <!-- Mobile Navigation Menu (slide-out) -->
+    <div id="mobileMenu" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div id="mobileMenuContent" class="fixed right-0 top-0 h-full w-64 bg-[#1A237E] text-white transform translate-x-full transition-transform duration-300 ease-in-out shadow-lg">
+            <div class="flex justify-between items-center p-4 border-b border-blue-700">
+                <h2 class="text-lg font-bold">Menu</h2>
+                <button id="closeMobileMenu" class="text-white p-2 hover:bg-blue-700 rounded transition" aria-label="Close menu">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <nav class="p-4">
+                <ul class="space-y-4">
+                    <li><a href="{{ url_for('landing') }}#about" class="block py-2 px-4 hover:bg-blue-700 rounded transition">About</a></li>
+                    <li><a href="{{ url_for('landing') }}#contact" class="block py-2 px-4 hover:bg-blue-700 rounded transition">Contact</a></li>
+                    <li><a href="/participant-dashboard" class="block py-2 px-4 hover:bg-blue-700 rounded transition">Dashboard</a></li>
+                    <li><a href="#" id="logoutBtnMobile" class="block py-2 px-4 bg-yellow-500 text-blue-900 rounded font-semibold hover:bg-yellow-400 transition text-center">Logout</a></li>
+                </ul>
+            </nav>
+        </div>
+    </div>
 
     <!-- Accessibility Button with Label -->
-    <div class="fixed bottom-4 left-4 z-50 flex flex-col items-center space-y-1">
+    <div class="fixed bottom-3 left-3 sm:bottom-4 sm:left-4 z-50 flex flex-col items-center space-y-1">
         <button id="togglePanel"
-            class="bg-[#1A237E] text-white p-3 rounded-full shadow-lg hover:bg-[#3a74cc] transition border border-white"
+            class="bg-[#1A237E] text-white p-2 sm:p-3 rounded-full shadow-lg hover:bg-[#3a74cc] transition border border-white"
             aria-label="Toggle Accessibility Panel">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none"
                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round"
                     d="M12 4.5c.828 0 1.5-.672 1.5-1.5S12.828 1.5 12 1.5 10.5 2.172 10.5 3s.672 1.5 1.5 1.5zM4.75 9.25l3.625.75M19.25 9.25l-3.625.75M8.375 10l.625 9m6-9l-.625 9M5.5 21.25h13"/>
             </svg>
         </button>
-        <span class="text-sm text-white bg-[#1A237E] px-2 py-1 rounded shadow border border-white">
+        <span class="text-xs sm:text-sm text-white bg-[#1A237E] px-1.5 sm:px-2 py-0.5 sm:py-1 rounded shadow border border-white">
             Accessibility
         </span>
     </div>
@@ -70,10 +101,10 @@
     
     <!-- Accessibility Panel -->
     <div id="accessibilityPanel"
-        class="hidden fixed top-0 left-0 h-screen w-80 bg-white shadow-lg z-50 border-l border-gray-300 overflow-y-auto p-4 space-y-6">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-lg font-semibold text-[#1A237E]">Accessibility Menu</h2>
-            <button id="closePanel" class="text-2xl font-bold text-gray-500 hover:text-gray-700">&times;</button>
+        class="hidden fixed top-0 left-0 h-screen w-full sm:w-80 bg-white shadow-lg z-50 border-l border-gray-300 overflow-y-auto p-3 sm:p-4 space-y-4 sm:space-y-6">
+        <div class="flex justify-between items-center mb-3 sm:mb-4">
+            <h2 class="text-base sm:text-lg font-semibold text-[#1A237E]">Accessibility Menu</h2>
+            <button id="closePanel" class="text-xl sm:text-2xl font-bold text-gray-500 hover:text-gray-700">&times;</button>
         </div>
 
         <div class="flex items-center justify-between">
@@ -116,35 +147,35 @@
 
 
     <!-- Main Content -->
-    <div class="content-wrapper mt-8 mb-16">
+    <div class="content-wrapper mt-4 sm:mt-6 md:mt-8 mb-8 sm:mb-12 md:mb-16 px-3 sm:px-4">
         <!-- Progress Bar -->
-        <div class="bg-white rounded-xl shadow-md p-6 mb-8">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold">Test Progress</h2>
-                <span id="progressText" class="text-lg font-semibold text-blue-600">0%</span>
+        <div class="bg-white rounded-lg sm:rounded-xl shadow-md p-4 sm:p-5 md:p-6 mb-4 sm:mb-6 md:mb-8">
+            <div class="flex justify-between items-center mb-3 sm:mb-4">
+                <h2 class="text-base sm:text-lg md:text-xl font-bold">Test Progress</h2>
+                <span id="progressText" class="text-sm sm:text-base md:text-lg font-semibold text-blue-600">0%</span>
             </div>
-            <div class="w-full bg-gray-200 rounded-full h-4">
-                <div id="progressBar" class="bg-blue-600 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
+            <div class="w-full bg-gray-200 rounded-full h-3 sm:h-4">
+                <div id="progressBar" class="bg-blue-600 h-3 sm:h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
             </div>
         </div>
 
         <!-- Instructions -->
-        <div id="instructions" class="bg-white rounded-xl shadow-md p-8 mb-8">
-            <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Aptitude Test Instructions</h2>
-            <div class="max-w-3xl mx-auto space-y-4 text-gray-700">
-                <p class="text-lg">Welcome to the Aptitude Test! This test consists of four sections designed to assess different cognitive abilities:</p>
-                <ul class="list-disc list-inside space-y-2 ml-4">
+        <div id="instructions" class="bg-white rounded-lg sm:rounded-xl shadow-md p-4 sm:p-6 md:p-8 mb-4 sm:mb-6 md:mb-8">
+            <h2 class="text-lg sm:text-xl md:text-2xl font-bold mb-4 sm:mb-5 md:mb-6 text-center text-gray-800">Aptitude Test Instructions</h2>
+            <div class="max-w-3xl mx-auto space-y-3 sm:space-y-4 text-gray-700">
+                <p class="text-sm sm:text-base md:text-lg">Welcome to the Aptitude Test! This test consists of four sections designed to assess different cognitive abilities:</p>
+                <ul class="list-disc list-inside space-y-2 ml-2 sm:ml-4 text-sm sm:text-base">
                     <li><strong>Logical Reasoning:</strong> Solve puzzles and identify patterns</li>
                     <li><strong>Numerical Ability:</strong> Work with numbers and mathematical concepts</li>
                     <li><strong>Verbal Ability:</strong> Understand and work with language</li>
                     <li><strong>Spatial Reasoning:</strong> Visualize and manipulate spatial relationships</li>
                 </ul>
-                <p class="text-lg"><strong>Time:</strong> Each section takes approximately 10-15 minutes</p>
-                <p class="text-lg"><strong>Instructions:</strong> Read each question carefully and select the best answer</p>
-                <p class="text-lg"><strong>Note:</strong> You can save your progress and return later</p>
+                <p class="text-sm sm:text-base md:text-lg"><strong>Time:</strong> Each section takes approximately 10-15 minutes</p>
+                <p class="text-sm sm:text-base md:text-lg"><strong>Instructions:</strong> Read each question carefully and select the best answer</p>
+                <p class="text-sm sm:text-base md:text-lg"><strong>Note:</strong> You can save your progress and return later</p>
             </div>
-            <div class="text-center mt-8">
-                <button id="startTest" class="primary-bg text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition">
+            <div class="text-center mt-6 sm:mt-8">
+                <button id="startTest" class="primary-bg text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg text-base sm:text-lg font-semibold hover:bg-blue-700 transition w-full sm:w-auto">
                     Start Test
                 </button>
             </div>
@@ -153,27 +184,27 @@
         <!-- Test Sections -->
         <div id="testSections" class="hidden">
             <!-- Section Navigation -->
-            <div class="bg-white rounded-xl shadow-md p-6 mb-8">
-                <div class="flex flex-wrap justify-center gap-4">
-                    <button class="section-nav px-4 py-2 rounded-lg font-medium transition" data-section="logical">Logical Reasoning</button>
-                    <button class="section-nav px-4 py-2 rounded-lg font-medium transition" data-section="numerical">Numerical Ability</button>
-                    <button class="section-nav px-4 py-2 rounded-lg font-medium transition" data-section="verbal">Verbal Ability</button>
-                    <button class="section-nav px-4 py-2 rounded-lg font-medium transition" data-section="spatial">Spatial Reasoning</button>
+            <div class="bg-white rounded-lg sm:rounded-xl shadow-md p-3 sm:p-4 md:p-6 mb-4 sm:mb-6 md:mb-8">
+                <div class="flex flex-wrap justify-center gap-2 sm:gap-3 md:gap-4">
+                    <button class="section-nav px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition" data-section="logical"><span class="hidden sm:inline">Logical </span>Reasoning</button>
+                    <button class="section-nav px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition" data-section="numerical"><span class="hidden sm:inline">Numerical </span>Ability</button>
+                    <button class="section-nav px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition" data-section="verbal"><span class="hidden sm:inline">Verbal </span>Ability</button>
+                    <button class="section-nav px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition" data-section="spatial"><span class="hidden sm:inline">Spatial </span>Reasoning</button>
                 </div>
             </div>
 
             <!-- Logical Reasoning Section -->
             <div id="logicalSection" class="question-container active">
-                <div class="bg-white rounded-xl shadow-md p-8 mb-8">
-                    <h3 class="text-2xl font-bold mb-6 text-center text-gray-800">Logical Reasoning</h3>
+                <div class="bg-white rounded-lg sm:rounded-xl shadow-md p-4 sm:p-6 md:p-8 mb-4 sm:mb-6 md:mb-8">
+                    <h3 class="text-lg sm:text-xl md:text-2xl font-bold mb-4 sm:mb-5 md:mb-6 text-center text-gray-800">Logical Reasoning</h3>
                     <div class="max-w-2xl mx-auto">
-                        <div class="question mb-8">
-                            <p class="text-lg font-medium mb-4">1. Which number comes next in the sequence: 2, 6, 12, 20, 30, ?</p>
-                            <div class="grid grid-cols-2 gap-4">
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="42">42</button>
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="44">44</button>
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="40">40</button>
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="38">38</button>
+                        <div class="question mb-6 sm:mb-8">
+                            <p class="text-sm sm:text-base md:text-lg font-medium mb-3 sm:mb-4">1. Which number comes next in the sequence: 2, 6, 12, 20, 30, ?</p>
+                            <div class="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4">
+                                <button class="option-btn p-3 sm:p-4 border-2 border-gray-300 rounded-lg text-sm sm:text-base text-center hover:border-blue-500" data-value="42">42</button>
+                                <button class="option-btn p-3 sm:p-4 border-2 border-gray-300 rounded-lg text-sm sm:text-base text-center hover:border-blue-500" data-value="44">44</button>
+                                <button class="option-btn p-3 sm:p-4 border-2 border-gray-300 rounded-lg text-sm sm:text-base text-center hover:border-blue-500" data-value="40">40</button>
+                                <button class="option-btn p-3 sm:p-4 border-2 border-gray-300 rounded-lg text-sm sm:text-base text-center hover:border-blue-500" data-value="38">38</button>
                             </div>
                         </div>
                     </div>
@@ -182,16 +213,16 @@
 
             <!-- Numerical Ability Section -->
             <div id="numericalSection" class="question-container">
-                <div class="bg-white rounded-xl shadow-md p-8 mb-8">
-                    <h3 class="text-2xl font-bold mb-6 text-center text-gray-800">Numerical Ability</h3>
+                <div class="bg-white rounded-lg sm:rounded-xl shadow-md p-4 sm:p-6 md:p-8 mb-4 sm:mb-6 md:mb-8">
+                    <h3 class="text-lg sm:text-xl md:text-2xl font-bold mb-4 sm:mb-5 md:mb-6 text-center text-gray-800">Numerical Ability</h3>
                     <div class="max-w-2xl mx-auto">
-                        <div class="question mb-8">
-                            <p class="text-lg font-medium mb-4">1. What is 25% of 80?</p>
-                            <div class="grid grid-cols-2 gap-4">
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="15">15</button>
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="20">20</button>
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="25">25</button>
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="30">30</button>
+                        <div class="question mb-6 sm:mb-8">
+                            <p class="text-sm sm:text-base md:text-lg font-medium mb-3 sm:mb-4">1. What is 25% of 80?</p>
+                            <div class="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4">
+                                <button class="option-btn p-3 sm:p-4 border-2 border-gray-300 rounded-lg text-sm sm:text-base text-center hover:border-blue-500" data-value="15">15</button>
+                                <button class="option-btn p-3 sm:p-4 border-2 border-gray-300 rounded-lg text-sm sm:text-base text-center hover:border-blue-500" data-value="20">20</button>
+                                <button class="option-btn p-3 sm:p-4 border-2 border-gray-300 rounded-lg text-sm sm:text-base text-center hover:border-blue-500" data-value="25">25</button>
+                                <button class="option-btn p-3 sm:p-4 border-2 border-gray-300 rounded-lg text-sm sm:text-base text-center hover:border-blue-500" data-value="30">30</button>
                             </div>
                         </div>
                     </div>
@@ -200,16 +231,16 @@
 
             <!-- Verbal Ability Section -->
             <div id="verbalSection" class="question-container">
-                <div class="bg-white rounded-xl shadow-md p-8 mb-8">
-                    <h3 class="text-2xl font-bold mb-6 text-center text-gray-800">Verbal Ability</h3>
+                <div class="bg-white rounded-lg sm:rounded-xl shadow-md p-4 sm:p-6 md:p-8 mb-4 sm:mb-6 md:mb-8">
+                    <h3 class="text-lg sm:text-xl md:text-2xl font-bold mb-4 sm:mb-5 md:mb-6 text-center text-gray-800">Verbal Ability</h3>
                     <div class="max-w-2xl mx-auto">
-                        <div class="question mb-8">
-                            <p class="text-lg font-medium mb-4">1. Choose the word that best completes the analogy: Book is to Reading as Fork is to:</p>
-                            <div class="grid grid-cols-2 gap-4">
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="eating">Eating</button>
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="cooking">Cooking</button>
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="cutting">Cutting</button>
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="washing">Washing</button>
+                        <div class="question mb-6 sm:mb-8">
+                            <p class="text-sm sm:text-base md:text-lg font-medium mb-3 sm:mb-4">1. Choose the word that best completes the analogy: Book is to Reading as Fork is to:</p>
+                            <div class="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4">
+                                <button class="option-btn p-3 sm:p-4 border-2 border-gray-300 rounded-lg text-sm sm:text-base text-center hover:border-blue-500" data-value="eating">Eating</button>
+                                <button class="option-btn p-3 sm:p-4 border-2 border-gray-300 rounded-lg text-sm sm:text-base text-center hover:border-blue-500" data-value="cooking">Cooking</button>
+                                <button class="option-btn p-3 sm:p-4 border-2 border-gray-300 rounded-lg text-sm sm:text-base text-center hover:border-blue-500" data-value="cutting">Cutting</button>
+                                <button class="option-btn p-3 sm:p-4 border-2 border-gray-300 rounded-lg text-sm sm:text-base text-center hover:border-blue-500" data-value="washing">Washing</button>
                             </div>
                         </div>
                     </div>
@@ -218,16 +249,16 @@
 
             <!-- Spatial Reasoning Section -->
             <div id="spatialSection" class="question-container">
-                <div class="bg-white rounded-xl shadow-md p-8 mb-8">
-                    <h3 class="text-2xl font-bold mb-6 text-center text-gray-800">Spatial Reasoning</h3>
+                <div class="bg-white rounded-lg sm:rounded-xl shadow-md p-4 sm:p-6 md:p-8 mb-4 sm:mb-6 md:mb-8">
+                    <h3 class="text-lg sm:text-xl md:text-2xl font-bold mb-4 sm:mb-5 md:mb-6 text-center text-gray-800">Spatial Reasoning</h3>
                     <div class="max-w-2xl mx-auto">
-                        <div class="question mb-8">
-                            <p class="text-lg font-medium mb-4">1. If you fold a piece of paper in half twice, how many layers will you have?</p>
-                            <div class="grid grid-cols-2 gap-4">
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="2">2 layers</button>
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="3">3 layers</button>
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="4">4 layers</button>
-                                <button class="option-btn p-4 border-2 border-gray-300 rounded-lg text-center hover:border-blue-500" data-value="6">6 layers</button>
+                        <div class="question mb-6 sm:mb-8">
+                            <p class="text-sm sm:text-base md:text-lg font-medium mb-3 sm:mb-4">1. If you fold a piece of paper in half twice, how many layers will you have?</p>
+                            <div class="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4">
+                                <button class="option-btn p-3 sm:p-4 border-2 border-gray-300 rounded-lg text-sm sm:text-base text-center hover:border-blue-500" data-value="2">2 layers</button>
+                                <button class="option-btn p-3 sm:p-4 border-2 border-gray-300 rounded-lg text-sm sm:text-base text-center hover:border-blue-500" data-value="3">3 layers</button>
+                                <button class="option-btn p-3 sm:p-4 border-2 border-gray-300 rounded-lg text-sm sm:text-base text-center hover:border-blue-500" data-value="4">4 layers</button>
+                                <button class="option-btn p-3 sm:p-4 border-2 border-gray-300 rounded-lg text-sm sm:text-base text-center hover:border-blue-500" data-value="6">6 layers</button>
                             </div>
                         </div>
                     </div>
@@ -235,16 +266,16 @@
             </div>
 
             <!-- Action Buttons -->
-            <div class="bg-white rounded-xl shadow-md p-6">
-                <div class="flex justify-between items-center">
-                    <button id="saveProgress" class="bg-yellow-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-yellow-600 transition">
+            <div class="bg-white rounded-lg sm:rounded-xl shadow-md p-4 sm:p-5 md:p-6">
+                <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4">
+                    <button id="saveProgress" class="bg-yellow-500 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-semibold hover:bg-yellow-600 transition w-full sm:w-auto">
                         Save Progress
                     </button>
-                    <div class="flex space-x-4">
-                        <button id="retakeTest" class="bg-orange-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-600 transition">
+                    <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                        <button id="retakeTest" class="bg-orange-500 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-semibold hover:bg-orange-600 transition w-full sm:w-auto">
                             Retake Test
                         </button>
-                        <button id="submitTest" class="primary-bg text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
+                        <button id="submitTest" class="primary-bg text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-semibold hover:bg-blue-700 transition w-full sm:w-auto">
                             Submit Test
                         </button>
                     </div>
@@ -254,45 +285,45 @@
     </div>
 
     <!-- Footer -->
-    <footer class="dark-bg text-white py-12 text-lg" style="background-color: #333333;">
-        <div class="content-wrapper">
+    <footer class="dark-bg text-white py-8 sm:py-10 md:py-12 text-xs sm:text-sm md:text-base" style="background-color: #333333;">
+        <div class="content-wrapper px-3 sm:px-4">
             <div class="flex flex-col md:flex-row justify-between">
-                <div class="mb-8 md:mb-0">
+                <div class="mb-6 sm:mb-8 md:mb-0">
                     <div class="flex items-center">
-                        <h2 class="text-xl font-bold">Dyslexia Research Initiative</h2>
+                        <h2 class="text-lg sm:text-xl font-bold">Dyslexia Research Initiative</h2>
                     </div>
-                    <p class="mt-4 text-gray-400 max-w-md">
+                    <p class="mt-3 sm:mt-4 text-gray-400 max-w-md text-sm sm:text-base">
                         Advancing our understanding of dyslexia through innovative research and technology to create better support systems for everyone.
                     </p>
                 </div>
                 
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-8">
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
                     <div>
-                        <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
-                        <ul class="space-y-2">
+                        <h3 class="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Quick Links</h3>b-4">Quick Links</h3>
+                        <ul class="space-y-2 text-sm sm:text-base">
                             <li><a href="landing.html#about" class="text-gray-400 hover:text-white transition">About</a></li>
                             <li><a href="landing.html#contact" class="text-gray-400 hover:text-white transition">Contact</a></li>
                         </ul>
                     </div>
                     
                     <div>
-                        <h3 class="text-lg font-semibold mb-4">Resources</h3>
-                        <ul class="space-y-2">
+                        <h3 class="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Resources</h3>
+                        <ul class="space-y-2 text-sm sm:text-base">
                             <li><a href="learn_more.html#faq" class="text-gray-400 hover:text-white transition">FAQs</a></li>
                             <li><a href="#" class="text-gray-400 hover:text-white transition">Privacy Policy</a></li>
                         </ul>
                     </div>
                     
                     <div>
-                        <h3 class="text-lg font-semibold mb-4">Connect</h3>
-                        <div class="flex space-x-4">
+                        <h3 class="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Connect</h3>
+                        <div class="flex space-x-3 sm:space-x-4">
                             <a href="#" class="text-gray-400 hover:text-white transition">
-                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"></path>
                                 </svg>
                             </a>
                             <a href="#" class="text-gray-400 hover:text-white transition">
-                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                     <path fill-rule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z" clip-rule="evenodd"></path>
                                 </svg>
                             </a>
@@ -301,7 +332,7 @@
                 </div>
             </div>
             
-            <div class="mt-12 pt-8 border-t border-gray-700 text-center text-gray-400">
+            <div class="mt-8 sm:mt-10 md:mt-12 pt-6 sm:pt-8 border-t border-gray-700 text-center text-gray-400 text-xs sm:text-sm">
                 <p>&copy; 2025 Leveraging NLP for Dyslexia Identification. All rights reserved.</p>
             </div>
         </div>
@@ -398,23 +429,100 @@
             root.style.fontSize = `${currentFontSize}px`;
         }
 
-        // Logout functionality
-        document.getElementById('logoutBtn').addEventListener('click', function() {
-            fetch('/api/logout', {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: { 'Content-Type': 'application/json' }
-            })
-            .then(res => res.json())
-            .then(data => {
-                localStorage.clear();
-                window.location.href = '/';
-            })
-            .catch(() => {
-                localStorage.clear();
-                window.location.href = '/';
+        // Mobile menu functionality
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const mobileMenuContent = document.getElementById('mobileMenuContent');
+        const closeMobileMenu = document.getElementById('closeMobileMenu');
+        
+        function openMobileMenu() {
+            mobileMenu.classList.remove('hidden');
+            setTimeout(() => {
+                mobileMenuContent.classList.remove('translate-x-full');
+            }, 10);
+        }
+        
+        function closeMobileMenuFunc() {
+            mobileMenuContent.classList.add('translate-x-full');
+            setTimeout(() => {
+                mobileMenu.classList.add('hidden');
+            }, 300);
+        }
+        
+        if (hamburgerBtn) {
+            hamburgerBtn.addEventListener('click', openMobileMenu);
+        }
+        
+        if (closeMobileMenu) {
+            closeMobileMenu.addEventListener('click', closeMobileMenuFunc);
+        }
+        
+        // Close menu when clicking outside
+        if (mobileMenu) {
+            mobileMenu.addEventListener('click', function(e) {
+                if (e.target === mobileMenu) {
+                    closeMobileMenuFunc();
+                }
+            });
+        }
+        
+        // Close menu when clicking nav links
+        document.querySelectorAll('#mobileMenuContent a').forEach(link => {
+            link.addEventListener('click', function() {
+                if (!this.id.includes('logout')) {
+                    closeMobileMenuFunc();
+                }
             });
         });
+        
+        // Close menu on window resize to desktop size
+        window.addEventListener('resize', function() {
+            if (window.innerWidth >= 768) {
+                closeMobileMenuFunc();
+            }
+        });
+
+        // Logout functionality (desktop)
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function() {
+                fetch('/api/logout', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    localStorage.clear();
+                    window.location.href = '/';
+                })
+                .catch(() => {
+                    localStorage.clear();
+                    window.location.href = '/';
+                });
+            });
+        }
+        
+        // Logout functionality (mobile)
+        const logoutBtnMobile = document.getElementById('logoutBtnMobile');
+        if (logoutBtnMobile) {
+            logoutBtnMobile.addEventListener('click', function() {
+                fetch('/api/logout', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    localStorage.clear();
+                    window.location.href = '/';
+                })
+                .catch(() => {
+                    localStorage.clear();
+                    window.location.href = '/';
+                });
+            });
+        }
 
         // Load aptitude tasks from database based on user's class level
         let currentAptitudeTask = null;
@@ -433,12 +541,12 @@
                     displayAptitudeTask(task);
                     
                     // Show class level info
-                    const classInfo = document.createElement('div');
-                    classInfo.className = 'bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4';
-                    classInfo.innerHTML = `
-                        <p class="font-bold">Class Level ${data.class_level} Aptitude Test</p>
-                        <p>Questions tailored for your class level.</p>
-                    `;
+                    // const classInfo = document.createElement('div');
+                    // classInfo.className = 'bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4';
+                    // classInfo.innerHTML = `
+                    //     <p class="font-bold">Class Level ${data.class_level} Aptitude Test</p>
+                    //     <p>Questions tailored for your class level.</p>
+                    // `;
                     
                     const contentWrapper = document.querySelector('.content-wrapper');
                     if (contentWrapper) {

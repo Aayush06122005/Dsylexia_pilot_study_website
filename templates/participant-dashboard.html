@@ -75,37 +75,70 @@
 </head>
 <body>
     <!-- Header -->
-    <header class="primary-bg text-white py-6">
-        <div class="content-wrapper flex justify-between items-center">
-            <div class="flex items-center">
-                <img src="{{ url_for('static', filename='gauge.png') }}" alt="Dashboard Graphic" class="h-12 w-12 rounded-full mr-4 hidden md:block">
-                <h1 class="text-xl md:text-2xl font-bold">Welcome to Your Dashboard, Captain!</h1>
+    <header class="primary-bg text-white py-4 md:py-6">
+        <div class="content-wrapper flex justify-between items-center px-3 sm:px-4">
+            <div class="flex items-center flex-1 min-w-0">
+                <img src="{{ url_for('static', filename='gauge.png') }}" alt="Dashboard Graphic" class="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 rounded-full mr-2 sm:mr-3 md:mr-4">
+                <h1 class="text-sm sm:text-base md:text-xl lg:text-2xl font-bold truncate">Welcome to Your Dashboard, Captain!</h1>
             </div>
-            <nav>
-                <ul class="flex space-x-6 text-lg md:text-xl items-center">
+            
+            <!-- Hamburger Menu Button (visible on small screens) -->
+            <button id="hamburgerBtn" class="md:hidden text-white p-2 hover:bg-blue-700 rounded transition" aria-label="Toggle menu">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            </button>
+            
+            <!-- Desktop Navigation (hidden on small screens) -->
+            <nav class="hidden md:block">
+                <ul class="flex space-x-2 lg:space-x-4 xl:space-x-6 text-sm lg:text-base xl:text-lg items-center">
                     <li><a href="{{ url_for('landing') }}#about" class="hover:text-yellow-100 transition">About</a></li>
                     <li><a href="{{ url_for('landing') }}#contact" class="hover:text-yellow-100 transition">Contact</a></li>
-                    <li><a href="/profile" class="hover:text-yellow-100 transition ">Profile</a></li>
+                    <li><a href="/profile" class="hover:text-yellow-100 transition">Profile</a></li>
                     <li><a href="/stats" class="hover:text-yellow-100 transition">Stats</a></li>
-                    <li id="backToParentNav" class="hidden"><a href="#" onclick="switchBackToParent()" class="hover:text-yellow-100 transition bg-yellow-500 text-blue-900 px-3 py-1 rounded">Back to Parent</a></li>
-                    <li><a href="#" id="logoutBtn" class="hover:text-yellow-100 transition ">Logout</a></li>
+                    <li id="backToParentNavDesktop" class="hidden"><a href="#" onclick="switchBackToParent()" class="hover:text-yellow-100 transition bg-yellow-500 text-blue-900 px-3 py-1 rounded text-sm">Back to Parent</a></li>
+                    <li><a href="#" id="logoutBtnDesktop" class="hover:text-yellow-100 transition">Logout</a></li>
                 </ul>
             </nav>
         </div>
     </header>
+    
+    <!-- Mobile Navigation Menu (slide-out) -->
+    <div id="mobileMenu" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div id="mobileMenuContent" class="fixed right-0 top-0 h-full w-64 bg-[#1A237E] text-white transform translate-x-full transition-transform duration-300 ease-in-out shadow-lg">
+            <div class="flex justify-between items-center p-4 border-b border-blue-700">
+                <h2 class="text-lg font-bold">Menu</h2>
+                <button id="closeMobileMenu" class="text-white p-2 hover:bg-blue-700 rounded transition" aria-label="Close menu">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <nav class="p-4">
+                <ul class="space-y-4">
+                    <li><a href="{{ url_for('landing') }}#about" class="block py-2 px-4 hover:bg-blue-700 rounded transition">About</a></li>
+                    <li><a href="{{ url_for('landing') }}#contact" class="block py-2 px-4 hover:bg-blue-700 rounded transition">Contact</a></li>
+                    <li><a href="/profile" class="block py-2 px-4 hover:bg-blue-700 rounded transition">Profile</a></li>
+                    <li><a href="/stats" class="block py-2 px-4 hover:bg-blue-700 rounded transition">Stats</a></li>
+                    <li id="backToParentNavMobile" class="hidden"><a href="#" onclick="switchBackToParent()" class="block py-2 px-4 bg-yellow-500 text-blue-900 hover:bg-yellow-400 rounded transition font-semibold">Back to Parent</a></li>
+                    <li><a href="#" id="logoutBtnMobile" class="block py-2 px-4 hover:bg-blue-700 rounded transition">Logout</a></li>
+                </ul>
+            </nav>
+        </div>
+    </div>
 
     <!-- Accessibility Button with Label -->
-    <div class="fixed bottom-4 left-4 z-50 flex flex-col items-center space-y-1">
+    <div class="fixed bottom-3 left-3 sm:bottom-4 sm:left-4 z-50 flex flex-col items-center space-y-1">
         <button id="togglePanel"
-            class="bg-[#1A237E] text-white p-3 rounded-full shadow-lg hover:bg-[#3a74cc] transition border border-white"
+            class="bg-[#1A237E] text-white p-2 sm:p-3 rounded-full shadow-lg hover:bg-[#3a74cc] transition border border-white"
             aria-label="Toggle Accessibility Panel">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none"
                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round"
                     d="M12 4.5c.828 0 1.5-.672 1.5-1.5S12.828 1.5 12 1.5 10.5 2.172 10.5 3s.672 1.5 1.5 1.5zM4.75 9.25l3.625.75M19.25 9.25l-3.625.75M8.375 10l.625 9m6-9l-.625 9M5.5 21.25h13"/>
             </svg>
         </button>
-        <span class="text-sm text-white bg-[#1A237E] px-2 py-1 rounded shadow border border-white">
+        <span class="text-xs sm:text-sm text-white bg-[#1A237E] px-1.5 sm:px-2 py-0.5 sm:py-1 rounded shadow border border-white">
             Accessibility
         </span>
     </div>
@@ -116,10 +149,10 @@
     
     <!-- Accessibility Panel -->
     <div id="accessibilityPanel"
-        class="hidden fixed top-0 left-0 h-screen w-80 bg-white shadow-lg z-50 border-l border-gray-300 overflow-y-auto p-4 space-y-6">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-lg font-semibold text-[#1A237E]">Accessibility Menu</h2>
-            <button id="closePanel" class="text-2xl font-bold text-gray-500 hover:text-gray-700">&times;</button>
+        class="hidden fixed top-0 left-0 h-screen w-full sm:w-80 bg-white shadow-lg z-50 border-l border-gray-300 overflow-y-auto p-3 sm:p-4 space-y-4 sm:space-y-6">
+        <div class="flex justify-between items-center mb-3 sm:mb-4">
+            <h2 class="text-base sm:text-lg font-semibold text-[#1A237E]">Accessibility Menu</h2>
+            <button id="closePanel" class="text-xl sm:text-2xl font-bold text-gray-500 hover:text-gray-700">&times;</button>
         </div>
 
         <div class="flex items-center justify-between">
@@ -161,16 +194,16 @@
     </div>
 
     <!-- Welcome and Progress -->
-    <div class="content-wrapper mt-8 mb-16">
-        <div class="bg-white rounded-xl shadow-md p-6 flex flex-col md:flex-row items-center justify-between mb-8">
-            <div>
-                <h2 class="text-2xl font-bold mb-2">Welcome, {{ user_name if user_name else 'Participant' }}!</h2>
-                <p class="text-gray-700">Here are your activities. Complete them at your own pace!</p>
+    <div class="content-wrapper mt-4 sm:mt-6 md:mt-8 mb-8 sm:mb-12 md:mb-16 px-3 sm:px-4">
+        <div class="bg-white rounded-lg sm:rounded-xl shadow-md p-4 sm:p-5 md:p-6 flex flex-col md:flex-row items-center justify-between mb-4 sm:mb-6 md:mb-8">
+            <div class="text-center md:text-left mb-4 md:mb-0">
+                <h2 class="text-lg sm:text-xl md:text-2xl font-bold mb-1 sm:mb-2">Welcome, {{ user_name if user_name else 'Participant' }}!</h2>
+                <p class="text-sm sm:text-base text-gray-700">Here are your activities. Complete them at your own pace!</p>
             </div>
-            <div class="w-full md:w-1/3 mt-6 md:mt-0">
-                <div class="mb-2 text-sm text-gray-600">Overall Progress</div>
-                <div class="w-full bg-gray-200 rounded-full h-4">
-                    <div id="progressBar" class="bg-blue-800 h-4 rounded-full transition-all duration-500" style="width: {{ progress }}%"></div>
+            <div class="w-full md:w-1/3 mt-4 md:mt-0">
+                <div class="mb-2 text-xs sm:text-sm text-gray-600">Overall Progress</div>
+                <div class="w-full bg-gray-200 rounded-full h-3 sm:h-4">
+                    <div id="progressBar" class="bg-blue-800 h-3 sm:h-4 rounded-full transition-all duration-500" style="width: {{ progress }}%"></div>
                 </div>
                 <div class="text-right text-xs text-gray-500 mt-1" id="progressText">
                     {{ tasks | selectattr('status', 'equalto', 'Completed') | list | length }} of {{ total_tasks }} tasks completed
@@ -179,22 +212,22 @@
         </div>
 
         <!-- Task Cards -->
-        <div id="taskGrid" class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-4">
+        <div id="taskGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 mt-4">
         
             {% for task in tasks %}
-            <div class="card bg-white rounded-xl shadow-md p-6 flex flex-col items-center text-center">
+            <div class="card bg-white rounded-lg sm:rounded-xl shadow-md p-4 sm:p-5 md:p-6 flex flex-col items-center text-center">
                 {% if task.task_name == 'Reading Aloud Task 1' %}
-                    <img src="{{ url_for('static', filename='read.jpg') }}" alt="Reading Aloud" class="h-20 w-20 mb-4 rounded-full shadow">
+                    <img src="{{ url_for('static', filename='read.jpg') }}" alt="Reading Aloud" class="h-16 w-16 sm:h-20 sm:w-20 mb-3 sm:mb-4 rounded-full shadow">
                 {% elif task.task_name == 'Typing Task' %}
-                    <img src="{{ url_for('static', filename='type.jpg') }}" alt="Typing" class="h-20 w-20 mb-4 rounded-full shadow">
+                    <img src="{{ url_for('static', filename='type.jpg') }}" alt="Typing" class="h-16 w-16 sm:h-20 sm:w-20 mb-3 sm:mb-4 rounded-full shadow">
                 {% elif task.task_name == 'Reading Comprehension' %}
-                    <img src="{{ url_for('static', filename='comprehend.jpg') }}" alt="Reading Comprehension" class="h-20 w-20 mb-4 rounded-full shadow">
+                    <img src="{{ url_for('static', filename='comprehend.jpg') }}" alt="Reading Comprehension" class="h-16 w-16 sm:h-20 sm:w-20 mb-3 sm:mb-4 rounded-full shadow">
                 {% elif task.task_name == 'Mathematical Comprehension' %}
-                    <img src="{{ url_for('static', filename='math.jpg') }}" alt="Mathematical Comprehension" class="h-20 w-20 mb-4 rounded-full shadow">
+                    <img src="{{ url_for('static', filename='math.jpg') }}" alt="Mathematical Comprehension" class="h-16 w-16 sm:h-20 sm:w-20 mb-3 sm:mb-4 rounded-full shadow">
                 {% elif task.task_name == 'Writing Task' %}
-                    <img src="{{ url_for('static', filename='write.jpg') }}" alt="Writing Task" class="h-20 w-20 mb-4 rounded-full shadow">
+                    <img src="{{ url_for('static', filename='write.jpg') }}" alt="Writing Task" class="h-16 w-16 sm:h-20 sm:w-20 mb-3 sm:mb-4 rounded-full shadow">
                     {% elif task.task_name == 'Aptitude Test' %}
-                    <img src="{{ url_for('static', filename='aptitude.png') }}" alt="Aptitude Test" class="h-20 w-20 mb-4 rounded-full shadow">
+                    <img src="{{ url_for('static', filename='aptitude.png') }}" alt="Aptitude Test" class="h-16 w-16 sm:h-20 sm:w-20 mb-3 sm:mb-4 rounded-full shadow">
                 {% else %}
                     <div class="task-card">
                         <h3>{{ task.task_name }}</h3>
@@ -204,8 +237,8 @@
                         </a>
                     </div>
                 {% endif %}
-                <h3 class="text-lg font-bold mb-2">{{ task.task_name }}</h3>
-                <p class="mb-4 text-gray-600">
+                <h3 class="text-base sm:text-lg font-bold mb-1 sm:mb-2">{{ task.task_name }}</h3>
+                <p class="mb-3 sm:mb-4 text-xs sm:text-sm text-gray-600">
                     {% if task.task_name == 'Reading Aloud Task 1' %}Read a short story out loud. Click to begin!{% endif %}
                     {% if task.task_name == 'Typing Task' %}Type a short essay on the mentioned topic. {% endif %}
                     {% if task.task_name == 'Reading Comprehension' %}Read a passage and answer questions.{% endif %}
@@ -236,13 +269,13 @@
 
                 <!-- Replace the existing task button code in participant-dashboard.html -->
                 {% if task.status == 'Not Started' %}
-                    <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-yellow-200 text-yellow-800 mb-3">Not Started</span>
-                    <button class="primary-bg text-white px-4 py-2 rounded-md font-semibold mt-auto w-full transition task-btn" data-task="{{ task.task_name }}" data-status="Not Started">Start Task</button>
+                    <span class="inline-block px-2 sm:px-3 py-1 rounded-full text-xs font-semibold bg-yellow-200 text-yellow-800 mb-2 sm:mb-3">Not Started</span>
+                    <button class="primary-bg text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-md font-semibold mt-auto w-full transition task-btn text-xs sm:text-sm" data-task="{{ task.task_name }}" data-status="Not Started">Start Task</button>
                 {% elif task.status == 'In Progress' %}
-                    <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-200 text-blue-800 mb-3">In Progress</span>
-                    <button class="primary-bg text-white px-4 py-2 rounded-md font-semibold mt-auto w-full transition task-btn" data-task="{{ task.task_name }}" data-status="In Progress">Continue</button>
+                    <span class="inline-block px-2 sm:px-3 py-1 rounded-full text-xs font-semibold bg-blue-200 text-blue-800 mb-2 sm:mb-3">In Progress</span>
+                    <button class="primary-bg text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-md font-semibold mt-auto w-full transition task-btn text-xs sm:text-sm" data-task="{{ task.task_name }}" data-status="In Progress">Continue</button>
                 {% else %}
-                    <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-green-200 text-green-800 mb-3">Completed</span>
+                    <span class="inline-block px-2 sm:px-3 py-1 rounded-full text-xs font-semibold bg-green-200 text-green-800 mb-2 sm:mb-3">Completed</span>
                     <div class="flex flex-col gap-2 mt-auto w-full">
                         <button class="bg-gray-200 text-gray-800 hover:bg-gray-300 px-4 py-2 rounded-md font-semibold transition task-btn" data-task="{{ task.task_name }}" data-status="Completed">Retake</button>
                         <button class="primary-bg opacity-60 text-white px-4 py-2 rounded-md font-semibold transition cursor-not-allowed" disabled>Completed</button>
@@ -255,20 +288,20 @@
     </div>
 
     <!-- Footer -->
-    <footer class="dark-bg text-white py-12 text-lg" style="background-color: #333333;">
-        <div class="content-wrapper">
+    <footer class="dark-bg text-white py-8 sm:py-10 md:py-12 text-xs sm:text-sm md:text-base" style="background-color: #333333;">
+        <div class="content-wrapper px-3 sm:px-4">
             <div class="flex flex-col md:flex-row justify-between">
-                <div class="mb-8 md:mb-0">
+                <div class="mb-6 sm:mb-8 md:mb-0">
                     <div class="flex items-center">
                         
-                        <h2 class="text-xl font-bold">Dyslexia Research Initiative</h2>
+                        <h2 class="text-lg sm:text-xl font-bold">Dyslexia Research Initiative</h2>
                     </div>
-                    <p class="mt-4 text-gray-400 max-w-md">
+                    <p class="mt-3 sm:mt-4 text-gray-400 max-w-md text-sm sm:text-base">
                         Advancing our understanding of dyslexia through innovative research and technology to create better support systems for everyone.
                     </p>
                 </div>
                 
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-8">
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
                     <div>
                         <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
                         <ul class="space-y-2">
@@ -304,13 +337,64 @@
                 </div>
             </div>
             
-            <div class="mt-12 pt-8 border-t border-gray-700 text-center text-gray-400">
+            <div class="mt-8 sm:mt-10 md:mt-12 pt-6 sm:pt-8 border-t border-gray-700 text-center text-gray-400 text-xs sm:text-sm">
                 <p>&copy; 2025 Leveraging NLP for Dyslexia Identification. All rights reserved.</p>
             </div>
         </div>
     </footer>
 
     <script>
+        // Mobile menu functionality
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const mobileMenuContent = document.getElementById('mobileMenuContent');
+        const closeMobileMenu = document.getElementById('closeMobileMenu');
+        
+        function openMobileMenu() {
+            mobileMenu.classList.remove('hidden');
+            setTimeout(() => {
+                mobileMenuContent.classList.remove('translate-x-full');
+            }, 10);
+        }
+        
+        function closeMobileMenuFunc() {
+            mobileMenuContent.classList.add('translate-x-full');
+            setTimeout(() => {
+                mobileMenu.classList.add('hidden');
+            }, 300);
+        }
+        
+        if (hamburgerBtn) {
+            hamburgerBtn.addEventListener('click', openMobileMenu);
+        }
+        
+        if (closeMobileMenu) {
+            closeMobileMenu.addEventListener('click', closeMobileMenuFunc);
+        }
+        
+        // Close menu when clicking outside
+        if (mobileMenu) {
+            mobileMenu.addEventListener('click', function(e) {
+                if (e.target === mobileMenu) {
+                    closeMobileMenuFunc();
+                }
+            });
+        }
+        
+        // Close menu when clicking nav links
+        document.querySelectorAll('#mobileMenuContent a').forEach(link => {
+            link.addEventListener('click', function() {
+                closeMobileMenuFunc();
+            });
+        });
+        
+        // Close menu on window resize to desktop size
+        window.addEventListener('resize', function() {
+            if (window.innerWidth >= 768) {
+                closeMobileMenuFunc();
+            }
+        });
+        
         // Accessibility functionality
         const root = document.documentElement;
         const panel = document.getElementById('accessibilityPanel');
@@ -401,8 +485,8 @@
             root.style.fontSize = `${currentFontSize}px`;
         }
 
-        // Logout functionality
-        document.getElementById('logoutBtn').addEventListener('click', function() {
+        // Logout functionality for both desktop and mobile
+        function handleLogout() {
             fetch('/api/logout', {
                 method: 'POST',
                 credentials: 'same-origin',
@@ -417,7 +501,18 @@
                 localStorage.clear();
                 window.location.href = '/';
             });
-        });
+        }
+        
+        const logoutBtnDesktop = document.getElementById('logoutBtnDesktop');
+        const logoutBtnMobile = document.getElementById('logoutBtnMobile');
+        
+        if (logoutBtnDesktop) {
+            logoutBtnDesktop.addEventListener('click', handleLogout);
+        }
+        
+        if (logoutBtnMobile) {
+            logoutBtnMobile.addEventListener('click', handleLogout);
+        }
 
         // Task status update logic
         let totalTasks = {{ total_tasks }};
@@ -447,31 +542,31 @@
             grid.innerHTML = '';
             (tasks || []).forEach(task => {
                 const card = document.createElement('div');
-                card.className = 'card task-card bg-white rounded-xl shadow-md p-6 flex flex-col items-center text-center';
+                card.className = 'card task-card bg-white rounded-lg sm:rounded-xl shadow-md p-4 sm:p-5 md:p-6 flex flex-col items-center text-center';
                 
                 // Get task description
                 const description = getTaskDescription(task.task_name);
                 
                 // Create status badge
                 const statusBadge = task.status === 'Not Started' 
-                    ? '<span class="status-badge inline-block px-3 py-1 rounded-full text-xs font-semibold bg-yellow-200 text-yellow-800 mb-3">Not Started</span>'
+                    ? '<span class="status-badge inline-block px-2 sm:px-3 py-1 rounded-full text-xs font-semibold bg-yellow-200 text-yellow-800 mb-2 sm:mb-3">Not Started</span>'
                     : task.status === 'In Progress' 
-                    ? '<span class="status-badge inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-200 text-blue-800 mb-3">In Progress</span>'
-                    : '<span class="status-badge inline-block px-3 py-1 rounded-full text-xs font-semibold bg-green-200 text-green-800 mb-3">Completed</span>';
+                    ? '<span class="status-badge inline-block px-2 sm:px-3 py-1 rounded-full text-xs font-semibold bg-blue-200 text-blue-800 mb-2 sm:mb-3">In Progress</span>'
+                    : '<span class="status-badge inline-block px-2 sm:px-3 py-1 rounded-full text-xs font-semibold bg-green-200 text-green-800 mb-2 sm:mb-3">Completed</span>';
                 
                 // Create button based on status
                 let buttonHtml = '';
                 if (task.status === 'Completed') {
-                    buttonHtml = `<button class="task-btn bg-gray-200 text-gray-800 hover:bg-gray-300 px-4 py-2 rounded-md font-semibold mt-auto w-full transition" data-task="${task.task_name}" data-status="${task.status}">Retake</button>`;
+                    buttonHtml = `<button class="task-btn bg-gray-200 text-gray-800 hover:bg-gray-300 px-3 sm:px-4 py-1.5 sm:py-2 rounded-md font-semibold mt-auto w-full transition text-xs sm:text-sm" data-task="${task.task_name}" data-status="${task.status}">Retake</button>`;
                 } else {
                     const buttonText = task.status === 'Not Started' ? 'Start Task' : 'Continue';
-                    buttonHtml = `<button class="task-btn primary-bg text-white px-4 py-2 rounded-md font-semibold mt-auto w-full transition" data-task="${task.task_name}" data-status="${task.status}">${buttonText}</button>`;
+                    buttonHtml = `<button class="task-btn primary-bg text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-md font-semibold mt-auto w-full transition text-xs sm:text-sm" data-task="${task.task_name}" data-status="${task.status}">${buttonText}</button>`;
                 }
                 
                 card.innerHTML = `
-                    <img src="${iconFor(task.task_name)}" alt="${task.task_name}" class="h-20 w-20 mb-4 rounded-full shadow">
-                    <h3 class="text-lg font-bold mb-2">${task.task_name}</h3>
-                    <p class="mb-4 text-gray-600">${description}</p>
+                    <img src="${iconFor(task.task_name)}" alt="${task.task_name}" class="h-16 w-16 sm:h-20 sm:w-20 mb-3 sm:mb-4 rounded-full shadow">
+                    <h3 class="text-base sm:text-lg font-bold mb-1 sm:mb-2">${task.task_name}</h3>
+                    <p class="mb-3 sm:mb-4 text-xs sm:text-sm text-gray-600">${description}</p>
                     ${statusBadge}
                     ${buttonHtml}
                 `;
@@ -644,7 +739,10 @@
         // Check if viewing as child and show back to parent button
         document.addEventListener('DOMContentLoaded', function() {
             if (sessionStorage.getItem('viewing_as_child') === 'true') {
-                document.getElementById('backToParentNav').classList.remove('hidden');
+                const backToParentDesktop = document.getElementById('backToParentNavDesktop');
+                const backToParentMobile = document.getElementById('backToParentNavMobile');
+                if (backToParentDesktop) backToParentDesktop.classList.remove('hidden');
+                if (backToParentMobile) backToParentMobile.classList.remove('hidden');
             }
             
             // Check for new badges after page load
